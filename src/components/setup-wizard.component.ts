@@ -114,22 +114,23 @@ interface DnsProvider {
                 <div class="flex justify-between items-center mb-2">
                     <h4 class="text-green-400 font-bold flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        Standard Install Command (Guaranteed)
+                        OFFLINE INSTALLATION (Fixed)
                     </h4>
                     <span class="text-xs text-gray-500">Method: Direct Write</span>
                 </div>
 
                 <p class="text-gray-300 text-sm mb-4">
-                    Copy and paste the block below into your terminal. This creates the installation script locally and runs it, <strong>avoiding all 404 errors</strong>.
+                    Since the GitHub file is unreachable (404), copy this command. 
+                    It <strong>creates the installer directly on your server</strong> without downloading anything.
                 </p>
                 
                 <div class="relative">
                     <textarea readonly class="w-full h-48 bg-gray-900 p-3 rounded-md text-xs font-mono text-green-400 border border-gray-700 resize-none break-all outline-none focus:border-green-500 transition-colors whitespace-pre" (click)="$event.target.select()">{{ installCommand() }}</textarea>
-                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded border border-gray-600">Copy All</button>
+                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded border border-gray-600">Copy Command</button>
                 </div>
                 <div class="text-xs text-gray-500 mt-2 font-mono flex gap-4">
                     <span>1. Copy</span>
-                    <span>2. Paste in VPS</span>
+                    <span>2. Paste in VPS Terminal</span>
                     <span>3. Press Enter</span>
                 </div>
             </div>
@@ -252,8 +253,7 @@ npm start`;
       const role = this.selectedRole();
       const key = this.edgeNodeKey();
       
-      // Instead of Base64 injection which can be confusing or fail on some stripped systems,
-      // we use a standard 'cat << EOF' heredoc block. This is the most reliable way 
+      // Use 'cat << EOF' heredoc block. This is the most reliable way 
       // to create a file without external fetching.
       
       let cmd = `cat << 'EOF' > install.sh\n${this.manualScriptContent}\nEOF\n`;
