@@ -15,11 +15,13 @@ import { DohSettingsComponent } from './doh-settings.component';
 import { IapSettingsComponent } from './iap-settings.component';
 import { NatTraversalComponent } from './nat-traversal.component';
 import { SshSettingsComponent } from './ssh-settings.component';
+import { RemoteInstallerComponent } from './remote-installer.component';
+import { EmailService } from '../services/email.service';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, RemoteInstallerComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,19 +29,22 @@ import { SshSettingsComponent } from './ssh-settings.component';
 export class SettingsComponent implements OnInit, OnDestroy {
   core = inject(ElahehCoreService);
   cryptoLayer = inject(CryptoLayerService);
+  emailService = inject(EmailService);
   fb: FormBuilder = inject(FormBuilder);
   languageService = inject(LanguageService);
   
   private destroy$ = new Subject<void>();
 
-  currentTab = signal<'general' | 'network' | 'security' | 'advanced' | 'store' | 'ssh'>('general');
+  currentTab = signal<'general' | 'network' | 'security' | 'advanced' | 'store' | 'ssh' | 'system'>('general');
   successMessage = signal('');
   modelSuccessMessage = signal('');
+  importError = signal('');
   
   availableModels = ['gemini-2.5-flash', 'gemini-2.5-pro'];
   selectedModel = signal<string>(this.core.aiModel());
 
   proxySuccessMessage = signal('');
+  emailTestStatus = signal<'idle' | 'sending' | 'success' | 'failed'>('idle');
 
   adminForm = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
@@ -57,6 +62,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
     port: [null as number | null],
     type: ['SOCKS5']
   });
+
+  smtpForm = this.fb.group({
+      host: ['smtp.gmail.com', Validators.required],
+      port: [587, [Validators.required, Validators.min(1)]],
+      user: ['', Validators.required],
+      pass: ['', Validators.required],
+      secure: [false],
+      senderName: ['Elaheh Admin'],
+      senderEmail: ['', [Validators.required, Validators.email]]
+  });
   
   ngOnInit(): void {
     this.adminForm.setValue({
@@ -73,6 +88,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
       port: this.core.proxyPort(),
       type: this.core.proxyType()
     });
+    
+    // SMTP Load
+    const smtp = this.core.smtpConfig();
+    this.smtpForm.patchValue(smtp);
 
     this.proxyForm.get('isEnabled')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(enabled => {
       const hostControl = this.proxyForm.get('host');
@@ -132,5 +151,56 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
     this.proxySuccessMessage.set(this.languageService.translate('settings.proxy.saveSuccess'));
     setTimeout(() => this.proxySuccessMessage.set(''), 3000);
+  }
+
+  // --- Database Actions ---
+  exportSettings() {
+      const json = this.core.exportSettings();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `elaheh_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+  }
+
+  triggerImport() {
+      document.getElementById('fileInput')?.click();
+  }
+
+  onFileSelected(event: any) {
+      const file = event.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              const content = e.target?.result as string;
+              if (this.core.importSettings(content)) {
+                  alert('Settings Imported Successfully. Reloading...');
+                  window.location.reload();
+              } else {
+                  this.importError.set('Invalid backup file.');
+                  setTimeout(() => this.importError.set(''), 3000);
+              }
+          };
+          reader.readAsText(file);
+      }
+  }
+
+  // --- Email Actions ---
+  saveSmtp() {
+      if (this.smtpForm.valid) {
+          this.core.updateSmtpConfig(this.smtpForm.value as any);
+      }
+  }
+
+  testEmail() {
+      if (this.smtpForm.valid) {
+          this.emailTestStatus.set('sending');
+          this.emailService.sendTestEmail(this.smtpForm.value as any, 'admin@localhost').then(() => {
+              this.emailTestStatus.set('success');
+              setTimeout(() => this.emailTestStatus.set('idle'), 3000);
+          });
+      }
   }
 }

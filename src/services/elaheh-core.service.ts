@@ -1,5 +1,7 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
-import { GoogleGenAI, GenerateContentResponse, GenerateContentParameters } from "@google/genai";
+import { Injectable, signal, computed, effect, inject } from '@angular/core';
+import { GoogleGenAI } from "@google/genai";
+import { DatabaseService } from './database.service';
+import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
 export const APP_VERSION = '1.0.3';
@@ -127,6 +129,8 @@ export interface Order {
   providedIn: 'root'
 })
 export class ElahehCoreService {
+  private db = inject(DatabaseService);
+
   // Theme State
   theme = signal<'light' | 'dark'>('dark');
 
@@ -239,6 +243,9 @@ export class ElahehCoreService {
   sslKeyPath = signal<string>('');
   isSslActive = computed(() => this.customDomain() !== '' && this.sslCertPath() !== '' && this.sslKeyPath() !== '');
   
+  // Email / SMTP
+  smtpConfig = signal<SmtpConfig>({ host: '', port: 587, user: '', pass: '', secure: false, senderName: 'Elaheh Admin', senderEmail: '' });
+
   // IAP
   iapConfig = signal<{projectId: string, zone: string, instanceName: string}>({ projectId: '', zone: 'europe-west3-c', instanceName: 'elaheh-upstream' });
 
@@ -296,6 +303,9 @@ export class ElahehCoreService {
     this.addLog('INFO', `Elaheh Core Service Initialized v${APP_VERSION}`);
     this.addLog('INFO', APP_SLOGAN);
     
+    // Load persisted state
+    this.loadPersistedData();
+
     const apiKey = process.env.API_KEY;
     if (apiKey) { this.ai = new GoogleGenAI({ apiKey }); }
 
@@ -308,6 +318,20 @@ export class ElahehCoreService {
         document.documentElement.classList.remove('dark');
         localStorage.setItem('theme', 'light');
       }
+    });
+
+    // Auto-save effect
+    effect(() => {
+       const state = {
+           users: this.users(),
+           products: this.products(),
+           settings: {
+               adminUsername: this.adminUsername(),
+               domain: this.customDomain(),
+               smtp: this.smtpConfig()
+           }
+       };
+       this.db.saveState(state);
     });
 
     effect(() => {
@@ -323,6 +347,20 @@ export class ElahehCoreService {
         this.startNatKeepAlive();
       }
     });
+  }
+
+  private loadPersistedData() {
+      const data = this.db.loadState();
+      if (data) {
+          if (data.users) this.users.set(data.users);
+          if (data.products) this.products.set(data.products);
+          if (data.settings) {
+              if(data.settings.adminUsername) this.adminUsername.set(data.settings.adminUsername);
+              if(data.settings.domain) this.customDomain.set(data.settings.domain);
+              if(data.settings.smtp) this.smtpConfig.set(data.settings.smtp);
+          }
+          this.addLog('SUCCESS', 'Database loaded successfully.');
+      }
   }
 
   toggleTheme() {
@@ -356,6 +394,11 @@ export class ElahehCoreService {
     this.sslCertPath.set(config.certPath);
     this.sslKeyPath.set(config.keyPath);
     this.addLog('SUCCESS', `Domain set to ${config.domain}. SSL/TLS paths updated.`);
+  }
+
+  updateSmtpConfig(config: SmtpConfig) {
+      this.smtpConfig.set(config);
+      this.addLog('INFO', 'SMTP Configuration updated.');
   }
   
   setTunnelMode(mode: 'auto' | 'manual') { 
@@ -593,6 +636,25 @@ export class ElahehCoreService {
       this.detectedPublicIp.set('89.1.2.3');
       this.natStatus.set('Connected');
     }, 1500);
+  }
+  
+  // Data Import/Export
+  exportSettings(): string {
+      return this.db.exportDatabase(this);
+  }
+
+  importSettings(json: string): boolean {
+      const backup = this.db.importDatabase(json);
+      if (backup) {
+          // Restore
+          if(backup.settings.adminUsername) this.adminUsername.set(backup.settings.adminUsername);
+          if(backup.settings.domain) this.customDomain.set(backup.settings.domain);
+          if(backup.users) this.users.set(backup.users);
+          if(backup.products) this.products.set(backup.products);
+          this.addLog('SUCCESS', `Restored backup from ${backup.timestamp}`);
+          return true;
+      }
+      return false;
   }
   
   // Placeholders
