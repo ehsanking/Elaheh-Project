@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.0 (Production Build & Serve)
+# Version 1.3.1 (Robust Dependency Handling)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.0"
+echo "   Version 1.3.1"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -27,8 +27,8 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Detect OS & Install Basic Dependencies
-echo -e "${GREEN}[+] Detecting OS and installing basics...${NC}"
+# 2. Detect OS & Install Dependencies
+echo -e "${GREEN}[+] Detecting OS and installing dependencies...${NC}"
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$NAME
@@ -37,25 +37,35 @@ fi
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq curl git unzip ufw nodejs npm
+    # Try to fix any existing broken package issues
+    apt-get --fix-broken install -y -qq
+    apt-get install -y -qq curl git unzip ufw ca-certificates
+    
+    # Install Node.js 20 using NodeSource repository
+    echo -e "${GREEN}[+] Installing Node.js 20 LTS...${NC}"
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null
+    apt-get install -y -qq nodejs
+
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-    dnf install -y -q curl git unzip firewalld nodejs npm
+    dnf install -y -q curl git unzip firewalld
+    
+    # Install Node.js 20
+    echo -e "${GREEN}[+] Installing Node.js 20 LTS...${NC}"
+    dnf module reset -y nodejs &> /dev/null # Reset to be safe
+    dnf module enable -y nodejs:20 &> /dev/null
+    dnf install -y -q nodejs
 fi
 
-# 3. Install/Update Node.js 20 & NPM
-echo -e "${GREEN}[+] Ensuring Node.js 20 LTS and NPM are installed...${NC}"
-npm install -g n
-n 20
-hash -r
 echo -e "${GREEN}[+] Node.js ($(node -v)) and NPM ($(npm -v)) are ready.${NC}"
 
-# 4. Install PM2
+
+# 3. Install PM2
 if ! command -v pm2 &> /dev/null; then
     echo -e "${GREEN}[+] Installing PM2 process manager...${NC}"
     npm install -g pm2
 fi
 
-# 5. Setup Directory & Clone
+# 4. Setup Directory & Clone
 INSTALL_DIR="/opt/elaheh-project"
 REPO_URL="https://github.com/ehsanking/Elaheh-Project.git"
 
@@ -70,15 +80,15 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# 6. Install Project Dependencies (including dev for build)
+# 5. Install Project Dependencies (including dev for build)
 echo -e "${GREEN}[+] Installing NPM packages...${NC}"
 npm install --production=false --silent --unsafe-perm
 
-# 7. Build Angular Application for Production
+# 6. Build Angular Application for Production
 echo -e "${GREEN}[+] Building Angular application...${NC}"
 npm run build
 
-# 8. Parse Arguments & Save Configuration
+# 7. Parse Arguments & Save Configuration
 ROLE="unknown"
 KEY=""
 while [ "$#" -gt 0 ]; do
@@ -102,7 +112,7 @@ cat <<EOF > "$DIST_PATH/assets/server-config.json"
 }
 EOF
 
-# 9. Set Initial Port & Configure Firewall
+# 8. Set Initial Port & Configure Firewall
 PANEL_PORT=4200
 CONF_FILE="$INSTALL_DIR/elaheh.conf"
 echo "PORT=$PANEL_PORT" > "$CONF_FILE"
@@ -122,7 +132,7 @@ elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedo
     fi
 fi
 
-# 10. Start Application with PM2 (serving static build)
+# 9. Start Application with PM2 (serving static build)
 echo -e "${GREEN}[+] Starting application on port ${PANEL_PORT}...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
@@ -130,7 +140,7 @@ pm2 serve "$DIST_PATH" ${PANEL_PORT} --name "elaheh-app" --spa
 pm2 save --force
 pm2 startup | grep "sudo" | bash || true
 
-# 11. Create 'elaheh' CLI tool
+# 10. Create 'elaheh' CLI tool
 echo -e "${GREEN}[+] Creating 'elaheh' management tool...${NC}"
 cat <<'EOF' > /usr/local/bin/elaheh
 #!/bin/bash
@@ -266,14 +276,14 @@ EOF
 
 chmod +x /usr/local/bin/elaheh
 
-# 12. Verify CLI tool creation
+# 11. Verify CLI tool creation
 if [ -s /usr/local/bin/elaheh ]; then
     echo -e "${GREEN}[+] 'elaheh' management tool created successfully.${NC}"
 else
     echo -e "${RED}[!] WARNING: Failed to create the 'elaheh' management tool. Manual intervention may be required.${NC}"
 fi
 
-# 13. Final Output
+# 12. Final Output
 PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
 
 echo ""
