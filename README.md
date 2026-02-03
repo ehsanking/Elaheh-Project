@@ -3,93 +3,95 @@
 > **"اینترنت آزاد برای همه یا هیچکس"**  
 > **"Free Internet for everyone or no one."**
 
-**Version:** 1.0.1  
+**Version:** 1.0.3  
 **Creator:** EHSANKiNG
 
-Project Elaheh is a sophisticated, web-based management dashboard designed to facilitate secure, high-performance tunneling between domestic servers (Edge/Iran) and foreign upstream servers. It leverages modern obfuscation techniques, automated routing optimization, and a user-friendly interface to manage VLESS, VMess, and SSH/IAP connections.
+Project Elaheh is a sophisticated, web-based management dashboard designed to facilitate secure, high-performance tunneling between domestic servers (Edge/Iran) and foreign upstream servers.
 
 ![Dashboard Preview](https://picsum.photos/800/400?grayscale)
 
-## Key Features
+## Installation Guide
 
-### 1. Dual-Node Architecture
-- **Upstream Node (Foreign):** Handles the actual internet traffic.
-- **Edge Node (Domestic):** Acts as a bridge (relay) to bypass censorship.
-- **Auto-Discovery:** Automatically detects network topography and latency.
+### Method 1: The Wizard (Recommended)
+1. Run the app locally or on your PC (`npm start`).
+2. Go to the **Setup Wizard**.
+3. At the final step, copy the **Direct Install Command**.
+4. Paste it into your VPS terminal. This method avoids all GitHub 404 errors by creating the script directly on your server.
 
-### 2. Protocol Support
-- **VLESS:** Reality (gRPC/TCP/Vision), TLS.
-- **VMess:** WebSocket (CDN), TCP (Relay).
-- **ShadowTLS:** Advanced handshake obfuscation.
-- **SSH Tunneling:** Dynamic (SOCKS), Local, Remote forwarding management.
-- **Google IAP:** Tunneling via Google Cloud infrastructure.
-- **UDP Support:** Full UDP forwarding support across generated configs.
-
-### 3. Smart Routing & Optimization
-- **Auto-Pilot Mode:** Continuously monitors connection quality (every 10 minutes) across multiple providers (Cloudflare, AWS, Hetzner, Blockchain relays) and switches to the lowest latency route.
-- **Camouflage Traffic:** Simulates realistic traffic patterns (AI Training, E-Commerce, Media Streaming) to mask tunnel activity.
-
-## Installation
-
-**Note:** This repository must be **Public** for the easy install script to work without authentication.
-
-### One-Line Install (Recommended)
-
-Run this command on your VPS (Debian/Ubuntu/Rocky Linux):
-
+### Method 2: Manual "One-Liner" (If Repo is Public)
+If you have pushed the code to a public repository:
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/EHSANKiNG/project-elaheh/main/install.sh)
 ```
 
-### Manual Installation
+### Method 3: Emergency Fallback (Fix for 404 Error)
+If `curl` fails with a 404 error, copy and paste this entire block into your server terminal to create the installer manually:
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/EHSANKiNG/project-elaheh.git
-    cd project-elaheh
-    ```
+```bash
+cat << 'EOF' > install.sh
+#!/bin/bash
+# Project Elaheh Installer v1.0.3
+set -e
+GREEN='\033[0;32m'
+NC='\033[0m'
 
-2.  **Install Dependencies:**
-    ```bash
-    npm install
-    ```
+if [ "$EUID" -ne 0 ]; then echo "Please run as root"; exit 1; fi
 
-3.  **Run Development Server:**
-    ```bash
-    npm start
-    ```
-    Access the panel at `http://localhost:4200`.
+if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
+echo -e "${GREEN}[+] Detected OS: $OS${NC}"
 
-## Server Deployment
+echo -e "${GREEN}[+] Installing dependencies...${NC}"
+if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq && apt-get install -y -qq curl git unzip
+elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]]; then
+    dnf install -y -q curl git unzip
+fi
 
-Use the built-in **Setup Wizard** on the first run. It will guide you through:
-1.  Selecting Server Role (Iran vs. External).
-2.  System checks.
-3.  Generating the final installation command.
+if ! command -v node &> /dev/null; then
+    echo -e "${GREEN}[+] Installing Node.js 20...${NC}"
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then apt-get install -y -qq nodejs; else dnf install -y -q nodejs; fi
+fi
 
-## Usage Guide
+INSTALL_DIR="/opt/project-elaheh"
+REPO_URL="https://github.com/EHSANKiNG/project-elaheh.git"
 
-### Initial Setup
-1.  Open the web panel.
-2.  Follow the **Setup Wizard**.
-3.  Copy the final SSH command and run it on your server to bind the panel to the system.
+if [ -d "$INSTALL_DIR" ]; then
+    cd "$INSTALL_DIR" && git pull origin main
+else
+    git clone "$REPO_URL" "$INSTALL_DIR" && cd "$INSTALL_DIR"
+fi
 
-### Creating Users
-1.  Go to **Users** tab.
-2.  Click **Add User**.
-3.  **Auto Mode:** Enter username and quota. The system generates VLESS/VMess/ShadowTLS links automatically.
-4.  **Manual Mode:** Select specific transport/security settings.
-5.  Share the **Subscription Link** with the user.
+npm install --silent
 
-### Tunnels
-1.  Go to **Settings > Advanced > Tunnel Opt**.
-2.  Enable **Auto Pilot** for automatic path selection.
-3.  Or manually activate a specific provider (CDN, Relay, etc.).
+ROLE="unknown"
+KEY=""
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --role) ROLE="$2"; shift ;;
+        --key) KEY="$2"; shift ;;
+        *) shift ;;
+    esac
+done
 
-## Security
-- **AEAD Encryption:** Internal communication uses ChaCha20-Poly1305.
-- **Key Rotation:** Session keys rotate automatically after 1k packets.
-- **Obfuscation:** Traffic is disguised as HTTPS/TLS.
+mkdir -p src/assets
+cat <<EOF > src/assets/server-config.json
+{ "role": "$ROLE", "key": "$KEY", "installedAt": "$(date)" }
+EOF
+
+echo -e "${GREEN}Installation Complete! Role: $ROLE${NC}"
+npm start
+EOF
+
+chmod +x install.sh
+./install.sh
+```
+
+## Usage
+1. Open the panel at `http://<YOUR_SERVER_IP>:4200`.
+2. Login with `admin` / `admin`.
+3. Configure your users and tunnels.
 
 ## License
 MIT License. Created by **EHSANKiNG**.

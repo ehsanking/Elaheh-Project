@@ -2,7 +2,7 @@ import { Injectable, signal, computed, effect } from '@angular/core';
 import { GoogleGenAI, GenerateContentResponse, GenerateContentParameters } from "@google/genai";
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.2';
+export const APP_VERSION = '1.0.3';
 export const APP_AUTHOR = 'EHSANKiNG';
 export const APP_SLOGAN = 'اینترنت آزاد برای همه یا هیچکس - Free Internet for everyone or no one';
 

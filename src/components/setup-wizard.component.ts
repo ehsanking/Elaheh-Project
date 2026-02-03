@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { ElahehCoreService, EndpointType, EndpointStrategy } from '../services/elaheh-core.service';
-import { LanguageService } from '../services/language.service';
+import { Language, LanguageService } from '../services/language.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -90,39 +90,23 @@ interface DnsProvider {
             
             <div class="bg-black p-4 rounded-lg border border-gray-600 mb-6">
                 <!-- Toggle Mode -->
-                <div class="flex justify-end mb-2">
-                    <button (click)="showManualScript.set(!showManualScript())" class="text-xs text-teal-400 hover:text-teal-300 underline">
-                        {{ showManualScript() ? 'Show One-Liner' : 'Show Manual Script (Fix 404)' }}
-                    </button>
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-green-400 font-bold flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        Direct Install (Fixes 404)
+                    </h4>
+                    <span class="text-xs text-gray-500">Method: Base64 Injection</span>
                 </div>
 
-                @if (!showManualScript()) {
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-yellow-400 font-bold">🚀 Installation Required</h4>
-                        <span class="text-xs text-gray-500">install.sh</span>
-                    </div>
-                    <p class="text-gray-300 text-sm mb-4">Run this one-liner on your <strong>{{ selectedRole() === 'iran' ? 'Iran (Edge)' : 'External (Upstream)' }}</strong> server:</p>
-                    
-                    <div class="relative">
-                        <textarea readonly class="w-full h-24 bg-gray-900 p-3 rounded-md text-sm font-mono text-green-400 border border-gray-700 resize-none">{{ installCommand() }}</textarea>
-                        <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded">Copy</button>
-                    </div>
-                    <div class="text-xs text-red-400 mt-2 font-bold flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        Required: 'install.sh' must be PUSHED to your PUBLIC GitHub repository. If you see 404, switch to Manual Script.
-                    </div>
-                } @else {
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-blue-400 font-bold">📝 Manual Installation</h4>
-                        <span class="text-xs text-gray-500">Fallback Method</span>
-                    </div>
-                    <p class="text-gray-300 text-sm mb-2">If the one-liner fails (404), copy this entire script, save it as <code>install.sh</code> on your server, and run <code>bash install.sh --role {{ selectedRole() === 'iran' ? 'edge' : 'upstream' }} --key {{edgeNodeKey()}}</code>.</p>
-                    
-                    <div class="relative">
-                        <textarea readonly class="w-full h-64 bg-gray-900 p-3 rounded-md text-xs font-mono text-gray-300 border border-gray-700 resize-none whitespace-pre">{{ manualScriptContent }}</textarea>
-                        <button (click)="copyManualScript()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded">Copy Script</button>
-                    </div>
-                }
+                <p class="text-gray-300 text-sm mb-4">Run this command on your <strong>{{ selectedRole() === 'iran' ? 'Iran (Edge)' : 'External (Upstream)' }}</strong> server. This creates the script locally to avoid GitHub 404 errors:</p>
+                
+                <div class="relative">
+                    <textarea readonly class="w-full h-32 bg-gray-900 p-3 rounded-md text-xs font-mono text-green-400 border border-gray-700 resize-none break-all">{{ installCommand() }}</textarea>
+                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded">Copy</button>
+                </div>
+                <div class="text-xs text-gray-500 mt-2 font-mono">
+                    Decodes script > install.sh > Executes
+                </div>
             </div>
 
             @if (selectedRole() === 'iran') {
@@ -166,15 +150,12 @@ export class SetupWizardComponent {
   camouflageMode = signal<'AI_RESEARCH' | 'SHOP' | 'SEARCH_ENGINE' | null>('SHOP');
   
   edgeNodeKey = signal('');
-  toastMessage = signal<string | null>(null);
   showLangDropdown = signal(false);
   
-  showManualScript = signal(false);
-
-  // Embedded script for fallback
+  // Embedded script for Base64 generation
   manualScriptContent = `#!/bin/bash
-# Project Elaheh Installer (Manual)
-# Version 1.0.2
+# Project Elaheh Installer
+# Version 1.0.3
 
 set -e
 GREEN='\\033[0;32m'
@@ -242,8 +223,11 @@ npm start`;
       const role = this.selectedRole();
       const key = this.edgeNodeKey();
       
-      // Updated One-Liner with Fail Check
-      const baseCmd = `bash <(curl -fLs https://raw.githubusercontent.com/EHSANKiNG/project-elaheh/main/install.sh)`;
+      // UTF-8 Safe Base64 Encoding
+      const base64Script = btoa(unescape(encodeURIComponent(this.manualScriptContent)));
+      
+      // Generate Self-Extracting Command
+      const baseCmd = `echo "${base64Script}" | base64 -d > install.sh && chmod +x install.sh && ./install.sh`;
       
       if (role === 'iran') {
           return `${baseCmd} --role edge --key ${key}`;
@@ -283,7 +267,6 @@ npm start`;
 
   copyCommand() { navigator.clipboard.writeText(this.installCommand()); }
   copyKey(key: string) { navigator.clipboard.writeText(key); }
-  copyManualScript() { navigator.clipboard.writeText(this.manualScriptContent); }
   
   setLanguage(lang: Language) { this.languageService.setLanguage(lang); this.showLangDropdown.set(false); }
   goToDashboard() { /* Handled by app.component state check */ }
