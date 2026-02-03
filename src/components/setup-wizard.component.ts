@@ -93,19 +93,24 @@ interface DnsProvider {
                 <div class="flex justify-between items-center mb-2">
                     <h4 class="text-green-400 font-bold flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        Direct Install (Fixes 404)
+                        OFFLINE INSTALLATION (Fixed)
                     </h4>
                     <span class="text-xs text-gray-500">Method: Base64 Injection</span>
                 </div>
 
-                <p class="text-gray-300 text-sm mb-4">Run this command on your <strong>{{ selectedRole() === 'iran' ? 'Iran (Edge)' : 'External (Upstream)' }}</strong> server. This creates the script locally to avoid GitHub 404 errors:</p>
+                <p class="text-gray-300 text-sm mb-4">
+                    Since the GitHub file is unreachable (404), copy this command. 
+                    It <strong>generates the installer directly on your server</strong> without downloading anything.
+                </p>
                 
                 <div class="relative">
-                    <textarea readonly class="w-full h-32 bg-gray-900 p-3 rounded-md text-xs font-mono text-green-400 border border-gray-700 resize-none break-all">{{ installCommand() }}</textarea>
-                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded">Copy</button>
+                    <textarea readonly class="w-full h-48 bg-gray-900 p-3 rounded-md text-xs font-mono text-green-400 border border-gray-700 resize-none break-all outline-none focus:border-green-500 transition-colors" (click)="$event.target.select()">{{ installCommand() }}</textarea>
+                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded border border-gray-600">Copy Command</button>
                 </div>
-                <div class="text-xs text-gray-500 mt-2 font-mono">
-                    Decodes script > install.sh > Executes
+                <div class="text-xs text-gray-500 mt-2 font-mono flex gap-4">
+                    <span>1. Copy</span>
+                    <span>2. Paste in VPS Terminal</span>
+                    <span>3. Press Enter</span>
                 </div>
             </div>
 
@@ -152,7 +157,7 @@ export class SetupWizardComponent {
   edgeNodeKey = signal('');
   showLangDropdown = signal(false);
   
-  // Embedded script for Base64 generation
+  // This content matches the install.sh file exactly.
   manualScriptContent = `#!/bin/bash
 # Project Elaheh Installer
 # Version 1.0.3
@@ -160,6 +165,10 @@ export class SetupWizardComponent {
 set -e
 GREEN='\\033[0;32m'
 NC='\\033[0m'
+
+echo "--------------------------------"
+echo "Project Elaheh Installer"
+echo "--------------------------------"
 
 if [ "$EUID" -ne 0 ]; then echo "Please run as root"; exit 1; fi
 
@@ -223,10 +232,12 @@ npm start`;
       const role = this.selectedRole();
       const key = this.edgeNodeKey();
       
-      // UTF-8 Safe Base64 Encoding
+      // UTF-8 Safe Base64 Encoding of the script
       const base64Script = btoa(unescape(encodeURIComponent(this.manualScriptContent)));
       
       // Generate Self-Extracting Command
+      // This command creates the file from base64, makes it executable, and runs it.
+      // This completely bypasses the need for the file to exist on GitHub.
       const baseCmd = `echo "${base64Script}" | base64 -d > install.sh && chmod +x install.sh && ./install.sh`;
       
       if (role === 'iran') {

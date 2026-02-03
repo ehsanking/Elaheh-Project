@@ -1,97 +1,107 @@
 # Project Elaheh - Advanced Tunneling Management System
 
-> **"اینترنت آزاد برای همه یا هیچکس"**  
-> **"Free Internet for everyone or no one."**
-
-**Version:** 1.0.3  
-**Creator:** EHSANKiNG
-
-Project Elaheh is a sophisticated, web-based management dashboard designed to facilitate secure, high-performance tunneling between domestic servers (Edge/Iran) and foreign upstream servers.
-
 ![Dashboard Preview](https://picsum.photos/800/400?grayscale)
 
-## Installation Guide
+**Version:** 1.0.3  
+**Author:** EHSANKiNG
 
-### Method 1: The Wizard (Recommended)
-1. Run the app locally or on your PC (`npm start`).
-2. Go to the **Setup Wizard**.
-3. At the final step, copy the **Direct Install Command**.
-4. Paste it into your VPS terminal. This method avoids all GitHub 404 errors by creating the script directly on your server.
+Project Elaheh is a sophisticated, web-based management dashboard designed to facilitate secure, high-performance tunneling between domestic servers (Edge/Iran) and foreign upstream servers. It features advanced camouflage, NAT traversal, and multi-protocol support.
 
-### Method 2: Manual "One-Liner" (If Repo is Public)
-If you have pushed the code to a public repository:
+---
+
+## 🇮🇷 فارسی (Persian)
+
+**پروژه الهه** یک سیستم مدیریت تونل پیشرفته برای ایجاد اینترنت آزاد و امن است. این سیستم به شما اجازه می‌دهد تا سرورهای ایران و خارج را به صورت هوشمند به هم متصل کنید.
+
+### امکانات کلیدی
+*   **پروتکل‌های مدرن:** پشتیبانی کامل از VLESS Reality, VMess, ShadowTLS.
+*   **استتار هوشمند:** شبیه‌سازی ترافیک سایت‌های معتبر (گوگل، خرید آنلاین) برای فریب فایروال.
+*   **عبور از NAT:** قابلیت اتصال سرورها بدون نیاز به IP عمومی روی سرور ایران (Reverse Tunnel).
+*   **مدیریت کاربران:** سیستم کامل اکانتینگ، محدودیت حجم و زمان، و لینک اشتراک.
+*   **داشبورد زیبا:** رابط کاربری مدرن با نمودارهای لحظه‌ای مصرف منابع و ترافیک.
+*   **نصب آسان:** ویزارد نصب گرافیکی و اسکریپت نصب خودکار.
+
+### راهنمای نصب
+۱. پنل را روی کامپیوتر خود اجرا کنید (`npm start`).
+۲. وارد ویزارد نصب شوید و نقش سرور (ایران یا خارج) را انتخاب کنید.
+۳. دستور نصب تولید شده را کپی کرده و در ترمینال سرور خود اجرا کنید.
+
+---
+
+## 🇺🇸 English
+
+**Project Elaheh** is a cutting-edge tunneling solution designed to bypass censorship using advanced obfuscation techniques. It acts as a bridge between an Edge node (in a restricted region) and an Upstream node (free internet).
+
+### Key Features
+*   **Multi-Protocol Support:** VLESS Reality, VMess over WebSocket/gRPC, and ShadowTLS.
+*   **Advanced Camouflage:** Mimics traffic of AI research labs, e-commerce stores, or video streaming to evade DPI.
+*   **NAT Traversal:** Connect Edge nodes behind NAT or firewalls to Upstream servers using Reverse Tunneling or STUN/TURN.
+*   **User Management:** Create users with traffic quotas, expiry dates, and concurrent connection limits.
+*   **Smart Routing:** Optimizes traffic routing based on latency and jitter.
+*   **Web Dashboard:** Real-time monitoring of server health, bandwidth, and connected users.
+
+### Installation
+1. Start the application locally via `npm start`.
+2. Navigate to the **Setup Wizard**.
+3. Choose your server role (Edge or Upstream).
+4. Copy the generated **Direct Install Command** (Base64 encoded) and paste it into your server's terminal. This avoids any GitHub 404 errors.
+
+---
+
+## 🇨🇳 中文 (Chinese)
+
+**Elaheh 项目** 是一个专为突破网络封锁而设计的高级隧道管理系统。它通过复杂的混淆技术连接受限区域的边缘节点和自由区域的上游节点。
+
+### 主要功能
+*   **多协议支持:** VLESS Reality, VMess, ShadowTLS。
+*   **智能伪装:** 模拟 AI 训练、电商购物或视频流流量，有效欺骗 DPI 检测。
+*   **NAT 穿透:** 通过反向隧道技术，无需公网 IP 即可连接边缘节点。
+*   **用户管理:** 完整的流量配额、过期时间和连接数限制管理。
+*   **实时监控:** 漂亮的仪表盘，显示服务器负载和流量统计。
+
+### 安装指南
+1. 本地运行 `npm start` 启动面板。
+2. 进入设置向导 (Setup Wizard)。
+3. 选择服务器角色 (伊朗/边缘 或 德国/上游)。
+4. 复制生成的**直接安装命令**并在服务器终端运行。
+
+---
+
+## 🇷🇺 Русский (Russian)
+
+**Project Elaheh** — это продвинутая система управления туннелированием для обхода цензуры.
+
+### Основные возможности
+*   **Протоколы:** VLESS Reality, VMess, ShadowTLS.
+*   **Обфускация:** Имитация трафика обычных сайтов для обхода блокировок.
+*   **NAT Traversal:** Работа за NAT без публичного IP.
+*   **Управление пользователями:** Лимиты трафика, сроки действия, подписки.
+*   **Мониторинг:** Дашборд с графиками в реальном времени.
+
+### Установка
+1. Запустите приложение (`npm start`).
+2. В мастере установки выберите роль сервера.
+3. Скопируйте команду установки и выполните её на сервере.
+
+---
+
+## Manual Installation (Fallback)
+
+If you cannot use the wizard, copy this script to a file named `install.sh` on your server and run it:
+
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/EHSANKiNG/project-elaheh/main/install.sh)
-```
-
-### Method 3: Emergency Fallback (Fix for 404 Error)
-If `curl` fails with a 404 error, copy and paste this entire block into your server terminal to create the installer manually:
-
-```bash
-cat << 'EOF' > install.sh
 #!/bin/bash
-# Project Elaheh Installer v1.0.3
-set -e
-GREEN='\033[0;32m'
-NC='\033[0m'
+# Install Node.js & Dependencies
+if [ -f /etc/os-release ]; then . /etc/os-release; fi
+if [[ "$NAME" == *"Ubuntu"* ]]; then apt update && apt install -y curl git unzip nodejs; fi
+if [[ "$NAME" == *"CentOS"* ]]; then dnf install -y curl git unzip nodejs; fi
 
-if [ "$EUID" -ne 0 ]; then echo "Please run as root"; exit 1; fi
-
-if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
-echo -e "${GREEN}[+] Detected OS: $OS${NC}"
-
-echo -e "${GREEN}[+] Installing dependencies...${NC}"
-if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq && apt-get install -y -qq curl git unzip
-elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]]; then
-    dnf install -y -q curl git unzip
-fi
-
-if ! command -v node &> /dev/null; then
-    echo -e "${GREEN}[+] Installing Node.js 20...${NC}"
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then apt-get install -y -qq nodejs; else dnf install -y -q nodejs; fi
-fi
-
-INSTALL_DIR="/opt/project-elaheh"
-REPO_URL="https://github.com/EHSANKiNG/project-elaheh.git"
-
-if [ -d "$INSTALL_DIR" ]; then
-    cd "$INSTALL_DIR" && git pull origin main
-else
-    git clone "$REPO_URL" "$INSTALL_DIR" && cd "$INSTALL_DIR"
-fi
-
-npm install --silent
-
-ROLE="unknown"
-KEY=""
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --role) ROLE="$2"; shift ;;
-        --key) KEY="$2"; shift ;;
-        *) shift ;;
-    esac
-done
-
-mkdir -p src/assets
-cat <<EOF > src/assets/server-config.json
-{ "role": "$ROLE", "key": "$KEY", "installedAt": "$(date)" }
-EOF
-
-echo -e "${GREEN}Installation Complete! Role: $ROLE${NC}"
+# Clone & Run
+git clone https://github.com/EHSANKiNG/project-elaheh.git /opt/project-elaheh
+cd /opt/project-elaheh
+npm install
 npm start
-EOF
-
-chmod +x install.sh
-./install.sh
 ```
-
-## Usage
-1. Open the panel at `http://<YOUR_SERVER_IP>:4200`.
-2. Login with `admin` / `admin`.
-3. Configure your users and tunnels.
 
 ## License
-MIT License. Created by **EHSANKiNG**.
+MIT License.
