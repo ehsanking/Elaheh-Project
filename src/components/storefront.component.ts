@@ -1,148 +1,163 @@
-import { Component, inject, signal, computed, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, Output, EventEmitter, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ElahehCoreService, Product, Order, PaymentGateway } from '../services/elaheh-core.service';
+import { ElahehCoreService, Product, Order } from '../services/elaheh-core.service';
 import { LanguageService, Language } from '../services/language.service';
 import { LogoComponent } from './logo.component';
+import { TermsComponent } from './terms.component';
 
 @Component({
   selector: 'app-storefront',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LogoComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LogoComponent, TermsComponent],
   template: `
-    <div class="min-h-screen bg-gray-900 text-gray-100 flex flex-col font-sans relative overflow-x-hidden">
+    <div class="min-h-screen bg-gray-900 text-gray-100 flex flex-col font-sans relative overflow-x-hidden" [dir]="languageService.currentLang() === 'fa' ? 'rtl' : 'ltr'">
       
-      <!-- Background Elements -->
-      <div class="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-teal-900/20 to-gray-900 z-0"></div>
-      <div class="absolute -top-20 -right-20 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl z-0"></div>
+      @if (showTerms()) {
+          <app-terms (close)="showTerms.set(false)"></app-terms>
+      } @else {
 
       <!-- Header -->
-      <header class="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <header class="bg-gray-900/90 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 text-teal-400">
-              <app-logo></app-logo>
-            </div>
-            <span class="text-xl font-bold tracking-tight text-white">ELAHEH <span class="text-teal-500">VPN</span></span>
+            @if(core.brandLogo()) {
+                <img [src]="core.brandLogo()" class="w-10 h-10 object-contain rounded-full bg-white/10 p-1">
+            } @else {
+                <div class="w-10 h-10 text-teal-400"><app-logo></app-logo></div>
+            }
+            <span class="text-xl font-bold tracking-tight text-white">{{ core.brandName() }}</span>
           </div>
-          <div class="flex items-center gap-4">
-             <div class="relative">
-                <button (click)="showLangDropdown.set(!showLangDropdown())" class="text-gray-400 hover:text-white text-sm font-medium flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>
-                    {{ languageService.getCurrentLanguageName() }}
-                </button>
-                @if(showLangDropdown()) {
-                  <div class="fixed inset-0 z-20" (click)="showLangDropdown.set(false)"></div>
-                  <div class="absolute top-full right-0 mt-2 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-30">
-                    <button (click)="setLanguage('en')" class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2">🇬🇧 English</button>
-                    <button (click)="setLanguage('fa')" class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2">🇮🇷 فارسی</button>
-                    <button (click)="setLanguage('zh')" class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2">🇨🇳 中文</button>
-                    <button (click)="setLanguage('ru')" class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2">🇷🇺 Русский</button>
-                  </div>
-                }
-             </div>
-             <button (click)="loginRequest.emit()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold border border-gray-700 transition-colors">
-                Manager Login
+          <div class="flex items-center gap-3">
+             <button (click)="loginRequest.emit()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-teal-900/20">
+                {{ languageService.translate('login.authenticate') }}
              </button>
           </div>
         </nav>
       </header>
 
-      <main class="flex-1 container mx-auto px-6 py-12 z-10">
+      <main class="flex-1 z-10 pb-20">
         
         @if (viewMode() === 'products') {
             <!-- Hero -->
-            <div class="text-center mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h1 class="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight">
-                {{ languageService.translate('store.heroTitle') }}
-            </h1>
-            <p class="text-xl text-gray-400 max-w-2xl mx-auto">
-                {{ languageService.translate('store.heroDesc') }}
-            </p>
+            <div class="relative py-20 px-6 text-center bg-gradient-to-b from-gray-800 to-gray-900">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+                <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-6 leading-tight max-w-4xl mx-auto">
+                    {{ languageService.translate('store.heroTitle') }}
+                </h1>
+                <p class="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
+                    {{ languageService.translate('store.heroDesc') }}
+                </p>
+                
+                <!-- Sanctioned Apps Carousel -->
+                <div class="mt-12 overflow-hidden relative max-w-5xl mx-auto group">
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-4 font-bold">{{ languageService.translate('store.sanctionedApps') }}</p>
+                    <!-- Infinite Scroll Effect -->
+                    <div class="flex overflow-hidden space-x-8 group-hover:pause">
+                        <div class="flex space-x-8 animate-marquee whitespace-nowrap opacity-60 grayscale hover:grayscale-0 transition-all duration-500 items-center">
+                             <!-- Binance Logo -->
+                             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Binance_Logo.png/1280px-Binance_Logo.png?20201023063027" alt="Binance" class="h-10 mx-4 inline-block object-contain">
+                             <img src="https://img.icons8.com/color/48/amazon-web-services.png" alt="AWS" class="w-12 h-12 mx-4 inline-block">
+                             <img src="https://img.icons8.com/color/48/docker.png" alt="Docker" class="w-12 h-12 mx-4 inline-block">
+                             <img src="https://img.icons8.com/color/48/spotify--v1.png" alt="Spotify" class="w-12 h-12 mx-4 inline-block">
+                             <img src="https://img.icons8.com/color/48/adobe-creative-cloud--v1.png" alt="Adobe" class="w-12 h-12 mx-4 inline-block">
+                             <img src="https://img.icons8.com/color/48/paypal.png" alt="PayPal" class="w-12 h-12 mx-4 inline-block">
+                             <img src="https://img.icons8.com/color/48/gitlab.png" alt="GitLab" class="w-12 h-12 mx-4 inline-block">
+                             <img src="https://img.icons8.com/color/48/google-cloud.png" alt="GCP" class="w-12 h-12 mx-4 inline-block">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Products Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            @for (product of core.products(); track product.id) {
-                <div class="bg-gray-800 rounded-2xl border border-gray-700 p-8 flex flex-col relative group hover:border-teal-500/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-teal-900/20">
-                @if (product.highlight) {
-                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-teal-500 to-blue-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-wider">
-                    {{ languageService.translate('store.bestValue') }}
+            <div class="container mx-auto px-6 -mt-10">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                @for (product of core.products(); track product.id) {
+                    <div class="bg-gray-800 rounded-2xl border border-gray-700 p-8 flex flex-col relative group hover:border-teal-500/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-teal-900/20">
+                    @if (product.highlight) {
+                        <div class="absolute -top-4 right-1/2 translate-x-1/2 bg-gradient-to-r from-teal-500 to-blue-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-wider whitespace-nowrap">
+                        {{ languageService.translate('store.bestValue') }}
+                        </div>
+                    }
+                    
+                    <h3 class="text-xl font-bold text-white mb-2 text-center">{{ product.title }}</h3>
+                    <div class="text-sm text-gray-400 mb-6 text-center">{{ product.description }}</div>
+                    
+                    <div class="text-3xl font-extrabold text-white mb-2 text-center text-teal-400">
+                        {{ product.price | number }} <span class="text-base font-normal text-gray-500">{{ core.currency() }}</span>
+                    </div>
+                    <div class="text-center text-sm text-gray-500 mb-8 border-b border-gray-700 pb-4">{{ product.durationDays }} {{ languageService.translate('common.duration') }} / {{ product.trafficGb }} GB</div>
+
+                    <ul class="space-y-3 mb-8 flex-1">
+                        @for (feature of product.features; track feature) {
+                        <li class="flex items-center gap-3 text-gray-300 text-sm">
+                            <svg class="w-5 h-5 text-teal-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            {{ feature }}
+                        </li>
+                        }
+                    </ul>
+
+                    <button (click)="openCheckout(product)" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg">
+                        {{ languageService.translate('store.buy') }}
+                    </button>
                     </div>
                 }
-                
-                <h3 class="text-2xl font-bold text-white mb-2">{{ product.title }}</h3>
-                <div class="text-sm text-gray-400 mb-6">{{ product.description }}</div>
-                
-                <div class="text-4xl font-extrabold text-white mb-1">
-                    {{ product.price | number }} <span class="text-lg font-normal text-gray-500">{{ product.currency }}</span>
                 </div>
-                <div class="text-sm text-gray-500 mb-8">{{ product.durationDays }} Days</div>
-
-                <ul class="space-y-4 mb-8 flex-1">
-                    @for (feature of product.features; track feature) {
-                    <li class="flex items-center gap-3 text-gray-300">
-                        <svg class="w-5 h-5 text-teal-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                        {{ feature }}
-                    </li>
-                    }
-                </ul>
-
-                <button (click)="openCheckout(product)" class="w-full bg-white text-gray-900 hover:bg-teal-50 font-bold py-4 rounded-xl transition-colors">
-                    {{ languageService.translate('store.buy') }}
-                </button>
-                </div>
-            }
             </div>
         }
 
         @if (viewMode() === 'checkout' && selectedProduct()) {
-            <div class="max-w-md mx-auto bg-gray-800 rounded-2xl border border-gray-700 p-8 animate-in zoom-in-95 duration-300">
+            <div class="max-w-md mx-auto bg-gray-800 rounded-2xl border border-gray-700 p-8 mt-10 animate-in zoom-in-95 duration-300 shadow-2xl">
                 <button (click)="viewMode.set('products')" class="text-gray-400 hover:text-white mb-6 flex items-center gap-2 text-sm">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                    Back to Store
+                    <svg class="w-4 h-4 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    {{ languageService.translate('common.back') }}
                 </button>
 
-                <h2 class="text-2xl font-bold text-white mb-6">{{ languageService.translate('store.checkoutTitle') }}</h2>
+                <h2 class="text-xl font-bold text-white mb-6 text-center border-b border-gray-700 pb-4">{{ languageService.translate('store.checkoutTitle') }}</h2>
                 
-                <div class="bg-gray-900 p-4 rounded-lg mb-6 border border-gray-800 flex justify-between items-center">
+                <div class="bg-gray-900/50 p-4 rounded-lg mb-6 border border-gray-800 flex justify-between items-center">
                     <div>
-                        <div class="font-bold text-white">{{ selectedProduct()!.title }}</div>
-                        <div class="text-sm text-gray-400">{{ selectedProduct()!.durationDays }} Days</div>
+                        <div class="font-bold text-white text-sm">{{ selectedProduct()!.title }}</div>
+                        <div class="text-xs text-gray-400">{{ selectedProduct()!.durationDays }} Days</div>
                     </div>
-                    <div class="text-teal-400 font-bold">{{ selectedProduct()!.price | number }} {{ selectedProduct()!.currency }}</div>
+                    <div class="text-teal-400 font-bold">{{ selectedProduct()!.price | number }} {{ core.currency() }}</div>
                 </div>
 
-                <form [formGroup]="checkoutForm" (ngSubmit)="processPayment()" class="space-y-6">
+                <form [formGroup]="checkoutForm" (ngSubmit)="processPayment()" class="space-y-5">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">{{ languageService.translate('store.contactInfo') }}</label>
+                        <label class="block text-xs font-bold text-gray-500 mb-2">{{ languageService.translate('store.contactInfo') }}</label>
                         <div class="space-y-3">
-                            <input formControlName="email" type="email" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-teal-500 outline-none transition-colors" [placeholder]="languageService.translate('common.email')">
-                            <input formControlName="telegram" type="text" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-teal-500 outline-none transition-colors" [placeholder]="languageService.translate('common.telegram')">
+                            <input formControlName="email" type="email" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white text-sm focus:border-teal-500 outline-none transition-colors text-left" [placeholder]="languageService.translate('common.email')">
+                            <input formControlName="telegram" type="text" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white text-sm focus:border-teal-500 outline-none transition-colors text-left" [placeholder]="languageService.translate('common.telegram')">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">{{ languageService.translate('store.paymentMethod') }}</label>
+                        <label class="block text-xs font-bold text-gray-500 mb-2">{{ languageService.translate('store.paymentMethod') }}</label>
                         <div class="grid grid-cols-2 gap-3">
                             @for (gateway of activeGateways(); track gateway.id) {
                                 <label class="cursor-pointer">
                                     <input type="radio" formControlName="gateway" [value]="gateway.id" class="peer sr-only">
-                                    <div class="flex items-center justify-center p-3 rounded-lg border border-gray-700 bg-gray-900 hover:bg-gray-800 peer-checked:border-teal-500 peer-checked:bg-teal-900/20 transition-all gap-2">
-                                        <img [src]="gateway.logo" [alt]="gateway.name" class="h-6 w-6 object-contain rounded-full bg-white p-0.5">
-                                        <span class="text-sm font-medium text-gray-300">{{ gateway.name }}</span>
+                                    <div class="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-600 bg-gray-900 hover:bg-gray-800 peer-checked:border-teal-500 peer-checked:bg-teal-900/20 transition-all gap-2 h-24">
+                                        <img [src]="gateway.logo" [alt]="gateway.name" class="h-8 object-contain">
+                                        <span class="text-xs font-medium text-gray-300">{{ gateway.name }}</span>
+                                        @if(gateway.merchantId) {
+                                            <span class="text-[10px] text-green-400">Verified</span>
+                                        }
                                     </div>
                                 </label>
                             }
                         </div>
+                        @if(activeGateways().length === 0) {
+                            <p class="text-red-400 text-xs mt-2">No active payment gateways.</p>
+                        }
                     </div>
 
-                    <button type="submit" [disabled]="checkoutForm.invalid || isProcessing()" class="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <button type="submit" [disabled]="checkoutForm.invalid || isProcessing() || activeGateways().length === 0" class="w-full bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-bold py-3 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                         @if (isProcessing()) {
-                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            {{ languageService.translate('store.processing') }}
+                            <span class="text-sm">{{ languageService.translate('store.processing') }}</span>
                         } @else {
-                            {{ languageService.translate('store.pay') }} {{ selectedProduct()!.price | number }} {{ selectedProduct()!.currency }}
+                            {{ languageService.translate('common.pay') }}
                         }
                     </button>
                 </form>
@@ -150,48 +165,91 @@ import { LogoComponent } from './logo.component';
         }
 
         @if (viewMode() === 'receipt' && currentOrder()) {
-            <div class="max-w-md mx-auto bg-gray-800 rounded-2xl border border-gray-700 p-8 text-center animate-in zoom-in-95">
+            <div class="max-w-md mx-auto bg-gray-800 rounded-2xl border border-gray-700 p-8 text-center animate-in zoom-in-95 mt-10">
                 @if (currentOrder()!.status === 'PAID') {
                     <div class="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-white mb-2">{{ languageService.translate('store.successTitle') }}</h2>
-                    <p class="text-gray-400 mb-6">{{ languageService.translate('store.successDesc') }}</p>
+                    <h2 class="text-xl font-bold text-white mb-2">{{ languageService.translate('store.successTitle') }}</h2>
+                    <p class="text-gray-400 mb-6 text-sm">{{ languageService.translate('store.successDesc') }}</p>
                     
-                    <div class="bg-black/50 p-4 rounded-lg mb-6 text-left">
-                        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">{{ languageService.translate('common.trackId') }}</span><span class="text-white font-mono">{{ currentOrder()!.transactionId }}</span></div>
-                        <div class="flex justify-between text-sm"><span class="text-gray-500">{{ languageService.translate('common.username') }}</span><span class="text-white font-mono">u_{{ currentOrder()!.id }}</span></div>
+                    <div class="bg-black/50 p-4 rounded-lg mb-6 text-right">
+                        <div class="flex justify-between text-xs mb-2"><span class="text-gray-500">{{ languageService.translate('common.trackId') }}</span><span class="text-white font-mono">{{ currentOrder()!.transactionId }}</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-gray-500">{{ languageService.translate('common.username') }}</span><span class="text-white font-mono">u_{{ currentOrder()!.id }}</span></div>
                     </div>
 
-                    <label class="block text-left text-xs font-bold text-gray-500 uppercase mb-2">{{ languageService.translate('common.subLink') }}</label>
-                    <div class="flex gap-2">
-                        <input type="text" readonly [value]="currentOrder()!.generatedSubLink" class="w-full bg-gray-900 border border-gray-700 rounded p-3 text-teal-400 font-mono text-xs">
-                        <button (click)="copyLink(currentOrder()!.generatedSubLink!)" class="bg-gray-700 hover:bg-gray-600 text-white px-4 rounded font-bold text-sm">{{ languageService.translate('common.copy') }}</button>
+                    <label class="block text-right text-xs font-bold text-gray-500 mb-2">{{ languageService.translate('common.subLink') }}</label>
+                    <div class="flex gap-2 direction-ltr">
+                        <button (click)="copyLink(currentOrder()!.generatedSubLink!)" class="bg-gray-700 hover:bg-gray-600 text-white px-4 rounded font-bold text-xs">{{ languageService.translate('common.copy') }}</button>
+                        <input type="text" readonly [value]="currentOrder()!.generatedSubLink" class="flex-1 bg-gray-900 border border-gray-700 rounded p-3 text-teal-400 font-mono text-xs text-left">
                     </div>
                     
-                    <button (click)="viewMode.set('products')" class="mt-8 text-gray-400 hover:text-white text-sm">Return to Store</button>
+                    <button (click)="viewMode.set('products')" class="mt-8 text-gray-400 hover:text-white text-sm underline">{{ languageService.translate('common.back') }}</button>
 
                 } @else {
                     <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-white mb-2">{{ languageService.translate('store.failTitle') }}</h2>
-                    <p class="text-gray-400 mb-6">{{ languageService.translate('store.failDesc') }}</p>
-                    <button (click)="viewMode.set('checkout')" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">{{ languageService.translate('store.retry') }}</button>
+                    <h2 class="text-xl font-bold text-white mb-2">{{ languageService.translate('store.failTitle') }}</h2>
+                    <p class="text-gray-400 mb-6 text-sm">{{ languageService.translate('store.failDesc') }}</p>
+                    <button (click)="viewMode.set('checkout')" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg text-sm">{{ languageService.translate('store.retry') }}</button>
                 }
             </div>
         }
 
       </main>
 
-      <footer class="border-t border-gray-800 bg-gray-900 py-8 text-center text-gray-600 text-sm">
-        &copy; 2024 Elaheh VPN Store. Secure Freedom.
+      <footer class="border-t border-gray-800 bg-gray-900 py-10 mt-auto">
+        <div class="container mx-auto px-6 text-center">
+            
+            <!-- Trust Badges Row -->
+            <div class="flex flex-wrap justify-center gap-8 mb-8 items-center">
+                <!-- Danesh Bonyan -->
+                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://www.orummachine.com/wp-content/uploads/2023/09/header_logo-copy-856x1024.png" alt="Danesh Bonyan" class="max-h-full max-w-full object-contain">
+                </div>
+                <!-- Park Elm -->
+                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://www.orummachine.com/wp-content/uploads/2023/09/park-elm-fanavari.png" alt="Science Park" class="max-h-full max-w-full object-contain">
+                </div>
+                <!-- ISO 9001 -->
+                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://pars.host/wp-content/uploads//2025/06/ISO_9001.png" alt="ISO 9001" class="max-h-full max-w-full object-contain">
+                </div>
+                 <!-- Anjoman Senfi -->
+                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://pars.host/wp-content/uploads//2025/06/anjooman-senfi.png" alt="Tech Association" class="max-h-full max-w-full object-contain">
+                </div>
+            </div>
+
+            <div class="max-w-2xl mx-auto space-y-2">
+                <p class="text-gray-500 text-xs">{{ languageService.translate('store.compliance') }}</p>
+                <div class="inline-block border border-red-900/30 bg-red-900/10 px-3 py-1 rounded text-[10px] text-red-300">
+                    {{ languageService.translate('store.noIllegal') }}
+                </div>
+            </div>
+            
+            <div class="flex justify-center gap-4 text-xs text-gray-600 mt-6">
+                <button (click)="showTerms.set(true)" class="hover:text-gray-300 transition-colors underline">{{ languageService.translate('terms.title') }}</button>
+                <span>|</span>
+                <span>© 1403 {{ core.brandName() }}</span>
+            </div>
+        </div>
       </footer>
+      }
     </div>
+  `,
+  styles: `
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee { animation: marquee 20s linear infinite; }
+    .group:hover .animate-marquee { animation-play-state: paused; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StorefrontComponent {
+export class StorefrontComponent implements OnInit {
   core = inject(ElahehCoreService);
   languageService = inject(LanguageService);
   fb: FormBuilder = inject(FormBuilder);
@@ -203,6 +261,7 @@ export class StorefrontComponent {
   selectedProduct = signal<Product | null>(null);
   currentOrder = signal<Order | null>(null);
   isProcessing = signal(false);
+  showTerms = signal(false);
 
   checkoutForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -211,6 +270,13 @@ export class StorefrontComponent {
   });
 
   activeGateways = computed(() => this.core.paymentGateways().filter(g => g.isEnabled));
+
+  ngOnInit() {
+      // Force Persian if in Iran mode context by default
+      if (this.core.serverRole() === 'iran') {
+          this.languageService.setLanguage('fa');
+      }
+  }
 
   openCheckout(product: Product) {
     this.selectedProduct.set(product);
@@ -239,7 +305,6 @@ export class StorefrontComponent {
     // 2. Simulate Redirect to Gateway (Delay)
     setTimeout(() => {
         // 3. Simulate Successful Callback
-        // In real app, this would be a redirect to URL, then back to /callback
         const mockTxId = `TX-${Math.floor(Math.random() * 1000000)}`;
         const completedOrder = this.core.completeOrder(order.id, mockTxId);
         

@@ -9,19 +9,17 @@ import { EndpointSettingsComponent } from './endpoint-settings.component';
 import { TunnelOptimizationComponent } from './tunnel-optimization.component';
 import { DomainSslComponent } from './domain-ssl.component';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 import { ApplicationCamouflageComponent } from './application-camouflage.component';
 import { DohSettingsComponent } from './doh-settings.component';
 import { IapSettingsComponent } from './iap-settings.component';
 import { NatTraversalComponent } from './nat-traversal.component';
 import { SshSettingsComponent } from './ssh-settings.component';
-import { RemoteInstallerComponent } from './remote-installer.component';
 import { EmailService } from '../services/email.service';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, RemoteInstallerComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,76 +33,38 @@ export class SettingsComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  currentTab = signal<'general' | 'network' | 'security' | 'advanced' | 'store' | 'ssh' | 'system'>('general');
+  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security'>('general');
   successMessage = signal('');
-  modelSuccessMessage = signal('');
-  importError = signal('');
   
-  availableModels = ['gemini-2.5-flash', 'gemini-2.5-pro'];
-  selectedModel = signal<string>(this.core.aiModel());
-
-  proxySuccessMessage = signal('');
-  emailTestStatus = signal<'idle' | 'sending' | 'success' | 'failed'>('idle');
-
+  // Store Mgmt Signals
+  selectedProductIdx = signal<number | null>(null);
+  
+  // Forms
   adminForm = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
     password: ['', [Validators.required, Validators.minLength(4)]]
   });
 
-  edgeNodeForm = this.fb.group({
-    address: ['', Validators.required],
-    key: ['', [Validators.required, Validators.pattern(/^[a-fA-F0-9]{64}$/)]]
+  brandingForm = this.fb.group({
+      brandName: [''],
+      currency: ['تومان']
   });
 
-  proxyForm = this.fb.group({
-    isEnabled: [false],
-    host: [''],
-    port: [null as number | null],
-    type: ['SOCKS5']
+  productForm = this.fb.group({
+      title: [''],
+      price: [0],
+      durationDays: [30],
+      trafficGb: [0]
   });
 
-  smtpForm = this.fb.group({
-      host: ['smtp.gmail.com', Validators.required],
-      port: [587, [Validators.required, Validators.min(1)]],
-      user: ['', Validators.required],
-      pass: ['', Validators.required],
-      secure: [false],
-      senderName: ['Elaheh Admin'],
-      senderEmail: ['', [Validators.required, Validators.email]]
-  });
-  
   ngOnInit(): void {
     this.adminForm.setValue({
       username: this.core.adminUsername(),
       password: this.core.adminPassword()
     });
-    this.edgeNodeForm.setValue({
-      address: this.core.edgeNodeAddress(),
-      key: this.core.edgeNodeAuthKey()
-    });
-    this.proxyForm.setValue({
-      isEnabled: this.core.isProxyEnabled(),
-      host: this.core.proxyHost(),
-      port: this.core.proxyPort(),
-      type: this.core.proxyType()
-    });
-    
-    // SMTP Load
-    const smtp = this.core.smtpConfig();
-    this.smtpForm.patchValue(smtp);
-
-    this.proxyForm.get('isEnabled')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(enabled => {
-      const hostControl = this.proxyForm.get('host');
-      const portControl = this.proxyForm.get('port');
-      if (enabled) {
-        hostControl?.setValidators([Validators.required]);
-        portControl?.setValidators([Validators.required, Validators.min(1), Validators.max(65535)]);
-      } else {
-        hostControl?.clearValidators();
-        portControl?.clearValidators();
-      }
-      hostControl?.updateValueAndValidity();
-      portControl?.updateValueAndValidity();
+    this.brandingForm.setValue({
+        brandName: this.core.brandName(),
+        currency: this.core.currency()
     });
   }
 
@@ -121,86 +81,64 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (this.adminForm.valid) {
       const { username, password } = this.adminForm.value;
       this.core.updateAdminCredentials(username!, password!);
-      this.successMessage.set(this.languageService.translate('settings.credentials.success'));
-      setTimeout(() => this.successMessage.set(''), 3000);
-    }
-  }
-  
-  saveModelSelection() {
-    this.core.aiModel.set(this.selectedModel());
-    this.core.addLog('SUCCESS', `AI model switched to: ${this.selectedModel()}`);
-    this.modelSuccessMessage.set(this.languageService.translate('settings.aiModel.saveSuccess'));
-    setTimeout(() => this.modelSuccessMessage.set(''), 3000);
-  }
-
-  saveAndTestEdgeNode() {
-    if (this.edgeNodeForm.valid) {
-      const { address, key } = this.edgeNodeForm.value;
-      this.core.updateEdgeNodeConfig(address!, key!);
+      this.showSuccess(this.languageService.translate('settings.credentials.success'));
     }
   }
 
-  saveProxySettings() {
-    if (this.proxyForm.invalid) return;
-    const config = this.proxyForm.value;
-    this.core.updateProxyConfig({
-      isEnabled: config.isEnabled!,
-      host: config.host || '',
-      port: config.port,
-      type: config.type as any
-    });
-    this.proxySuccessMessage.set(this.languageService.translate('settings.proxy.saveSuccess'));
-    setTimeout(() => this.proxySuccessMessage.set(''), 3000);
+  // Branding Logic
+  saveBranding() {
+      const { brandName, currency } = this.brandingForm.value;
+      this.core.updateBranding(brandName!, this.core.brandLogo(), currency!);
+      this.showSuccess(this.languageService.translate('settings.branding.saveSuccess'));
   }
 
-  // --- Database Actions ---
-  exportSettings() {
-      const json = this.core.exportSettings();
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `elaheh_backup_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-  }
-
-  triggerImport() {
-      document.getElementById('fileInput')?.click();
-  }
-
-  onFileSelected(event: any) {
+  onLogoSelected(event: any) {
       const file = event.target.files[0];
       if (file) {
           const reader = new FileReader();
           reader.onload = (e) => {
-              const content = e.target?.result as string;
-              if (this.core.importSettings(content)) {
-                  alert('Settings Imported Successfully. Reloading...');
-                  window.location.reload();
-              } else {
-                  this.importError.set('Invalid backup file.');
-                  setTimeout(() => this.importError.set(''), 3000);
-              }
+              const base64 = e.target?.result as string;
+              this.core.brandLogo.set(base64);
           };
-          reader.readAsText(file);
+          reader.readAsDataURL(file);
       }
   }
 
-  // --- Email Actions ---
-  saveSmtp() {
-      if (this.smtpForm.valid) {
-          this.core.updateSmtpConfig(this.smtpForm.value as any);
+  // Store Logic
+  editProduct(idx: number) {
+      this.selectedProductIdx.set(idx);
+      const p = this.core.products()[idx];
+      this.productForm.patchValue({
+          title: p.title, price: p.price, durationDays: p.durationDays, trafficGb: p.trafficGb
+      });
+  }
+
+  saveProduct() {
+      if (this.selectedProductIdx() !== null) {
+          const p = this.core.products()[this.selectedProductIdx()!];
+          const val = this.productForm.value;
+          const updated = { ...p, title: val.title!, price: val.price!, durationDays: val.durationDays!, trafficGb: val.trafficGb! };
+          this.core.updateProduct(this.selectedProductIdx()!, updated);
+          this.selectedProductIdx.set(null);
       }
   }
 
-  testEmail() {
-      if (this.smtpForm.valid) {
-          this.emailTestStatus.set('sending');
-          this.emailService.sendTestEmail(this.smtpForm.value as any, 'admin@localhost').then(() => {
-              this.emailTestStatus.set('success');
-              setTimeout(() => this.emailTestStatus.set('idle'), 3000);
-          });
+  toggleGateway(id: string, event: any) {
+      const gw = this.core.paymentGateways().find(g => g.id === id);
+      if(gw) {
+          this.core.updateGateway(id, gw.merchantId, event.target.checked);
       }
+  }
+
+  updateMerchant(id: string, event: any) {
+      const gw = this.core.paymentGateways().find(g => g.id === id);
+      if(gw) {
+          this.core.updateGateway(id, event.target.value, gw.isEnabled);
+      }
+  }
+
+  showSuccess(msg: string) {
+      this.successMessage.set(msg);
+      setTimeout(() => this.successMessage.set(''), 3000);
   }
 }
