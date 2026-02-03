@@ -1,4 +1,4 @@
-# Project Elaheh - Advanced Tunneling Management System
+# Project Elaheh (پروژه الهه) - Advanced Tunneling Management System
 
 <div align="center">
   <img src="https://picsum.photos/800/400?grayscale" alt="Dashboard Preview" width="800">

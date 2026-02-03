@@ -406,12 +406,388 @@ export const translations: any = {
     header: { systemSecure: 'ایمن', edgeNode: { connected: 'متصل', connecting: 'در حال اتصال', failed: 'قطع', notConfigured: 'تنظیم نشده' } },
     view: { dashboard: 'داشبورد', users: 'کاربران', settings: 'تنظیمات' }
   },
-  zh: { 
-      // Minimal Fallback for Chinese to prevent crashes
-      common: { cancel: '取消', saveChanges: '保存更改' }
+  zh: {
+    common: { 
+      cancel: '取消', active: '有效', expired: '已过期', banned: '已封禁', 
+      saveChanges: '保存更改', username: '用户名', status: '状态', 
+      actions: '操作', create: '创建', delete: '删除', price: '价格', 
+      currency: '货币', duration: '时长', traffic: '流量', buy: '购买', 
+      email: '电子邮件', pay: '立即支付', gateway: '支付网关', subLink: '订阅链接', 
+      copy: '复制', copied: '已复制！', telegram: 'Telegram ID', trackId: '追踪ID',
+      back: '返回', close: '关闭'
+    },
+    nav: { 
+      signOut: '退出登录', dashboard: '仪表盘', users: '用户管理', 
+      settings: '系统设置', system: '系统状态', store: '商店管理', 
+      disk: '磁盘用量'
+    },
+    store: {
+      title: '服务套餐',
+      heroTitle: '安全访问国际服务',
+      heroDesc: '为开发者、交易员和自由职业者提供的合法稳定解决方案，以规避不公平的制裁。',
+      bestValue: '最具价值',
+      checkoutTitle: '结算',
+      contactInfo: '联系信息',
+      paymentMethod: '选择支付网关',
+      processing: '正在连接到网关...',
+      successTitle: '支付成功',
+      successDesc: '服务已成功激活。您的连接详细信息如下。',
+      failTitle: '支付失败',
+      failDesc: '交易被拒绝。请重试。',
+      retry: '重试',
+      sanctionedApps: '优化支持',
+      compliance: '根据伊朗伊斯兰共和国的法规运营。',
+      noIllegal: '严格禁止访问不道德内容、赌博和反政府媒体。',
+      buy: '购买套餐'
+    },
+    settings: {
+        title: '系统设置',
+        tabs: { general: '通用', store: '商店和套餐', branding: '品牌', network: '网络', security: '安全', installer: '安装程序' },
+        credentials: { title: '管理员凭证', newUser: '新用户名', newPass: '新密码', success: '凭证更新成功。' },
+        branding: { title: '品牌设置', name: '品牌名称', logo: '徽标URL/上传', preview: '预览', saveSuccess: '品牌已更新。' },
+        storeMgmt: { title: '商店配置', currency: '货币单位', gateways: '支付网关', merchant: '商户ID/令牌', packages: '服务套餐', edit: '编辑', save: '保存' },
+        domain: { 
+            title: '域名和SSL', 
+            description: '为您的订阅链接配置自定义域名。', 
+            saveSuccess: '域名已保存。',
+            domainName: '域名',
+            domainPlaceholder: 'example.com',
+            subscriptionDomain: '订阅子域名',
+            subscriptionDomainDesc: '可选。例如 "sub"。',
+            subscriptionDomainPlaceholder: 'sub',
+            invalidDomainError: '域名格式无效',
+            instructionsTitle: '说明',
+            instructions: '1. 将您的域名A记录指向此服务器IP。\n2. 点击“获取证书”以生成SSL。',
+            healthCheckTitle: '域名健康检查',
+            pruneBtn: '清理列表',
+            checkHealthBtn: '检查健康状况',
+            checkingHealthBtn: '检查中...',
+            status: { untested: '未测试', testing: '测试中', healthy: '健康', filtered: '被过滤' },
+            certPath: '证书路径',
+            keyPath: '私钥路径',
+            getCertButton: '获取免费SSL证书',
+            gettingCertButton: '正在请求Let\'s Encrypt...',
+            getCertSuccess: 'SSL证书安装成功。',
+            getCertError: '获取证书失败。请检查DNS。'
+        },
+        endpoint: {
+            title: '隧道策略',
+            description: '根据网络状况选择最佳路由策略。',
+            blockchain: '区块链中继',
+            blockchainDesc: '去中心化路由。',
+            applyButton: '应用策略',
+            success: '策略应用成功。'
+        },
+        camouflage: {
+            title: '流量伪装',
+            description: '模仿合法流量模式以规避检测。',
+            profile: '流量配置文件',
+            profileDesc: { ai: 'AI模型训练', data: '数据库同步', media: '视频流' },
+            frequency: '轮换频率',
+            lessFrequent: '稳定',
+            moreFrequent: '动态',
+            status: '引擎状态'
+        },
+        appCamouflage: {
+            title: '应用层伪装',
+            description: '将流量伪装成热门游戏协议。',
+            enable: '启用游戏协议仿真',
+            profile: '游戏配置文件',
+            codm: '使命召唤手游',
+            codmDesc: 'UDP/443 仿真',
+            pubg: '绝地求生手游',
+            pubgDesc: 'UDP/10000+ 仿真',
+            clash: '皇室战争',
+            clashDesc: 'TCP/9339 仿真',
+            mmorpg: '通用MMORPG',
+            mmorpgDesc: '混合TCP/UDP',
+            liveStatus: '实时状态'
+        },
+        doh: {
+            title: '安全DNS (DoH)',
+            description: '启用DNS over HTTPS以防止DNS污染。',
+            enable: '启用DoH服务器',
+            activeUrl: '活动的解析器URL',
+            subdomain: 'DNS子域名',
+            createButton: '部署解析器',
+            creatingButton: '部署中...',
+            deactivate: '停用',
+            copy: '复制URL',
+            copied: '已复制！',
+            status: { creating: '部署中', failed: '失败', inactive: '未激活' }
+        },
+        iap: {
+            title: '身份感知代理 (IAP)',
+            description: '使用Google Cloud IAP进行隧道连接，无需公共IP。',
+            form: { projectId: '项目ID', zone: '区域', instance: '实例名称' },
+            info: { secure: '零信任', noPublicIp: '无公共IP', tcpFwd: 'TCP转发' },
+            command: { title: '客户端命令', description: '在客户端机器上运行：', copy: '复制', copied: '已复制' }
+        },
+        nat: {
+            title: 'NAT穿透',
+            description: '绕过限制性NAT和防火墙的技术。',
+            status: '穿透状态',
+            detectionBtn: '检测NAT类型',
+            modes: { 
+                stun: 'STUN (P2P)', stunDesc: '通过UDP打洞的直接连接。',
+                turn: 'TURN (中继)', turnDesc: 'P2P失败时通过中继服务器连接。',
+                reverse: '反向隧道', reverseDesc: '到中继服务器的出站连接。'
+            },
+            stunServer: 'STUN服务器',
+            turnServer: 'TURN服务器',
+            turnUser: 'TURN用户名',
+            turnPass: 'TURN密码',
+            keepAlive: '保持连接间隔 (秒)',
+            warning: 'TURN模式需要外部中继服务器。',
+            holePunching: '启用UDP打洞',
+            save: '保存配置'
+        },
+        sshSettings: {
+            title: 'SSH隧道',
+            description: '管理本地 (-L) 和远程 (-R) 端口转发规则。',
+            localTitle: '本地转发 (-L)',
+            localDesc: '在本地访问远程服务。',
+            remoteTitle: '远程转发 (-R)',
+            remoteDesc: '远程暴露本地服务。',
+            bindPort: '绑定端口',
+            target: '目标 (主机:端口)',
+            addRule: '添加规则',
+            useCase: '常见用例'
+        }
+    },
+    wizard: {
+      title: '设置向导',
+      role: { title: '服务器角色', description: '选择此服务器的角色。', germany: '上游 (国外)', germanyDesc: '位于伊朗境外 (例如德国、荷兰)。', iran: '边缘 (伊朗)', iranDesc: '位于伊朗境内 (隧道入口)。', next: '下一步' },
+      finish: { title: '安装命令', description: '在您的服务器终端上运行此命令。', key: '连接密钥' },
+      steps: { serverRole: '角色', selectOS: '操作系统', systemCheck: '检查', endpoint: '策略', doh: 'DoH', camouflage: '伪装', finalConfig: '安装' },
+      endpoint: {
+          cdn: 'CDN中继', cdnTag: '高可用性', cdnDesc: '使用Cloudflare/ArvanCloud workers。',
+          cloud: '云原生', cloudTag: '可扩展', cloudDesc: 'AWS/GCP/Azure直接对等。',
+          vps: '直接VPS', vpsTag: '低延迟', vpsDesc: '直接TCP/UDP连接。',
+          edge: '边缘计算', edgeTag: '最快', edgeDesc: '分布式边缘节点。'
+      }
+    },
+    login: {
+      title: '制裁规避管理',
+      adminUser: '管理员用户名',
+      placeholderUser: '输入用户名',
+      passphrase: '密码',
+      placeholderPass: '输入密码',
+      error: '凭证无效。',
+      authenticate: '登录',
+      statusLabel: '系统状态',
+      forgotPassword: { title: '恢复', description: '联系系统管理员。', forgotLink: '忘记密码？', sendButton: '重置', backToLogin: '返回', successTitle: '已发送', successMessage: '检查日志。' }
+    },
+    notFound: { title: '404', desc: '找不到页面。', home: '返回首页' },
+    terms: {
+        title: '服务条款',
+        intro: '使用此服务即表示您同意以下条款：',
+        law1: '1. 本服务严格用于规避针对伊朗专业人士 (开发者、交易员) 的不公平制裁。',
+        law2: '2. 访问色情内容、赌博网站和反伊朗媒体被阻止和监控。',
+        law3: '3. 任何试图使用此服务进行网络攻击或非法活动的行为将导致立即终止服务。',
+        law4: '4. 用户对其流量负全部责任。',
+        accept: '我接受'
+    },
+    dashboard: {
+      userBase: '用户群', totalUsers: '总数', liveConnections: '活动连接', tunnelEstablished: '隧道', totalData: '数据使用量', encryptedPayload: '加密流量', simulatedTraffic: '吞吐量', networkHealth: '网络健康', connectionQuality: '质量', packetLoss: '丢包率', jitter: '抖动', stabilityChart: '稳定性', systemLogs: '系统日志', geoDist: { title: '地理分布', users: '用户' }, active: '活动', expired: '过期', banned: '封禁', used: '已用', remaining: '剩余', optimalDns: '最佳DNS', avgRTT: '平均RTT', tlsActive: 'TLS 1.3', tlsInactive: '无TLS', camouflage: { title: '伪装', jobStatus: '状态', running: '运行中', idle: '空闲', lastRun: '上次运行', never: '从不' }, quality: { Excellent: '优秀', Good: '良好', Fair: '一般', Poor: '差' }
+    },
+    users: { title: '用户管理', addUser: '添加用户', usage: '用量', expiry: '到期时间', manageLinks: '链接', addModal: { title: '创建用户', quota: '配额 (GB)', expiry: '有效期 (天)' } },
+    edgeStatus: { title: '边缘节点状态', connectionTitle: '隧道状态', statusLabel: '状态', statusConnected: '已连接', activeTunnel: '活动协议' },
+    camouflageSite: { title: 'AI研究实验室', navHome: '主页', navApi: 'API', navContact: '联系我们', login: '门户', signup: '请求访问', status: '系统状态', statusIdle: '运行正常', statusRunningAI: '训练模型', statusRunningData: '同步数据', statusRunningMedia: '获取资产', getStarted: '开始研究', footer: '© 2024 AI研究所。保留所有权利。' },
+    signup: { title: '请求访问', description: '提交您的详细信息以供审核。', successTitle: '已收到', successMessage: '您的请求正在审核中。', backButton: '返回', form: { name: '全名', email: '电子邮件地址', reason: '使用原因', submit: '提交请求' } },
+    header: { systemSecure: '已保护', edgeNode: { connected: '已连接', connecting: '连接中', failed: '失败', notConfigured: '未配置' } },
+    view: { dashboard: '仪表盘', users: '用户', settings: '设置' }
   },
-  ru: { 
-      // Minimal Fallback for Russian to prevent crashes
-      common: { cancel: 'Отмена', saveChanges: 'Сохранить изменения' }
+  ru: {
+    common: { 
+      cancel: 'Отмена', active: 'Активен', expired: 'Истекший', banned: 'Забанен', 
+      saveChanges: 'Сохранить изменения', username: 'Имя пользователя', status: 'Статус', 
+      actions: 'Действия', create: 'Создать', delete: 'Удалить', price: 'Цена', 
+      currency: 'Валюта', duration: 'Длительность', traffic: 'Трафик', buy: 'Купить', 
+      email: 'Электронная почта', pay: 'Оплатить', gateway: 'Шлюз', subLink: 'Ссылка подписки', 
+      copy: 'Копировать', copied: 'Скопировано!', telegram: 'ID в Telegram', trackId: 'Код отслеживания',
+      back: 'Назад', close: 'Закрыть'
+    },
+    nav: { 
+      signOut: 'Выйти', dashboard: 'Панель', users: 'Пользователи', 
+      settings: 'Настройки', system: 'Статус системы', store: 'Магазин', 
+      disk: 'Диск' 
+    },
+    store: {
+      title: 'Тарифы',
+      heroTitle: 'Безопасный доступ к международным сервисам',
+      heroDesc: 'Легальное и стабильное решение для разработчиков, трейдеров и фрилансеров для обхода санкций.',
+      bestValue: 'Лучший выбор',
+      checkoutTitle: 'Оплата',
+      contactInfo: 'Контактная информация',
+      paymentMethod: 'Выберите способ оплаты',
+      processing: 'Подключение к шлюзу...',
+      successTitle: 'Оплата прошла успешно',
+      successDesc: 'Услуга успешно активирована. Ваши данные для подключения ниже.',
+      failTitle: 'Ошибка оплаты',
+      failDesc: 'Транзакция отклонена. Попробуйте еще раз.',
+      retry: 'Повторить',
+      sanctionedApps: 'Оптимизировано для',
+      compliance: 'Работает в соответствии с законодательством Исламской Республики Иран.',
+      noIllegal: 'Доступ к аморальному контенту, азартным играм и антигосударственным СМИ строго заблокирован.',
+      buy: 'Купить план'
+    },
+    settings: {
+        title: 'Настройки системы',
+        tabs: { general: 'Общие', store: 'Магазин', branding: 'Брендинг', network: 'Сеть', security: 'Безопасность', installer: 'Установщик' },
+        credentials: { title: 'Данные администратора', newUser: 'Новое имя пользователя', newPass: 'Новый пароль', success: 'Данные успешно обновлены.' },
+        branding: { title: 'Брендинг', name: 'Название бренда', logo: 'URL логотипа / Загрузить', preview: 'Предпросмотр', saveSuccess: 'Брендинг обновлен.' },
+        storeMgmt: { title: 'Настройки магазина', currency: 'Валюта', gateways: 'Платежные шлюзы', merchant: 'ID продавца / Токен', packages: 'Пакеты услуг', edit: 'Изменить', save: 'Сохранить' },
+        domain: { 
+            title: 'Домен и SSL', 
+            description: 'Настройте свой домен для ссылок подписки.', 
+            saveSuccess: 'Домен сохранен.',
+            domainName: 'Имя домена',
+            domainPlaceholder: 'example.com',
+            subscriptionDomain: 'Поддомен для подписок',
+            subscriptionDomainDesc: 'Необязательно. Например, "sub".',
+            subscriptionDomainPlaceholder: 'sub',
+            invalidDomainError: 'Неверный формат домена',
+            instructionsTitle: 'Инструкции',
+            instructions: '1. Направьте A-запись вашего домена на IP этого сервера.\n2. Нажмите "Получить сертификат" для генерации SSL.',
+            healthCheckTitle: 'Проверка домена',
+            pruneBtn: 'Очистить список',
+            checkHealthBtn: 'Проверить',
+            checkingHealthBtn: 'Проверка...',
+            status: { untested: 'Не проверен', testing: 'Тестирование', healthy: 'Работает', filtered: 'Фильтруется' },
+            certPath: 'Путь к сертификату',
+            keyPath: 'Путь к приватному ключу',
+            getCertButton: 'Получить бесплатный SSL-сертификат',
+            gettingCertButton: 'Запрос Let\'s Encrypt...',
+            getCertSuccess: 'SSL-сертификат успешно установлен.',
+            getCertError: 'Не удалось получить сертификат. Проверьте DNS.'
+        },
+        endpoint: {
+            title: 'Стратегия туннелирования',
+            description: 'Выберите оптимальную стратегию маршрутизации.',
+            blockchain: 'Блокчейн-реле',
+            blockchainDesc: 'Децентрализованная маршрутизация.',
+            applyButton: 'Применить',
+            success: 'Стратегия успешно применена.'
+        },
+        camouflage: {
+            title: 'Маскировка трафика',
+            description: 'Имитируйте легитимные шаблоны трафика, чтобы избежать обнаружения.',
+            profile: 'Профиль трафика',
+            profileDesc: { ai: 'Обучение ИИ модели', data: 'Синхронизация баз данных', media: 'Потоковое видео' },
+            frequency: 'Частота ротации',
+            lessFrequent: 'Стабильная',
+            moreFrequent: 'Динамическая',
+            status: 'Статус движка'
+        },
+        appCamouflage: {
+            title: 'Маскировка на уровне приложений',
+            description: 'Маскировка трафика под популярные игровые протоколы.',
+            enable: 'Включить эмуляцию игрового протокола',
+            profile: 'Игровой профиль',
+            codm: 'Call of Duty Mobile',
+            codmDesc: 'Эмуляция UDP/443',
+            pubg: 'PUBG Mobile',
+            pubgDesc: 'Эмуляция UDP/10000+',
+            clash: 'Clash Royale',
+            clashDesc: 'Эмуляция TCP/9339',
+            mmorpg: 'Общие MMORPG',
+            mmorpgDesc: 'Смешанный TCP/UDP',
+            liveStatus: 'Текущий статус'
+        },
+        doh: {
+            title: 'Безопасный DNS (DoH)',
+            description: 'Включите DNS через HTTPS для предотвращения DNS-отравления.',
+            enable: 'Включить DoH-сервер',
+            activeUrl: 'Активный URL резолвера',
+            subdomain: 'Поддомен DNS',
+            createButton: 'Развернуть',
+            creatingButton: 'Развертывание...',
+            deactivate: 'Отключить',
+            copy: 'Копировать URL',
+            copied: 'Скопировано!',
+            status: { creating: 'Развертывание', failed: 'Ошибка', inactive: 'Неактивен' }
+        },
+        iap: {
+            title: 'Identity-Aware Proxy (IAP)',
+            description: 'Используйте Google Cloud IAP для туннелирования без публичного IP.',
+            form: { projectId: 'ID проекта', zone: 'Зона', instance: 'Имя экземпляра' },
+            info: { secure: 'Zero Trust', noPublicIp: 'Без публичного IP', tcpFwd: 'TCP-переадресация' },
+            command: { title: 'Команда для клиента', description: 'Выполните на клиентской машине:', copy: 'Копировать', copied: 'Скопировано' }
+        },
+        nat: {
+            title: 'Обход NAT',
+            description: 'Техники для обхода ограничивающих NAT и файрволов.',
+            status: 'Статус обхода',
+            detectionBtn: 'Определить тип NAT',
+            modes: { 
+                stun: 'STUN (P2P)', stunDesc: 'Прямое соединение с использованием UDP hole punching.',
+                turn: 'TURN (Реле)', turnDesc: 'Перенаправленное соединение при сбое P2P.',
+                reverse: 'Обратный туннель', reverseDesc: 'Исходящее соединение к ретрансляционному серверу.'
+            },
+            stunServer: 'STUN-сервер',
+            turnServer: 'TURN-сервер',
+            turnUser: 'Пользователь TURN',
+            turnPass: 'Пароль TURN',
+            keepAlive: 'Keep-Alive (сек)',
+            warning: 'Для TURN требуется внешний ретрансляционный сервер.',
+            holePunching: 'Включить UDP Hole Punching',
+            save: 'Сохранить конфигурацию'
+        },
+        sshSettings: {
+            title: 'SSH-туннели',
+            description: 'Управление правилами переадресации портов Local (-L) и Remote (-R).',
+            localTitle: 'Локальная переадресация (-L)',
+            localDesc: 'Доступ к удаленным службам локально.',
+            remoteTitle: 'Удаленная переадресация (-R)',
+            remoteDesc: 'Предоставление доступа к локальным службам удаленно.',
+            bindPort: 'Порт для привязки',
+            target: 'Цель (хост:порт)',
+            addRule: 'Добавить правило',
+            useCase: 'Типичные случаи использования'
+        }
+    },
+    wizard: {
+      title: 'Мастер установки',
+      role: { title: 'Роль сервера', description: 'Выберите роль этого сервера.', germany: 'Внешний (Upstream)', germanyDesc: 'Расположен за пределами Ирана (например, Германия).', iran: 'Пограничный (Edge)', iranDesc: 'Расположен внутри Ирана (вход в туннель).', next: 'Далее' },
+      finish: { title: 'Команда установки', description: 'Выполните эту команду в терминале вашего сервера.', key: 'Ключ подключения' },
+      steps: { serverRole: 'Роль', selectOS: 'ОС', systemCheck: 'Проверка', endpoint: 'Стратегия', doh: 'DoH', camouflage: 'Маскировка', finalConfig: 'Установка' },
+      endpoint: {
+          cdn: 'CDN-реле', cdnTag: 'Высокая доступность', cdnDesc: 'Использует воркеры Cloudflare/ArvanCloud.',
+          cloud: 'Облачный', cloudTag: 'Масштабируемый', cloudDesc: 'Прямой пиринг с AWS/GCP/Azure.',
+          vps: 'Прямой VPS', vpsTag: 'Низкая задержка', vpsDesc: 'Прямое TCP/UDP соединение.',
+          edge: 'Пограничные вычисления', edgeTag: 'Самый быстрый', edgeDesc: 'Распределенные пограничные узлы.'
+      }
+    },
+    login: {
+      title: 'Управление обходом санкций',
+      adminUser: 'Имя администратора',
+      placeholderUser: 'Введите имя пользователя',
+      passphrase: 'Пароль',
+      placeholderPass: 'Введите пароль',
+      error: 'Неверные учетные данные.',
+      authenticate: 'Войти',
+      statusLabel: 'Статус системы',
+      forgotPassword: { title: 'Восстановление', description: 'Свяжитесь с администратором системы.', forgotLink: 'Забыли пароль?', sendButton: 'Сбросить', backToLogin: 'Назад', successTitle: 'Отправлено', successMessage: 'Проверьте логи.' }
+    },
+    notFound: { title: '404', desc: 'Страница не найдена.', home: 'На главную' },
+    terms: {
+        title: 'Условия использования',
+        intro: 'Используя этот сервис, вы соглашаетесь со следующими условиями:',
+        law1: '1. Этот сервис предназначен исключительно для обхода несправедливых санкций против иранских профессионалов (разработчиков, трейдеров).',
+        law2: '2. Доступ к порнографическому контенту, сайтам азартных игр и антииранским СМИ заблокирован и отслеживается.',
+        law3: '3. Любая попытка использовать этот сервис для кибератак или незаконной деятельности приведет к немедленному прекращению обслуживания.',
+        law4: '4. Пользователь несет полную ответственность за свой трафик.',
+        accept: 'Принимаю'
+    },
+    dashboard: {
+      userBase: 'Пользователи', totalUsers: 'Всего', liveConnections: 'Активные соединения', tunnelEstablished: 'Туннели', totalData: 'Использование данных', encryptedPayload: 'Зашифрованный трафик', simulatedTraffic: 'Пропускная способность', networkHealth: 'Состояние сети', connectionQuality: 'Качество', packetLoss: 'Потеря пакетов', jitter: 'Джиттер', stabilityChart: 'Стабильность', systemLogs: 'Системные логи', geoDist: { title: 'Геораспределение', users: 'пользователей' }, active: 'Активные', expired: 'Истекшие', banned: 'Забаненные', used: 'Использовано', remaining: 'Осталось', optimalDns: 'Оптимальный DNS', avgRTT: 'Средний RTT', tlsActive: 'TLS 1.3', tlsInactive: 'Без TLS', camouflage: { title: 'Маскировка', jobStatus: 'Статус', running: 'Выполняется', idle: 'Ожидание', lastRun: 'Последний запуск', never: 'Никогда' }, quality: { Excellent: 'Отличное', Good: 'Хорошее', Fair: 'Удовлетворительное', Poor: 'Плохое' }
+    },
+    users: { title: 'Управление пользователями', addUser: 'Добавить пользователя', usage: 'Использование', expiry: 'Срок действия', manageLinks: 'Ссылки', addModal: { title: 'Создать пользователя', quota: 'Квота (ГБ)', expiry: 'Срок (дни)' } },
+    edgeStatus: { title: 'Статус пограничного узла', connectionTitle: 'Статус туннеля', statusLabel: 'Статус', statusConnected: 'Подключено', activeTunnel: 'Активный протокол' },
+    camouflageSite: { title: 'Лаборатория ИИ', navHome: 'Главная', navApi: 'API', navContact: 'Контакты', login: 'Портал', signup: 'Запросить доступ', status: 'Статус системы', statusIdle: 'Работает', statusRunningAI: 'Обучение моделей', statusRunningData: 'Синхронизация данных', statusRunningMedia: 'Загрузка медиа', getStarted: 'Начать исследование', footer: '© 2024 Институт исследований ИИ. Все права защищены.' },
+    signup: { title: 'Запросить доступ', description: 'Отправьте ваши данные на рассмотрение.', successTitle: 'Получено', successMessage: 'Ваш запрос на рассмотрении.', backButton: 'Назад', form: { name: 'Полное имя', email: 'Адрес электронной почты', reason: 'Причина использования', submit: 'Отправить запрос' } },
+    header: { systemSecure: 'Защищено', edgeNode: { connected: 'Подключено', connecting: 'Подключение', failed: 'Сбой', notConfigured: 'Не настроен' } },
+    view: { dashboard: 'Панель', users: 'Пользователи', settings: 'Настройки' }
   }
 };
