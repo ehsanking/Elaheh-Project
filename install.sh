@@ -1,100 +1,98 @@
 #!/bin/bash
-# Project Elaheh Installer v2.2.0
-# Auto-detects OS and installs via ZIP (Releases/Main) to avoid Git auth issues.
+
+# Project Elaheh Installer
+# Version 1.0.2
+# Author: EHSANKiNG
 
 set -e
 
 # Colors
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
-NC='\033[0m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
 echo -e "${CYAN}"
 echo "################################################################"
-echo "   Project Elaheh - Tunnel Management System v2.2.0"
+echo "   Project Elaheh - Tunnel Management System"
+echo "   Version 1.0.2"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
+echo "   'Free Internet for everyone or no one'"
 echo "################################################################"
 echo -e "${NC}"
 
-# Check root
+# 1. Check root
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root"
+  echo -e "${YELLOW}Please run as root (sudo su)${NC}"
   exit 1
 fi
 
-# 1. OS Detection & Dependency Install
-if [ -f /etc/os-release ]; then . /etc/os-release; fi
-echo -e "${GREEN}[+] Detected OS: $NAME${NC}"
-
-if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq
-    apt-get install -y -qq curl unzip nodejs sqlite3
-elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]]; then
-    dnf install -y -q curl unzip nodejs sqlite3
-else
-    echo "Unsupported OS. Proceeding with generic assumptions..."
+# 2. Detect OS & Install Dependencies
+echo -e "${GREEN}[+] Installing system dependencies...${NC}"
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$NAME
 fi
 
-# 2. Node.js Check
+if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq
+    apt-get install -y -qq curl git unzip
+elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+    dnf install -y -q curl git unzip
+else
+    echo -e "${YELLOW}[!] OS not fully supported, trying generic install...${NC}"
+fi
+
+# 3. Install Node.js 20
 if ! command -v node &> /dev/null; then
     echo -e "${GREEN}[+] Installing Node.js 20...${NC}"
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs || dnf install -y nodejs
+    apt-get install -y -qq nodejs || dnf install -y nodejs
+else
+    echo -e "${GREEN}[+] Node.js is already installed ($(node -v)).${NC}"
 fi
 
-# 3. Download Project (Robust Method with Fallbacks)
-INSTALL_DIR="/opt/project-elaheh"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
-download_and_extract() {
-    URL="$1"
-    echo -e "${GREEN}>>> Trying to download: $URL${NC}"
-    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
-    
-    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
-        echo -e "${GREEN}>>> Download successful. Extracting...${NC}"
-        if unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract; then
-            mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
-            rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
-            return 0
-        fi
-    fi
-    echo -e "${CYAN}>>> Warning: Download failed. Trying next source...${NC}"
-    return 1
-}
-
-echo -e "${GREEN}[+] Downloading Project Archive...${NC}"
-if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
-        if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"; then
-            echo ">>> ERROR: Failed to download repository. Please check internet connection or repo visibility."
-            exit 1
-        fi
-    fi
+# 4. Install PM2 (Process Manager)
+if ! command -v pm2 &> /dev/null; then
+    echo -e "${GREEN}[+] Installing PM2 global process manager...${NC}"
+    npm install -g pm2
 fi
 
-cd "$INSTALL_DIR"
+# 5. Setup Directory & Clone
+INSTALL_DIR="/opt/elaheh-project"
+REPO_URL="https://github.com/ehsanking/Elaheh-Project.git"
 
-# 4. Install Node Modules
-echo -e "${GREEN}[+] Installing Dependencies...${NC}"
-npm install --silent --production
+if [ -d "$INSTALL_DIR" ]; then
+    echo -e "${GREEN}[+] Updating existing installation at $INSTALL_DIR...${NC}"
+    cd "$INSTALL_DIR"
+    git reset --hard
+    git pull origin main
+else
+    echo -e "${GREEN}[+] Cloning repository to $INSTALL_DIR...${NC}"
+    git clone "$REPO_URL" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+fi
 
-# 5. Parse Arguments & Configure
+# 6. Install NPM Packages
+echo -e "${GREEN}[+] Installing NPM packages...${NC}"
+npm install --silent
+
+# 7. Parse Arguments
 ROLE="unknown"
 KEY=""
 
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --role) ROLE="$2"; shift ;;
-        --key) KEY="$2"; shift ;;
-        *) shift ;;
-    esac
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --role) ROLE="$2"; shift 2;;
+    --key) KEY="$2"; shift 2;;
+    *) shift 1;;
+  esac
 done
 
-echo -e "${GREEN}[+] Applying Configuration...${NC}"
+# 8. Save Configuration
 mkdir -p src/assets
+echo -e "${GREEN}[+] Saving configuration...${NC}"
 cat <<EOF > src/assets/server-config.json
 {
   "role": "$ROLE",
@@ -103,6 +101,17 @@ cat <<EOF > src/assets/server-config.json
 }
 EOF
 
+# 9. Start Application with PM2
+echo -e "${GREEN}[+] Starting application with PM2...${NC}"
+pm2 stop elaheh-app 2>/dev/null || true
+pm2 delete elaheh-app 2>/dev/null || true
+# Running npm start via PM2
+pm2 start npm --name "elaheh-app" -- start
+pm2 save --force
+# Enable startup on boot (just runs the generator, requires manual execution if not already set)
+pm2 startup | grep "sudo" | bash || true
+
+# 10. Final Output
 PUBLIC_IP=$(curl -s ifconfig.me || echo "localhost")
 
 echo -e "${CYAN}"
@@ -110,8 +119,6 @@ echo "################################################################"
 echo "   Installation Complete!"
 echo "   Dashboard URL: http://$PUBLIC_IP:4200"
 echo "   Role: $ROLE"
+echo "   Process: Running in background (PM2)"
 echo "################################################################"
 echo -e "${NC}"
-
-echo "Starting Application..."
-npm start

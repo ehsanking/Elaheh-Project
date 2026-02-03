@@ -37,52 +37,10 @@ This software is developed strictly for **educational purposes** and to ensure *
 
 ### Installation (Standard One-Liner)
 
-This script automatically handles dependencies and avoids GitHub credential prompts by using robust fallback strategies.
+Copy and run the following command as root on your server. It handles all dependencies and starts the application automatically.
 
 ```bash
-cat << 'EOF' > install.sh
-#!/bin/bash
-set -e
-echo "Initializing Project Elaheh Installer..."
-# OS Detection
-if [ -f /etc/os-release ]; then . /etc/os-release; fi
-if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
-elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl unzip nodejs sqlite3
-fi
-
-INSTALL_DIR="/opt/project-elaheh"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
-download_and_extract() {
-    URL="$1"
-    echo "Trying $URL..."
-    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
-    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
-        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
-        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
-        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
-        return 0
-    fi
-    return 1
-}
-
-# Try Release Tag -> Main -> Master
-if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
-    fi
-fi
-
-cd "$INSTALL_DIR"
-npm install --silent
-echo "Installation Complete. Starting Dashboard..."
-npm start
-EOF
-chmod +x install.sh
-./install.sh
+bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 ---
@@ -98,51 +56,10 @@ chmod +x install.sh
 ۳. **عدم ضمانت:** هیچ تضمینی برای پایداری ۱۰۰٪ وجود ندارد.
 
 ### نصب آسان (تک خطی)
-این دستور مشکل درخواست نام کاربری گیت‌هاب را حل می‌کند و فایل‌ها را با اولویت نسخه Release دانلود می‌کند:
+دستور زیر را کپی کرده و در ترمینال سرور خود (به عنوان کاربر root) اجرا کنید تا همه چیز به صورت خودکار نصب و راه‌اندازی شود.
 
 ```bash
-cat << 'EOF' > install.sh
-#!/bin/bash
-set -e
-echo "Initializing Project Elaheh Installer..."
-if [ -f /etc/os-release ]; then . /etc/os-release; fi
-if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
-elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl unzip nodejs sqlite3
-fi
-
-INSTALL_DIR="/opt/project-elaheh"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
-download_and_extract() {
-    URL="$1"
-    echo "Trying $URL..."
-    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
-    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
-        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
-        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
-        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
-        return 0
-    fi
-    return 1
-}
-
-# Priority: Tag v2.2.0 -> Main -> Master
-if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
-    fi
-fi
-
-cd "$INSTALL_DIR"
-npm install --silent
-echo "Installation Complete. Starting Dashboard..."
-npm start
-EOF
-chmod +x install.sh
-./install.sh
+bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 ---
@@ -164,50 +81,10 @@ chmod +x install.sh
 *   **系统:** Ubuntu 20.04+, Debian 11+, Rocky Linux 9
 
 ### 安装 (一键脚本)
-请复制以下代码块并在终端运行。此脚本已修复 GitHub 密码提示问题，优先下载 Release 版本：
+请复制以下命令并在您的服务器上以 root 用户身份运行。它会自动处理所有依赖项并启动应用程序。
 
 ```bash
-cat << 'EOF' > install.sh
-#!/bin/bash
-set -e
-echo "Initializing Project Elaheh Installer..."
-if [ -f /etc/os-release ]; then . /etc/os-release; fi
-if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
-elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl unzip nodejs sqlite3
-fi
-
-INSTALL_DIR="/opt/project-elaheh"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
-download_and_extract() {
-    URL="$1"
-    echo "Trying $URL..."
-    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
-    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
-        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
-        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
-        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
-        return 0
-    fi
-    return 1
-}
-
-if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
-    fi
-fi
-
-cd "$INSTALL_DIR"
-npm install --silent
-echo "Installation Complete. Starting Dashboard..."
-npm start
-EOF
-chmod +x install.sh
-./install.sh
+bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 ---
@@ -229,50 +106,10 @@ chmod +x install.sh
 *   **ОС:** Ubuntu 20.04+, Debian 11+, Rocky Linux 9
 
 ### Установка (Одной строкой)
-Скопируйте и запустите этот блок. Он автоматически скачивает ZIP-архив с проверкой целостности:
+Скопируйте и выполните следующую команду на вашем сервере от имени root. Она автоматически установит все зависимости и запустит приложение.
 
 ```bash
-cat << 'EOF' > install.sh
-#!/bin/bash
-set -e
-echo "Initializing Project Elaheh Installer..."
-if [ -f /etc/os-release ]; then . /etc/os-release; fi
-if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
-elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl unzip nodejs sqlite3
-fi
-
-INSTALL_DIR="/opt/project-elaheh"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
-download_and_extract() {
-    URL="$1"
-    echo "Trying $URL..."
-    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
-    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
-        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
-        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
-        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
-        return 0
-    fi
-    return 1
-}
-
-if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
-    fi
-fi
-
-cd "$INSTALL_DIR"
-npm install --silent
-echo "Installation Complete. Starting Dashboard..."
-npm start
-EOF
-chmod +x install.sh
-./install.sh
+bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 **License:** MIT  
