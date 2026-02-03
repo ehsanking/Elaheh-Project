@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.3 (Reverted to Official NodeSource Script)
+# Version 1.3.4 (Ensure lsb-release and unhide logs)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.3"
+echo "   Version 1.3.4"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -37,14 +37,15 @@ fi
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y -qq
-    # Install prerequisites and try to fix any existing broken package issues.
-    apt-get install -y -qq ca-certificates curl
+    # Install prerequisites including lsb-release for OS detection, and fix any broken packages.
+    apt-get install -y -qq ca-certificates curl lsb-release
     apt-get install -f -y -qq
     
-    # Install Node.js 20 using the official NodeSource setup script. This is the most reliable method.
+    # Install Node.js 20 using the official NodeSource setup script.
     echo -e "${GREEN}[+] Setting up Node.js 20 LTS repository...${NC}"
-    # The script handles adding GPG keys and the correct sources list for the detected distribution.
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
+    # The script uses lsb-release to find the correct distribution codename.
+    # Output is no longer hidden to allow for debugging if it fails.
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     
     echo -e "${GREEN}[+] Installing Node.js and other dependencies...${NC}"
     # We need to update again after adding the new repo
