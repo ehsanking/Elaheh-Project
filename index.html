@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Elaheh</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom Scrollbar for Terminal Look */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1f2937; 
+    }
+    .dark ::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    html:not(.dark) ::-webkit-scrollbar-track {
+      background: #e5e7eb;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4b5563; 
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280; 
+    }
+    .dark ::-webkit-scrollbar-thumb {
+       background: #4b5563;
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+       background: #6b7280;
+    }
+     html:not(.dark) ::-webkit-scrollbar-thumb {
+       background: #9ca3af;
+    }
+     html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+       background: #6b7280;
+    }
+    
+    .crt-effect {
+      animation: textShadow 1.6s infinite;
+    }
+    @keyframes textShadow {
+      0% { text-shadow: 0.4389924193300864px 0 1px rgba(0,30,255,0.5), -0.4389924193300864px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
+      50% { text-shadow: 2.7928974010788217px 0 1px rgba(0,30,255,0.5), -2.7928974010788217px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
+      100% { text-shadow: 0.4389924193300864px 0 1px rgba(0,30,255,0.5), -0.4389924193300864px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
+    }
+
+    /* Tooltip styles */
+    [data-tooltip] {
+      position: relative;
+      cursor: help;
+    }
+
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%);
+      
+      background-color: #1f2937; /* dark:bg-gray-800 */
+      color: #d1d5db; /* dark:text-gray-300 */
+      border: 1px solid #4b5563; /* dark:border-gray-600 */
+      border-radius: 0.375rem; /* rounded-md */
+      padding: 0.5rem 0.75rem; /* px-3 py-2 */
+      
+      font-size: 0.75rem; /* text-xs */
+      line-height: 1.25;
+      font-weight: 500;
+      white-space: pre-wrap; /* Allow wrapping */
+      width: max-content;
+      max-width: 280px; /* Limit width */
+      text-align: left;
+      
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+      z-index: 9999;
+      
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+
+    [data-tooltip]:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0.4s; /* Show after a short delay */
+    }
+
+    /* Tooltip arrow */
+    [data-tooltip]::before {
+      content: '';
+      position: absolute;
+      bottom: calc(110% - 5px); /* Position arrow correctly */
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 10px;
+      height: 10px;
+      background-color: #1f2937;
+      border-bottom: 1px solid #4b5563;
+      border-right: 1px solid #4b5563;
+      
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+      z-index: 9998;
+    }
+
+    [data-tooltip]:hover::before {
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0.4s;
+    }
+
+    /* Adjustments for RTL */
+    html[dir="rtl"] [data-tooltip]::after {
+      text-align: right;
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "rxjs": "https://esm.sh/rxjs@^7.8.2?conditions=es2015",
+    "rxjs/operators": "https://esm.sh/rxjs@^7.8.2/operators?conditions=es2015",
+    "rxjs/ajax": "https://esm.sh/rxjs@^7.8.2/ajax?conditions=es2015",
+    "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
+    "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
+    "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
+    "@angular/compiler": "https://esm.sh/@angular/compiler@^21.1.2?external=rxjs",
+    "@angular/core": "https://esm.sh/@angular/core@^21.1.2?external=rxjs",
+    "@google/genai": "https://esm.sh/@google/genai@^1.39.0?external=rxjs",
+    "@angular/common": "https://esm.sh/@angular/common@^21.1.2?external=rxjs",
+    "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.1.2?external=rxjs",
+    "@angular/forms": "https://esm.sh/@angular/forms@^21.1.2?external=rxjs",
+    "qrcode": "https://esm.sh/qrcode@^1.5.3"
+  }
+}
+</script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
+  <app-root></app-root>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<div class="bg-gray-900/50 p-6 rounded-lg border border-gray-700 mt-8">
+  <h3 class="text-lg font-bold text-gray-200 mb-4 border-b border-gray-700 pb-2">{{ languageService.translate('settings.domain.title') }}</h3>
+  <p class="text-sm text-gray-400 mb-6">{{ languageService.translate('settings.domain.description') }}</p>
+  
+  <form [formGroup]="domainForm" class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="domainName" class="block text-gray-400 text-sm mb-1 uppercase font-bold" [attr.data-tooltip]="languageService.translate('tooltips.settings.domainName')">{{ languageService.translate('settings.domain.domainName') }}</label>
+        <input id="domainName" formControlName="domain" type="text" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-colors" [placeholder]="languageService.translate('settings.domain.domainPlaceholder')">
+        @if (domainForm.get('domain')?.invalid && domainForm.get('domain')?.touched) {
+           <p class="text-red-400 text-xs mt-1">{{ languageService.translate('settings.domain.invalidDomainError') }}</p>
+        }
+      </div>
+      <div>
+        <label for="subscriptionDomain" class="block text-gray-400 text-sm mb-1 uppercase font-bold" [attr.data-tooltip]="languageService.translate('tooltips.settings.subscriptionDomain')">{{ languageService.translate('settings.domain.subscriptionDomain') }}</label>
+        <input id="subscriptionDomain" formControlName="subscriptionDomain" type="text" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-colors" [placeholder]="languageService.translate('settings.domain.subscriptionDomainPlaceholder')">
+        <p class="text-gray-500 text-xs mt-1">{{ languageService.translate('settings.domain.subscriptionDomainDesc') }}</p>
+      </div>
+    </div>
+
+    <div class="p-4 bg-gray-800 border border-gray-700 rounded-lg">
+       <h4 class="text-xs uppercase font-bold text-gray-500 mb-2">{{ languageService.translate('settings.domain.instructionsTitle') }}</h4>
+       <p class="text-xs text-gray-400 whitespace-pre-line">{{ languageService.translate('settings.domain.instructions') }}</p>
+    </div>
+
+    @if(core.customDomain()) {
+      <div class="p-4 bg-gray-800 border border-gray-700 rounded-lg">
+         <div class="flex justify-between items-center mb-2">
+            <h4 class="text-xs uppercase font-bold text-gray-500" [attr.data-tooltip]="languageService.translate('tooltips.settings.healthCheck')">{{ languageService.translate('settings.domain.healthCheckTitle') }}</h4>
+            <div class="flex gap-2">
+              @if(hasChecked()) {
+                <button type="button" (click)="pruneAndRegenerate()" class="bg-red-900/50 hover:bg-red-900/80 text-red-300 text-xs font-bold py-1 px-3 rounded transition-colors shadow-sm border border-red-800">
+                  {{ languageService.translate('settings.domain.pruneBtn') }}
+                </button>
+              }
+              <button type="button" (click)="checkHealth()" [disabled]="isCheckingHealth()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded transition-colors shadow-sm disabled:opacity-50">
+                {{ isCheckingHealth() ? languageService.translate('settings.domain.checkingHealthBtn') : languageService.translate('settings.domain.checkHealthBtn') }}
+              </button>
+            </div>
+         </div>
+         <div class="grid grid-cols-2 gap-x-4 gap-y-2 font-mono text-xs text-gray-300">
+            @for(sub of subdomainStatuses(); track sub.domain) {
+              <div class="flex items-center gap-2 p-1 bg-gray-900/50 rounded">
+                @switch (sub.status) {
+                  @case('untested') { <span class="text-gray-500" title="{{ languageService.translate('settings.domain.status.untested') }}">?</span> }
+                  @case('testing') { <div class="w-2.5 h-2.5 border-2 border-t-transparent border-blue-400 rounded-full animate-spin" title="{{ languageService.translate('settings.domain.status.testing') }}"></div> }
+                  @case('healthy') { <span class="text-green-500" title="{{ languageService.translate('settings.domain.status.healthy') }}">✓</span> }
+                  @case('filtered') { <span class="text-red-500" title="{{ languageService.translate('settings.domain.status.filtered') }}">✗</span> }
+                }
+                <span class="truncate">{{ sub.domain }}</span>
+              </div>
+            }
+         </div>
+      </div>
+    }
+
+    <div>
+      <label for="certPath" class="block text-gray-400 text-sm mb-1 uppercase font-bold">{{ languageService.translate('settings.domain.certPath') }}</label>
+      <input id="certPath" formControlName="certPath" type="text" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white font-mono text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-colors" placeholder="/etc/ssl/certs/fullchain.pem">
+    </div>
+    <div>
+      <label for="keyPath" class="block text-gray-400 text-sm mb-1 uppercase font-bold">{{ languageService.translate('settings.domain.keyPath') }}</label>
+      <input id="keyPath" formControlName="keyPath" type="text" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white font-mono text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-colors" placeholder="/etc/ssl/private/privkey.pem">
+    </div>
+  </form>
+
+  <div class="mt-8 flex justify-end items-center gap-4">
+    @if (successMessage()) {
+      <span class="text-green-400 text-sm animate-pulse font-bold">{{ successMessage() }}</span>
+    }
+    
+    <button (click)="getCertificate()" [disabled]="domainForm.get('domain')?.invalid || isRequestingCert()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors shadow-lg disabled:opacity-50 flex items-center gap-2" [attr.data-tooltip]="languageService.translate('tooltips.settings.getCert')">
+       @if(isRequestingCert()) {
+        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>{{ languageService.translate('settings.domain.gettingCertButton') }}</span>
+      } @else {
+         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+           <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+         </svg>
+        <span>{{ languageService.translate('settings.domain.getCertButton') }}</span>
+      }
+    </button>
+
+    <button (click)="saveDomainSettings()" [disabled]="domainForm.invalid" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded transition-colors shadow-lg disabled:opacity-50">
+      {{ languageService.translate('common.saveChanges') }}
+    </button>
+  </div>
+</div>

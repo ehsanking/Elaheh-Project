@@ -1,0 +1,162 @@
+<div class="bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-white">{{ languageService.translate('users.title') }}</h2>
+        <button (click)="toggleAddModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors shadow-lg">
+            <span>+</span> {{ languageService.translate('users.addUser') }}
+        </button>
+      </div>
+
+      <!-- User List -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-900 text-gray-400 text-sm uppercase">
+              <th class="p-4 rounded-tl-lg">{{ languageService.translate('common.username') }}</th>
+              <th class="p-4">{{ languageService.translate('users.usage') }}</th>
+              <th class="p-4">{{ languageService.translate('users.expiry') }}</th>
+              <th class="p-4">{{ languageService.translate('common.status') }}</th>
+              <th class="p-4 rounded-tr-lg text-right">{{ languageService.translate('common.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700">
+            @for (user of filteredUsers(); track user.id) {
+              <tr class="hover:bg-gray-700/50 transition-colors">
+                <td class="p-4 font-bold text-white">{{ user.username }}</td>
+                <td class="p-4">
+                  <div class="flex items-center gap-2">
+                    <div class="w-24 bg-gray-700 rounded-full h-2">
+                      <div class="bg-blue-500 h-2 rounded-full" [style.width.%]="user.quotaGb > 0 ? (user.usedGb / user.quotaGb) * 100 : 0"></div>
+                    </div>
+                    <span class="text-xs text-gray-400">{{user.usedGb | number:'1.1-1'}} / {{user.quotaGb}}</span>
+                  </div>
+                </td>
+                <td class="p-4 text-gray-300">{{ user.expiryDays }} Days</td>
+                <td class="p-4">
+                  <span class="px-2 py-1 rounded text-xs font-bold" 
+                    [class.bg-green-900]="user.status === 'active'" 
+                    [class.text-green-400]="user.status === 'active'">
+                    {{ languageService.translate('common.' + user.status) }}
+                  </span>
+                </td>
+                <td class="p-4 text-right flex gap-2 justify-end">
+                  <button (click)="openLinkManager(user)" class="bg-gray-700 hover:bg-gray-600 text-teal-400 px-3 py-1 rounded text-xs font-bold border border-gray-600">
+                     {{ languageService.translate('users.manageLinks') }}
+                  </button>
+                  <button (click)="core.removeUser(user.id)" class="text-red-400 hover:text-red-300 text-sm p-2">✕</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add User Modal -->
+      @if (showAddModal()) {
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div class="bg-gray-800 border border-gray-600 rounded-lg p-6 w-96 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-4">{{ languageService.translate('users.addModal.title') }}</h3>
+            <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+              <div class="mb-4">
+                <label class="block text-gray-400 text-sm mb-1 uppercase font-bold">{{ languageService.translate('common.username') }}</label>
+                <div class="flex gap-2">
+                    <input formControlName="username" type="text" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white outline-none">
+                    <button type="button" (click)="generateRandomUsername()" class="bg-gray-700 text-white p-2 rounded">🎲</button>
+                </div>
+              </div>
+              
+              <!-- Creation Mode Toggle -->
+              <div class="flex bg-gray-900 rounded p-1 mb-4">
+                  <button type="button" (click)="setCreationMode('auto')" class="flex-1 py-1 text-sm rounded transition-colors" [class.bg-teal-600]="creationMode() === 'auto'" [class.text-white]="creationMode() === 'auto'" [class.text-gray-400]="creationMode() !== 'auto'">Auto-Generate</button>
+                  <button type="button" (click)="setCreationMode('manual')" class="flex-1 py-1 text-sm rounded transition-colors" [class.bg-teal-600]="creationMode() === 'manual'" [class.text-white]="creationMode() === 'manual'" [class.text-gray-400]="creationMode() !== 'manual'">Manual</button>
+              </div>
+
+              @if(creationMode() === 'manual') {
+                  <div [formGroup]="manualProtoForm" class="mb-4 p-3 bg-gray-900 rounded border border-gray-700">
+                      <label class="block text-gray-400 text-xs mb-1">Protocol</label>
+                      <select formControlName="protocol" class="w-full bg-gray-800 text-white text-xs rounded p-2 mb-2">
+                          <option value="vless">VLESS</option>
+                          <option value="vmess">VMess</option>
+                          <option value="shadowtls">ShadowTLS</option>
+                      </select>
+                      <label class="block text-gray-400 text-xs mb-1">Transport</label>
+                      <select formControlName="transport" class="w-full bg-gray-800 text-white text-xs rounded p-2">
+                          <option value="ws">WebSocket</option>
+                          <option value="tcp">TCP</option>
+                          <option value="grpc">gRPC</option>
+                      </select>
+                  </div>
+              } @else {
+                  <p class="text-xs text-gray-400 mb-4 italic">Automatically creates links for all available protocols (VLESS Reality, VMess, ShadowTLS) using configured subdomains.</p>
+              }
+
+              <div class="flex gap-2 mb-4">
+                  <div class="flex-1">
+                    <label class="block text-gray-400 text-sm mb-1 uppercase font-bold">{{ languageService.translate('users.addModal.quota') }}</label>
+                    <input formControlName="quota" type="number" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white outline-none">
+                  </div>
+                  <div class="flex-1">
+                    <label class="block text-gray-400 text-sm mb-1 uppercase font-bold">{{ languageService.translate('users.addModal.expiry') }}</label>
+                    <input formControlName="days" type="number" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white outline-none">
+                  </div>
+              </div>
+
+              <div class="flex justify-end gap-3 pt-2 border-t border-gray-700">
+                <button type="button" (click)="toggleAddModal()" class="px-4 py-2 text-gray-400 hover:text-white">{{ languageService.translate('common.cancel') }}</button>
+                <button type="submit" [disabled]="userForm.invalid" class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded font-bold">{{ languageService.translate('common.create') }}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Manage Links Modal (Simplified for brevity) -->
+      @if (showLinkModal() && selectedUser()) {
+        <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md">
+          <div class="bg-gray-800 border border-gray-600 rounded-lg w-full max-w-4xl shadow-2xl p-6 h-[80vh] flex flex-col">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">{{ selectedUser()?.username }} Links</h3>
+                <button (click)="closeLinkManager()" class="text-gray-400 hover:text-white">✕</button>
+             </div>
+             
+             <!-- Subscription Link -->
+             <div class="bg-blue-900/30 border border-blue-700 p-4 rounded mb-4">
+                <label class="text-xs text-blue-300 font-bold uppercase mb-1 block">Subscription Link (Client Area)</label>
+                <div class="flex gap-2">
+                    <a [href]="selectedUser()?.subscriptionLink" target="_blank" class="flex-1 bg-black/50 text-blue-400 text-sm font-mono p-2 rounded underline truncate">{{ selectedUser()?.subscriptionLink }}</a>
+                    <button (click)="copyLinkStr(selectedUser()!.subscriptionLink, -1)" class="bg-blue-700 text-white px-3 rounded text-xs">Copy</button>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Share this link with the user. They can view all configs and QR codes there.</p>
+             </div>
+
+             <div class="flex-1 overflow-y-auto space-y-2">
+                @for(link of selectedUser()?.links; track link.alias; let i = $index) {
+                    <div class="bg-gray-900 p-3 rounded border border-gray-700 flex justify-between items-center">
+                        <div class="truncate flex-1 mr-4">
+                            <div class="font-bold text-teal-400 text-sm">{{ link.alias }}</div>
+                            <div class="text-xs text-gray-500 font-mono truncate">{{ link.url }}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button (click)="copyLinkStr(link.url, i)" class="text-gray-400 hover:text-white">Copy</button>
+                            <button (click)="showQrCode(link)" class="text-gray-400 hover:text-white">QR</button>
+                            <button (click)="deleteLink(i)" class="text-red-400 hover:text-red-300">Del</button>
+                        </div>
+                    </div>
+                }
+             </div>
+          </div>
+        </div>
+      }
+
+      <!-- QR Code Modal -->
+      @if (qrCodeDataUrl()) {
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm" (click)="closeQrCode()">
+          <div class="bg-gray-800 border border-gray-600 rounded-lg p-6 shadow-2xl flex flex-col items-center gap-4" (click)="$event.stopPropagation()">
+            <h4 class="text-lg font-bold text-white">{{ qrCodeLinkAlias() }}</h4>
+            <div class="bg-white p-2 rounded-lg">
+                <img [src]="qrCodeDataUrl()" alt="QR Code" class="w-64 h-64">
+            </div>
+            <button (click)="closeQrCode()" class="mt-2 px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded">{{ languageService.translate('common.close') }}</button>
+          </div>
+        </div>
+      }
+</div>
