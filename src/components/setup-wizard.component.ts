@@ -215,13 +215,13 @@ download_and_extract() {
 
 echo ">>> Downloading Project Archive..."
 # Priority 1: Specific Release Tag (v2.2.0) - Best for Stability
-if download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
+if download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
     echo ">>> Version v2.2.0 Installed."
 # Priority 2: Main Branch - Latest Code
-elif download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
+elif download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
     echo ">>> Main Branch Installed."
 # Priority 3: Master Branch - Legacy Fallback
-elif download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"; then
+elif download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"; then
     echo ">>> Master Branch Installed."
 else
     echo ">>> ERROR: Failed to download repository. Please check internet connection or repo visibility."

@@ -1,22 +1,18 @@
 #!/bin/bash
-
-# Project Elaheh Installer
-# Version 1.0.1
-# Author: EHSANKiNG
+# Project Elaheh Installer v2.2.0
+# Auto-detects OS and installs via ZIP (Releases/Main) to avoid Git auth issues.
 
 set -e
 
 # Colors
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 echo -e "${CYAN}"
 echo "################################################################"
-echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.0.1"
+echo "   Project Elaheh - Tunnel Management System v2.2.0"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
-echo "   'Free Internet for everyone or no one'"
 echo "################################################################"
 echo -e "${NC}"
 
@@ -26,56 +22,66 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Detect OS
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS=$NAME
-fi
-echo -e "${GREEN}[+] Detected OS: $OS${NC}"
+# 1. OS Detection & Dependency Install
+if [ -f /etc/os-release ]; then . /etc/os-release; fi
+echo -e "${GREEN}[+] Detected OS: $NAME${NC}"
 
-# Install System Dependencies
-echo -e "${GREEN}[+] Installing system dependencies...${NC}"
-if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq curl git unzip
+    apt-get install -y -qq curl unzip nodejs sqlite3
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]]; then
-    dnf install -y -q curl git unzip
+    dnf install -y -q curl unzip nodejs sqlite3
+else
+    echo "Unsupported OS. Proceeding with generic assumptions..."
 fi
 
-# Install Node.js 20
+# 2. Node.js Check
 if ! command -v node &> /dev/null; then
     echo -e "${GREEN}[+] Installing Node.js 20...${NC}"
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        apt-get install -y -qq nodejs
-    else
-        dnf install -y -q nodejs
-    fi
-else
-    echo -e "${GREEN}[+] Node.js is already installed.${NC}"
+    apt-get install -y nodejs || dnf install -y nodejs
 fi
 
-# Setup Directory
+# 3. Download Project (Robust Method with Fallbacks)
 INSTALL_DIR="/opt/project-elaheh"
-REPO_URL="https://github.com/EHSANKiNG/project-elaheh.git"
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
 
-if [ -d "$INSTALL_DIR" ]; then
-    echo -e "${GREEN}[+] Updating existing installation at $INSTALL_DIR...${NC}"
-    cd "$INSTALL_DIR"
-    git reset --hard
-    git pull origin main
-else
-    echo -e "${GREEN}[+] Cloning repository to $INSTALL_DIR...${NC}"
-    git clone "$REPO_URL" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+download_and_extract() {
+    URL="$1"
+    echo -e "${GREEN}>>> Trying to download: $URL${NC}"
+    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
+    
+    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
+        echo -e "${GREEN}>>> Download successful. Extracting...${NC}"
+        if unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract; then
+            mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
+            rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
+            return 0
+        fi
+    fi
+    echo -e "${CYAN}>>> Warning: Download failed. Trying next source...${NC}"
+    return 1
+}
+
+echo -e "${GREEN}[+] Downloading Project Archive...${NC}"
+if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
+        if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"; then
+            echo ">>> ERROR: Failed to download repository. Please check internet connection or repo visibility."
+            exit 1
+        fi
+    fi
 fi
 
-# Install NPM Packages
-echo -e "${GREEN}[+] Installing NPM packages (this may take a moment)...${NC}"
-npm install --silent
+cd "$INSTALL_DIR"
 
-# Parse Arguments
+# 4. Install Node Modules
+echo -e "${GREEN}[+] Installing Dependencies...${NC}"
+npm install --silent --production
+
+# 5. Parse Arguments & Configure
 ROLE="unknown"
 KEY=""
 
@@ -87,7 +93,7 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-# Save Configuration (Mock Backend)
+echo -e "${GREEN}[+] Applying Configuration...${NC}"
 mkdir -p src/assets
 cat <<EOF > src/assets/server-config.json
 {
@@ -97,7 +103,6 @@ cat <<EOF > src/assets/server-config.json
 }
 EOF
 
-# Get Public IP
 PUBLIC_IP=$(curl -s ifconfig.me || echo "localhost")
 
 echo -e "${CYAN}"

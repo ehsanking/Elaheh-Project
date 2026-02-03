@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/EHSANKiNG/project-elaheh)
+  [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>
@@ -47,9 +47,9 @@ echo "Initializing Project Elaheh Installer..."
 # OS Detection
 if [ -f /etc/os-release ]; then . /etc/os-release; fi
 if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
+    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
 elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl git unzip nodejs sqlite3
+    dnf install -y curl unzip nodejs sqlite3
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
@@ -70,9 +70,9 @@ download_and_extract() {
 }
 
 # Try Release Tag -> Main -> Master
-if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
     fi
 fi
 
@@ -107,9 +107,9 @@ set -e
 echo "Initializing Project Elaheh Installer..."
 if [ -f /etc/os-release ]; then . /etc/os-release; fi
 if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
+    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
 elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl git unzip nodejs sqlite3
+    dnf install -y curl unzip nodejs sqlite3
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
@@ -130,9 +130,9 @@ download_and_extract() {
 }
 
 # Priority: Tag v2.2.0 -> Main -> Master
-if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
     fi
 fi
 
@@ -173,9 +173,9 @@ set -e
 echo "Initializing Project Elaheh Installer..."
 if [ -f /etc/os-release ]; then . /etc/os-release; fi
 if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
+    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
 elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl git unzip nodejs sqlite3
+    dnf install -y curl unzip nodejs sqlite3
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
@@ -195,9 +195,9 @@ download_and_extract() {
     return 1
 }
 
-if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
     fi
 fi
 
@@ -238,9 +238,9 @@ set -e
 echo "Initializing Project Elaheh Installer..."
 if [ -f /etc/os-release ]; then . /etc/os-release; fi
 if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
+    apt-get update -qq && apt-get install -y curl unzip nodejs sqlite3
 elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y curl git unzip nodejs sqlite3
+    dnf install -y curl unzip nodejs sqlite3
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
@@ -260,9 +260,9 @@ download_and_extract() {
     return 1
 }
 
-if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
-    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
-        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"
     fi
 fi
 
