@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/EHSANKiNG/project-elaheh)
+  [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/EHSANKiNG/project-elaheh)
   
   **Internet Freedom for Everyone or No One**
 </div>
@@ -23,48 +23,49 @@
 
 ### ⚖️ Legal Disclaimer & Liability
 **Important Notice:**
-This software, "Project Elaheh," is developed strictly for **educational purposes** and to ensure **business continuity** for legitimate online businesses operating in regions with unstable internet connectivity. 
+This software is developed strictly for **educational purposes** and to ensure **business continuity** for legitimate online businesses.
 
-1.  **No Illegal Use:** The developers of this project do not endorse, encourage, or support the use of this software for any illegal activities, including but not limited to hacking, bypassing lawful restrictions, or accessing prohibited content in your jurisdiction.
-2.  **User Responsibility:** You, the user, are solely responsible for compliance with all local, state, and federal laws regarding the use of VPNs, tunneling protocols, and encryption software.
-3.  **Liability Waiver:** The authors and contributors of Project Elaheh shall not be held liable for any direct, indirect, incidental, or consequential damages resulting from the use, misuse, or inability to use this software.
-4.  **Business Focus:** Features such as traffic obfuscation are designed to prevent commercial espionage and ensure stable connections for remote work and digital commerce.
+1.  **No Illegal Use:** The developers do not support the use of this software for any illegal activities.
+2.  **User Responsibility:** You are solely responsible for compliance with local laws regarding encryption software.
+3.  **Liability Waiver:** The authors shall not be held liable for any damages resulting from the use of this software.
 
 ### System Requirements
-To run the panel and traffic relay efficiently, your server must meet these minimums:
+*   **CPU:** 1 Core
+*   **RAM:** 1GB
+*   **Disk:** 2GB Free SSD
+*   **OS:** Ubuntu 20.04+, Debian 11+, Rocky 9
 
-*   **CPU:** 1 Core (2 Cores recommended for high concurrency)
-*   **RAM:** 1GB (2GB recommended if running database locally)
-*   **Disk:** 2GB Free SSD Space (for logs and database)
-*   **OS:** Ubuntu 20.04+, Debian 11+, Rocky Linux 9, CentOS Stream 9.
+### Installation (Standard One-Liner)
 
-### Installation (Professional Method)
-
-To avoid GitHub caching issues (404 errors) and ensure a clean install with a progress bar, copy and paste this **entire block** into your terminal. This method creates the installer locally:
+This script automatically handles dependencies and avoids GitHub credential prompts.
 
 ```bash
 cat << 'EOF' > install.sh
 #!/bin/bash
 set -e
 echo "Initializing Project Elaheh Installer..."
+# OS Detection
 if [ -f /etc/os-release ]; then . /etc/os-release; fi
-
-# Detect OS and Install Pre-reqs
 if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
     apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
 elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
     dnf install -y curl git unzip nodejs sqlite3
 fi
 
-# Clone or Update
 INSTALL_DIR="/opt/project-elaheh"
-if [ -d "$INSTALL_DIR" ]; then
-    cd "$INSTALL_DIR" && git pull origin main
+# Try Git clone, fallback to ZIP if auth fails (avoids password prompt)
+if [ ! -d "$INSTALL_DIR" ]; then
+    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
+        echo "Git clone restricted. Downloading Archive..."
+        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
+        unzip -o /tmp/elaheh.zip -d /tmp
+        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+    fi
 else
-    git clone https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+    cd "$INSTALL_DIR" && git pull origin main || true
 fi
 
+cd "$INSTALL_DIR"
 npm install --silent
 echo "Installation Complete. Starting Dashboard..."
 npm start
@@ -79,25 +80,20 @@ chmod +x install.sh
 
 ### ⚖️ سلب مسئولیت قانونی
 **توجه مهم:**
-پروژه "الهه" صرفاً با اهداف **آموزشی** و به منظور **تداوم کسب‌وکارهای آنلاین** طراحی شده است.
+پروژه "الهه" صرفاً با اهداف **آموزشی** و برای **تداوم کسب‌وکارهای آنلاین** طراحی شده است.
 
-۱. **استفاده قانونی:** توسعه‌دهندگان هیچگونه مسئولیتی در قبال استفاده نادرست، غیرقانونی یا خلاف مقررات جاری کشور ندارند. هدف ما کمک به فریلنسرها و شرکت‌های تجاری برای دسترسی پایدار به ابزارهای کار است.
-۲. **مسئولیت کاربر:** مسئولیت رعایت قوانین مربوط به استفاده از ابزارهای رمزنگاری و تونلینگ بر عهده کاربر نهایی است.
-۳. **عدم ضمانت:** هیچ تضمینی برای پایداری ۱۰۰٪ وجود ندارد و توسعه‌دهندگان مسئولیتی در قبال خسارات احتمالی ناشی از قطع سرویس ندارند.
+۱. **استفاده قانونی:** توسعه‌دهندگان هیچگونه مسئولیتی در قبال استفاده نادرست ندارند.
+۲. **مسئولیت کاربر:** مسئولیت رعایت قوانین بر عهده کاربر نهایی است.
+۳. **عدم ضمانت:** هیچ تضمینی برای پایداری ۱۰۰٪ وجود ندارد.
 
-### سیستم مورد نیاز
-*   **پردازنده:** ۱ هسته
-*   **رم:** ۱ گیگابایت (۲ گیگابایت برای تعداد کاربر بالا)
-*   **هارد:** ۲ گیگابایت فضای خالی SSD
-
-### نصب تضمینی (رفع خطای ۴۰۴)
-برای نصب صحیح و مشاهده مراحل نصب، لطفا **دستور زیر را به طور کامل** کپی کرده و در ترمینال اجرا کنید:
+### نصب آسان (تک خطی)
+این دستور مشکل درخواست نام کاربری گیت‌هاب را حل می‌کند:
 
 ```bash
 cat << 'EOF' > install.sh
 #!/bin/bash
 set -e
-echo "Installing Project Elaheh..."
+echo "Initializing Project Elaheh Installer..."
 if [ -f /etc/os-release ]; then . /etc/os-release; fi
 if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
     apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
@@ -106,13 +102,18 @@ elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
-if [ -d "$INSTALL_DIR" ]; then
-    cd "$INSTALL_DIR" && git pull origin main
+if [ ! -d "$INSTALL_DIR" ]; then
+    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
+        echo "Git clone restricted. Downloading Archive..."
+        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
+        unzip -o /tmp/elaheh.zip -d /tmp
+        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+    fi
 else
-    git clone https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+    cd "$INSTALL_DIR" && git pull origin main || true
 fi
 
+cd "$INSTALL_DIR"
 npm install --silent
 echo "Installation Complete. Starting Dashboard..."
 npm start
@@ -122,6 +123,114 @@ chmod +x install.sh
 ```
 
 ---
+
+## 🇨🇳 中文 (Chinese)
+
+### ⚖️ 法律免责声明
+**重要通知：**
+本项目（"Project Elaheh"）仅供**教育用途**，旨在保障合法在线业务的**业务连续性**。
+
+1.  **禁止非法使用：** 开发者不支持将本软件用于任何非法活动。
+2.  **用户责任：** 用户需自行承担遵守当地关于加密软件法律法规的责任。
+3.  **免责条款：** 作者不对因使用本软件造成的任何直接或间接损失负责。
+
+### 系统要求
+*   **CPU:** 1 核
+*   **内存:** 1GB
+*   **硬盘:** 2GB 可用空间
+*   **系统:** Ubuntu 20.04+, Debian 11+, Rocky Linux 9
+
+### 安装 (一键脚本)
+请复制以下代码块并在终端运行。此脚本已修复 GitHub 密码提示问题：
+
+```bash
+cat << 'EOF' > install.sh
+#!/bin/bash
+set -e
+echo "Initializing Project Elaheh Installer..."
+if [ -f /etc/os-release ]; then . /etc/os-release; fi
+if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
+    apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
+elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
+    dnf install -y curl git unzip nodejs sqlite3
+fi
+
+INSTALL_DIR="/opt/project-elaheh"
+if [ ! -d "$INSTALL_DIR" ]; then
+    # 尝试 Git 克隆，如果需要密码则自动切换到 ZIP 下载
+    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
+        echo "Git authentication required. Switching to ZIP download..."
+        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
+        unzip -o /tmp/elaheh.zip -d /tmp
+        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+    fi
+else
+    cd "$INSTALL_DIR" && git pull origin main || true
+fi
+
+cd "$INSTALL_DIR"
+npm install --silent
+echo "Installation Complete. Starting Dashboard..."
+npm start
+EOF
+chmod +x install.sh
+./install.sh
+```
+
+---
+
+## 🇷🇺 Русский (Russian)
+
+### ⚖️ Юридический отказ от ответственности
+**Важное уведомление:**
+Это программное обеспечение ("Project Elaheh") разработано исключительно в **образовательных целях** и для обеспечения **непрерывности бизнеса**.
+
+1.  **Нет незаконному использованию:** Разработчики не поддерживают использование этого ПО для незаконной деятельности.
+2.  **Ответственность пользователя:** Вы несете единоличную ответственность за соблюдение местных законов.
+3.  **Отказ от ответственности:** Авторы не несут ответственности за любой ущерб, возникший в результате использования этого ПО.
+
+### Системные требования
+*   **CPU:** 1 ядро
+*   **RAM:** 1 ГБ
+*   **Диск:** 2 ГБ свободного места
+*   **ОС:** Ubuntu 20.04+, Debian 11+, Rocky Linux 9
+
+### Установка (Одной строкой)
+Скопируйте и запустите этот блок. Он автоматически скачивает ZIP-архив, если Git требует пароль:
+
+```bash
+cat << 'EOF' > install.sh
+#!/bin/bash
+set -e
+echo "Initializing Project Elaheh Installer..."
+if [ -f /etc/os-release ]; then . /etc/os-release; fi
+if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
+    apt-get update -qq && apt-get install -y curl git unzip nodejs sqlite3
+elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
+    dnf install -y curl git unzip nodejs sqlite3
+fi
+
+INSTALL_DIR="/opt/project-elaheh"
+if [ ! -d "$INSTALL_DIR" ]; then
+    # Если Git требует пароль, используем ZIP
+    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
+        echo "Git clone failed. Downloading archive..."
+        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
+        unzip -o /tmp/elaheh.zip -d /tmp
+        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+    fi
+else
+    cd "$INSTALL_DIR" && git pull origin main || true
+fi
+
+cd "$INSTALL_DIR"
+npm install --silent
+echo "Installation Complete. Starting Dashboard..."
+npm start
+EOF
+chmod +x install.sh
+./install.sh
+```
 
 **License:** MIT  
 **Author:** EHSANKiNG

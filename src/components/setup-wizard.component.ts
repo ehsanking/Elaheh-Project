@@ -114,18 +114,18 @@ interface DnsProvider {
                 <div class="flex justify-between items-center mb-2">
                     <h4 class="text-green-400 font-bold flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        Professional Installer (Guaranteed)
+                        Professional Installer (Silent)
                     </h4>
-                    <span class="text-xs text-gray-500">Mode: Direct Injection</span>
+                    <span class="text-xs text-gray-500">Mode: Auto-Detect</span>
                 </div>
 
                 <p class="text-gray-300 text-sm mb-4">
-                    This command injects the installer directly into your server, bypassing GitHub delays and 404 errors. It includes a visual progress bar and installs necessary databases.
+                    This command automatically handles dependencies, installation, and configuration. It prevents credential prompts by using public archives if Git cloning is restricted.
                 </p>
                 
                 <div class="relative">
                     <textarea readonly class="w-full h-48 bg-gray-900 p-3 rounded-md text-xs font-mono text-green-400 border border-gray-700 resize-none break-all outline-none focus:border-green-500 transition-colors whitespace-pre" (click)="$event.target.select()">{{ installCommand() }}</textarea>
-                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded border border-gray-600">Copy Command</button>
+                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded border border-gray-600">Copy All</button>
                 </div>
                 <div class="text-xs text-gray-500 mt-2 font-mono flex gap-4">
                     <span>1. Copy</span>
@@ -177,10 +177,10 @@ export class SetupWizardComponent {
   edgeNodeKey = signal('');
   showLangDropdown = signal(false);
   
-  // PROFESSIONAL INSTALL SCRIPT with Progress Bar
+  // Professional Install Script: No Git Prompts, fallback to ZIP
   manualScriptContent = `#!/bin/bash
 # Project Elaheh - Advanced Tunneling Installer
-# Version 2.0.0 (Enterprise)
+# Version 2.1.0 (Stable)
 
 set -e
 GREEN='\\033[0;32m'
@@ -200,7 +200,7 @@ cat << "EOF"
  | |   | | | (_) || |  __/ (__| |_    
  |_|   |_|  \\___/ | |\\___|\\___|\\__|   
                _/ |                   
-              |__/   ELAHEH v2.0   
+              |__/   ELAHEH v2.1   
 EOF
 echo -e "\${NC}"
 echo -e "\${BLUE}>> Starting Professional Installation... <<\${NC}"
@@ -253,14 +253,29 @@ fi
 
 INSTALL_DIR="/opt/project-elaheh"
 REPO_URL="https://github.com/EHSANKiNG/project-elaheh.git"
+ZIP_URL="https://github.com/EHSANKiNG/project-elaheh/archive/main.zip"
 
 echo -n "[+] Fetching Core System..."
-if [ -d "$INSTALL_DIR" ]; then
+mkdir -p "$INSTALL_DIR"
+
+if [ -d "$INSTALL_DIR/.git" ]; then
     (cd "$INSTALL_DIR" && git pull origin main >/dev/null 2>&1) &
     show_progress $!
 else
-    (git clone "$REPO_URL" "$INSTALL_DIR" >/dev/null 2>&1) &
-    show_progress $!
+    # Try git clone without prompt. If it fails (private/auth), fall back to zip
+    if GIT_TERMINAL_PROMPT=0 git clone --depth 1 "$REPO_URL" "$INSTALL_DIR" >/dev/null 2>&1; then
+       true
+    else
+       # Git failed (auth required or not found), try ZIP download
+       echo -e "\\n\${BLUE}[i] Git clone failed (likely private repo). Switching to Archive download...\${NC}"
+       (
+         curl -L -o /tmp/elaheh.zip "$ZIP_URL" >/dev/null 2>&1
+         unzip -o /tmp/elaheh.zip -d /tmp >/dev/null 2>&1
+         cp -r /tmp/project-elaheh-main/* "$INSTALL_DIR/"
+         rm -rf /tmp/project-elaheh-main /tmp/elaheh.zip
+       ) &
+       show_progress $!
+    fi
 fi
 cd "$INSTALL_DIR"
 echo -e " \${GREEN}Done\${NC}"
