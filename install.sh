@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.3
+# Version 1.0.4
 # Author: EHSANKiNG
 
 set -e
@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.0.3 (Fix NPM Issue)"
+echo "   Version 1.0.4 (Firewall & NPM Fix)"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -36,8 +36,8 @@ fi
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    # Fix: Added 'npm' here as a fallback, but mainly rely on nodejs package later
-    apt-get install -y -qq curl git unzip
+    # Add ufw for firewall management
+    apt-get install -y -qq curl git unzip ufw
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
     dnf install -y -q curl git unzip
 fi
@@ -111,7 +111,32 @@ cat <<EOF > src/assets/server-config.json
 }
 EOF
 
-# 9. Start Application with PM2
+# 9. Configure Firewall
+echo -e "${GREEN}[+] Configuring firewall to allow port 4200...${NC}"
+if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+    if command -v ufw &> /dev/null; then
+        ufw allow 4200/tcp > /dev/null
+        # The 'yes' pipe is to automatically answer the confirmation prompt.
+        yes | ufw enable > /dev/null
+        echo -e "${GREEN}[+] UFW enabled and port 4200 opened.${NC}"
+    else
+        echo -e "${YELLOW}[!] UFW not found. Please open port 4200 manually.${NC}"
+    fi
+elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+    if command -v firewall-cmd &> /dev/null; then
+        systemctl start firewalld &> /dev/null
+        systemctl enable firewalld &> /dev/null
+        firewall-cmd --permanent --add-port=4200/tcp > /dev/null
+        firewall-cmd --reload > /dev/null
+        echo -e "${GREEN}[+] firewalld port 4200 opened and service enabled.${NC}"
+    else
+        echo -e "${YELLOW}[!] firewalld not found. Please open port 4200 manually.${NC}"
+    fi
+else
+    echo -e "${YELLOW}[!] Could not determine firewall. Please open port 4200 manually.${NC}"
+fi
+
+# 10. Start Application with PM2
 echo -e "${GREEN}[+] Starting application with PM2...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
@@ -124,7 +149,7 @@ pm2 save --force
 # Automatically setup startup script for current user
 pm2 startup | grep "sudo" | bash || true
 
-# 10. Final Output
+# 11. Final Output
 PUBLIC_IP=$(curl -s ifconfig.me || echo "localhost")
 
 echo -e "${CYAN}"
