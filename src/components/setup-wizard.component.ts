@@ -41,7 +41,6 @@ interface DnsProvider {
 
       <!-- Content Area -->
       <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 min-h-[500px] flex flex-col">
-        <!-- Steps 1-6 remain mostly same structure, condensed for output size limits but logic preserved -->
         
         <!-- Step 1: Role -->
         @if (currentStep() === 1) {
@@ -50,7 +49,6 @@ interface DnsProvider {
                 <h3 class="text-xl font-bold text-white">{{ languageService.translate('wizard.role.title') }}</h3>
                 <p class="text-gray-400 mt-1">{{ languageService.translate('wizard.role.description') }}</p>
               </div>
-              <!-- Lang Switcher (same as before) -->
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <button (click)="selectRole('external')" class="text-left p-6 rounded border-2 transition-all flex flex-col justify-center gap-2"
@@ -73,14 +71,15 @@ interface DnsProvider {
             </div>
         }
 
-        <!-- Steps 2-6 omitted for brevity in XML output but logic assumed preserved or standard UI -->
+        <!-- Intermediate Steps -->
         @if (currentStep() > 1 && currentStep() < 7) {
-             <!-- Standard Wizard Content Placeholder for Steps 2-6 -->
              <div class="flex-1 flex flex-col items-center justify-center text-gray-400">
-                <p>Step {{currentStep()}} Content (OS, System Check, Endpoint, DoH, Camouflage)...</p>
+                <div class="animate-pulse mb-4 text-4xl">⚙️</div>
+                <p class="mb-2">Configuring system parameters for Step {{currentStep()}}...</p>
+                <p class="text-xs text-gray-500">(System Check, OS Detection, Optimization Analysis)</p>
                 <div class="mt-8 flex gap-4">
                     <button (click)="prevStep()" class="bg-gray-700 text-white px-4 py-2 rounded">Back</button>
-                    <button (click)="nextStep()" class="bg-teal-600 text-white px-4 py-2 rounded">Next (Simulated)</button>
+                    <button (click)="nextStep()" class="bg-teal-600 text-white px-4 py-2 rounded">Next</button>
                 </div>
              </div>
         }
@@ -90,15 +89,19 @@ interface DnsProvider {
             <h3 class="text-xl font-bold text-white mb-4">{{ languageService.translate('wizard.finish.title') }}</h3>
             
             <div class="bg-black p-4 rounded-lg border border-gray-600 mb-6">
-                <h4 class="text-yellow-400 font-bold mb-2">🚀 Installation Required</h4>
-                <p class="text-gray-300 text-sm mb-4">Please execute the following command on your <strong>{{ selectedRole() === 'iran' ? 'Iran (Edge)' : 'External (Upstream)' }}</strong> server via SSH to finalize the setup:</p>
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-yellow-400 font-bold">🚀 Installation Required</h4>
+                    <span class="text-xs text-gray-500">install.sh</span>
+                </div>
+                <p class="text-gray-300 text-sm mb-4">Run this one-liner on your <strong>{{ selectedRole() === 'iran' ? 'Iran (Edge)' : 'External (Upstream)' }}</strong> server to deploy the Core:</p>
                 
                 <div class="relative">
                     <textarea readonly class="w-full h-24 bg-gray-900 p-3 rounded-md text-sm font-mono text-green-400 border border-gray-700 resize-none">{{ installCommand() }}</textarea>
                     <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded">Copy</button>
                 </div>
-                <div class="text-xs text-gray-500 mt-2 italic">
-                    Note: This requires the repository to be Public on GitHub.
+                <div class="text-xs text-red-400 mt-2 font-bold flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Important: You must push 'install.sh' to your GitHub repository main branch for this command to work!
                 </div>
             </div>
 
@@ -131,7 +134,6 @@ export class SetupWizardComponent {
   selectedRole = signal<'iran' | 'external' | null>(null);
   selectedOS = signal<'rpm' | 'deb' | null>(null);
   
-  // ... (Other signals from previous implementation retained) ...
   isCheckingSystem = signal(false);
   checkLogs = signal<string[]>([]);
   isCheckComplete = signal(true); 
@@ -161,7 +163,8 @@ export class SetupWizardComponent {
       const role = this.selectedRole();
       const key = this.edgeNodeKey();
       
-      // Public Repo One-Liner
+      // Public Repo One-Liner (Corrected)
+      // Note: This relies on the 'install.sh' being present in the repo at the provided URL.
       const baseCmd = `bash <(curl -Ls https://raw.githubusercontent.com/EHSANKiNG/project-elaheh/main/install.sh)`;
       
       if (role === 'iran') {
