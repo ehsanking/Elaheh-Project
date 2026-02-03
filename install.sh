@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.2.0 (CLI Management Tool)
+# Version 1.2.1 (Robust PM2 & CLI)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.2.0"
+echo "   Version 1.2.1"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -125,8 +125,8 @@ fi
 echo -e "${GREEN}[+] Starting application on port ${PANEL_PORT}...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
-# Pass port with -- --port syntax
-pm2 start npm --name "elaheh-app" -- start -- --port ${PANEL_PORT}
+NG_PATH="$INSTALL_DIR/node_modules/.bin/ng"
+pm2 start "$NG_PATH" --name "elaheh-app" -- serve --host 0.0.0.0 --disable-host-check --port ${PANEL_PORT}
 pm2 save --force
 pm2 startup | grep "sudo" | bash || true
 
@@ -208,7 +208,8 @@ change_port() {
     pm2 stop elaheh-app 2>/dev/null || true
     pm2 delete elaheh-app 2>/dev/null || true
     cd "$INSTALL_DIR"
-    pm2 start npm --name "elaheh-app" -- start -- --port ${new_port}
+    NG_PATH="$INSTALL_DIR/node_modules/.bin/ng"
+    pm2 start "$NG_PATH" --name "elaheh-app" -- serve --host 0.0.0.0 --disable-host-check --port ${new_port}
     pm2 save --force
     
     PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
@@ -263,7 +264,14 @@ EOF
 
 chmod +x /usr/local/bin/elaheh
 
-# 11. Final Output
+# 11. Verify CLI tool creation
+if [ -s /usr/local/bin/elaheh ]; then
+    echo -e "${GREEN}[+] 'elaheh' management tool created successfully.${NC}"
+else
+    echo -e "${RED}[!] WARNING: Failed to create the 'elaheh' management tool. Manual intervention may be required.${NC}"
+fi
+
+# 12. Final Output
 PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
 
 echo ""

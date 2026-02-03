@@ -43,6 +43,13 @@ Copy and run the following command as root on your server. It handles all depend
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
+### Management (`elaheh` CLI)
+After a successful installation, a command-line tool named `elaheh` is available for easy management. Simply type `elaheh` in your terminal to access the management menu:
+*   **Update:** Pulls the latest version from GitHub.
+*   **Uninstall:** Completely removes the project.
+*   **Change Port:** Allows you to change the admin panel's port.
+*   **Install BBR:** Installs and enables Google's BBR congestion control algorithm for better network performance.
+
 ---
 
 ## 🇮🇷 فارسی (Persian)
@@ -61,6 +68,13 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
+
+### مدیریت پنل (دستور `elaheh`)
+پس از نصب موفق، ابزار خط فرمان `elaheh` برای مدیریت آسان پنل در دسترس شماست. کافیست در ترمینال سرور خود دستور `elaheh` را وارد کنید تا منوی مدیریتی برای شما نمایش داده شود:
+*   **آپدیت:** دریافت و نصب آخرین نسخه از گیت‌هاب.
+*   **حذف:** حذف کامل پروژه از روی سرور.
+*   **تغییر پورت:** امکان تغییر پورت پنل مدیریت.
+*   **نصب BBR:** نصب و فعال‌سازی الگوریتم BBR گوگل برای بهینه‌سازی و افزایش سرعت شبکه.
 
 ---
 
@@ -87,6 +101,13 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
+### 管理 (`elaheh` 命令行工具)
+成功安装后，您可以使用名为 `elaheh` 的命令行工具进行轻松管理。只需在终端中输入 `elaheh` 即可访问管理菜单：
+*   **更新:** 从 GitHub 拉取最新版本。
+*   **卸载:** 完全删除项目。
+*   **更改端口:** 允许您更改管理面板的端口。
+*   **安装 BBR:** 安装并启用谷歌的 BBR 拥塞控制算法，以获得更好的网络性能。
+
 ---
 
 ## 🇷🇺 Русский (Russian)
@@ -111,6 +132,13 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
+
+### Управление (инструмент `elaheh`)
+После успешной установки для удобного управления доступен инструмент командной строки `elaheh`. Просто введите `elaheh` в вашем терминале, чтобы получить доступ к меню управления:
+*   **Обновить:** Загружает последнюю версию с GitHub.
+*   **Удалить:** Полностью удаляет проект.
+*   **Изменить порт:** Позволяет изменить порт панели администратора.
+*   **Установить BBR:** Устанавливает и включает алгоритм контроля перегрузки Google BBR для лучшей производительности сети.
 
 **License:** MIT  
 **Author:** EHSANKiNG
