@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.2.1 (Robust PM2 & CLI)
+# Version 1.3.0 (Production Build & Serve)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.2.1"
+echo "   Version 1.3.0"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -37,23 +37,17 @@ fi
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq curl git unzip ufw
+    apt-get install -y -qq curl git unzip ufw nodejs npm
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-    dnf install -y -q curl git unzip firewalld
+    dnf install -y -q curl git unzip firewalld nodejs npm
 fi
 
-# 3. Install Node.js 20 & NPM
-if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-    echo -e "${GREEN}[+] Node.js/NPM missing. Installing Node.js 20 LTS...${NC}"
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        apt-get install -y -qq nodejs
-    else
-        dnf install -y -q nodejs
-    fi
-else
-    echo -e "${GREEN}[+] Node.js ($(node -v)) and NPM ($(npm -v)) are already installed.${NC}"
-fi
+# 3. Install/Update Node.js 20 & NPM
+echo -e "${GREEN}[+] Ensuring Node.js 20 LTS and NPM are installed...${NC}"
+npm install -g n
+n 20
+hash -r
+echo -e "${GREEN}[+] Node.js ($(node -v)) and NPM ($(npm -v)) are ready.${NC}"
 
 # 4. Install PM2
 if ! command -v pm2 &> /dev/null; then
@@ -76,11 +70,15 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# 6. Install Project Dependencies
+# 6. Install Project Dependencies (including dev for build)
 echo -e "${GREEN}[+] Installing NPM packages...${NC}"
-npm install --silent --unsafe-perm
+npm install --production=false --silent --unsafe-perm
 
-# 7. Parse Arguments & Save Configuration
+# 7. Build Angular Application for Production
+echo -e "${GREEN}[+] Building Angular application...${NC}"
+npm run build
+
+# 8. Parse Arguments & Save Configuration
 ROLE="unknown"
 KEY=""
 while [ "$#" -gt 0 ]; do
@@ -91,9 +89,12 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-mkdir -p src/assets
+PROJECT_NAME=$(node -p "require('./package.json').name")
+DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
+
+mkdir -p "$DIST_PATH/assets"
 echo -e "${GREEN}[+] Saving configuration...${NC}"
-cat <<EOF > src/assets/server-config.json
+cat <<EOF > "$DIST_PATH/assets/server-config.json"
 {
   "role": "$ROLE",
   "key": "$KEY",
@@ -101,7 +102,7 @@ cat <<EOF > src/assets/server-config.json
 }
 EOF
 
-# 8. Set Initial Port & Configure Firewall
+# 9. Set Initial Port & Configure Firewall
 PANEL_PORT=4200
 CONF_FILE="$INSTALL_DIR/elaheh.conf"
 echo "PORT=$PANEL_PORT" > "$CONF_FILE"
@@ -121,16 +122,15 @@ elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedo
     fi
 fi
 
-# 9. Start Application with PM2
+# 10. Start Application with PM2 (serving static build)
 echo -e "${GREEN}[+] Starting application on port ${PANEL_PORT}...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
-NG_PATH="$INSTALL_DIR/node_modules/.bin/ng"
-pm2 start "$NG_PATH" --name "elaheh-app" -- serve --host 0.0.0.0 --disable-host-check --port ${PANEL_PORT}
+pm2 serve "$DIST_PATH" ${PANEL_PORT} --name "elaheh-app" --spa
 pm2 save --force
 pm2 startup | grep "sudo" | bash || true
 
-# 10. Create 'elaheh' CLI tool
+# 11. Create 'elaheh' CLI tool
 echo -e "${GREEN}[+] Creating 'elaheh' management tool...${NC}"
 cat <<'EOF' > /usr/local/bin/elaheh
 #!/bin/bash
@@ -156,7 +156,8 @@ update_app() {
     cd "$INSTALL_DIR"
     git reset --hard
     git pull origin main
-    npm install --silent --unsafe-perm
+    npm install --production=false --silent --unsafe-perm
+    npm run build
     pm2 restart elaheh-app
     echo -e "${GREEN}Update complete!${NC}"
 }
@@ -208,8 +209,9 @@ change_port() {
     pm2 stop elaheh-app 2>/dev/null || true
     pm2 delete elaheh-app 2>/dev/null || true
     cd "$INSTALL_DIR"
-    NG_PATH="$INSTALL_DIR/node_modules/.bin/ng"
-    pm2 start "$NG_PATH" --name "elaheh-app" -- serve --host 0.0.0.0 --disable-host-check --port ${new_port}
+    PROJECT_NAME=$(node -p "require('./package.json').name")
+    DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
+    pm2 serve "$DIST_PATH" ${new_port} --name "elaheh-app" --spa
     pm2 save --force
     
     PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
@@ -264,14 +266,14 @@ EOF
 
 chmod +x /usr/local/bin/elaheh
 
-# 11. Verify CLI tool creation
+# 12. Verify CLI tool creation
 if [ -s /usr/local/bin/elaheh ]; then
     echo -e "${GREEN}[+] 'elaheh' management tool created successfully.${NC}"
 else
     echo -e "${RED}[!] WARNING: Failed to create the 'elaheh' management tool. Manual intervention may be required.${NC}"
 fi
 
-# 12. Final Output
+# 13. Final Output
 PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
 
 echo ""
