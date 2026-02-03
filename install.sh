@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.2 (Hardened Debian/Ubuntu Installer)
+# Version 1.3.3 (Reverted to Official NodeSource Script)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.2"
+echo "   Version 1.3.3"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -37,26 +37,18 @@ fi
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y -qq
-    # Install prerequisites for adding repositories first
-    apt-get install -y -qq ca-certificates curl gnupg
-    # Forcefully try to fix any remaining broken package issues. -f is an alias for --fix-broken.
+    # Install prerequisites and try to fix any existing broken package issues.
+    apt-get install -y -qq ca-certificates curl
     apt-get install -f -y -qq
     
-    # Install Node.js 20 using the official NodeSource repository (robust method)
+    # Install Node.js 20 using the official NodeSource setup script. This is the most reliable method.
     echo -e "${GREEN}[+] Setting up Node.js 20 LTS repository...${NC}"
-    KEYRING_DIR="/etc/apt/keyrings"
-    mkdir -p "$KEYRING_DIR"
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o "$KEYRING_DIR/nodesource.gpg"
-    
-    # Get OS codename
-    . /etc/os-release
-    
-    # Create the repo file
-    echo "deb [signed-by=$KEYRING_DIR/nodesource.gpg] https://deb.nodesource.com/node_20.x $VERSION_CODENAME main" | tee /etc/apt/sources.list.d/nodesource.list > /dev/null
+    # The script handles adding GPG keys and the correct sources list for the detected distribution.
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
     
     echo -e "${GREEN}[+] Installing Node.js and other dependencies...${NC}"
+    # We need to update again after adding the new repo
     apt-get update -y -qq
-    # Using a single install command is better for dependency resolution
     apt-get install -y -qq nodejs git unzip ufw
 
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
