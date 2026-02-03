@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/EHSANKiNG/project-elaheh)
+  [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/EHSANKiNG/project-elaheh)
   
   **Internet Freedom for Everyone or No One**
 </div>
@@ -37,7 +37,7 @@ This software is developed strictly for **educational purposes** and to ensure *
 
 ### Installation (Standard One-Liner)
 
-This script automatically handles dependencies and avoids GitHub credential prompts.
+This script automatically handles dependencies and avoids GitHub credential prompts by using robust fallback strategies.
 
 ```bash
 cat << 'EOF' > install.sh
@@ -53,16 +53,27 @@ elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
-# Try Git clone, fallback to ZIP if auth fails (avoids password prompt)
-if [ ! -d "$INSTALL_DIR" ]; then
-    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
-        echo "Git clone restricted. Downloading Archive..."
-        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
-        unzip -o /tmp/elaheh.zip -d /tmp
-        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+
+download_and_extract() {
+    URL="$1"
+    echo "Trying $URL..."
+    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
+    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
+        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
+        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
+        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
+        return 0
     fi
-else
-    cd "$INSTALL_DIR" && git pull origin main || true
+    return 1
+}
+
+# Try Release Tag -> Main -> Master
+if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+    fi
 fi
 
 cd "$INSTALL_DIR"
@@ -87,7 +98,7 @@ chmod +x install.sh
 ۳. **عدم ضمانت:** هیچ تضمینی برای پایداری ۱۰۰٪ وجود ندارد.
 
 ### نصب آسان (تک خطی)
-این دستور مشکل درخواست نام کاربری گیت‌هاب را حل می‌کند:
+این دستور مشکل درخواست نام کاربری گیت‌هاب را حل می‌کند و فایل‌ها را با اولویت نسخه Release دانلود می‌کند:
 
 ```bash
 cat << 'EOF' > install.sh
@@ -102,15 +113,27 @@ elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
-if [ ! -d "$INSTALL_DIR" ]; then
-    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
-        echo "Git clone restricted. Downloading Archive..."
-        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
-        unzip -o /tmp/elaheh.zip -d /tmp
-        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+
+download_and_extract() {
+    URL="$1"
+    echo "Trying $URL..."
+    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
+    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
+        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
+        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
+        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
+        return 0
     fi
-else
-    cd "$INSTALL_DIR" && git pull origin main || true
+    return 1
+}
+
+# Priority: Tag v2.2.0 -> Main -> Master
+if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+    fi
 fi
 
 cd "$INSTALL_DIR"
@@ -141,7 +164,7 @@ chmod +x install.sh
 *   **系统:** Ubuntu 20.04+, Debian 11+, Rocky Linux 9
 
 ### 安装 (一键脚本)
-请复制以下代码块并在终端运行。此脚本已修复 GitHub 密码提示问题：
+请复制以下代码块并在终端运行。此脚本已修复 GitHub 密码提示问题，优先下载 Release 版本：
 
 ```bash
 cat << 'EOF' > install.sh
@@ -156,16 +179,26 @@ elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
-if [ ! -d "$INSTALL_DIR" ]; then
-    # 尝试 Git 克隆，如果需要密码则自动切换到 ZIP 下载
-    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
-        echo "Git authentication required. Switching to ZIP download..."
-        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
-        unzip -o /tmp/elaheh.zip -d /tmp
-        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+
+download_and_extract() {
+    URL="$1"
+    echo "Trying $URL..."
+    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
+    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
+        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
+        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
+        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
+        return 0
     fi
-else
-    cd "$INSTALL_DIR" && git pull origin main || true
+    return 1
+}
+
+if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+    fi
 fi
 
 cd "$INSTALL_DIR"
@@ -196,7 +229,7 @@ chmod +x install.sh
 *   **ОС:** Ubuntu 20.04+, Debian 11+, Rocky Linux 9
 
 ### Установка (Одной строкой)
-Скопируйте и запустите этот блок. Он автоматически скачивает ZIP-архив, если Git требует пароль:
+Скопируйте и запустите этот блок. Он автоматически скачивает ZIP-архив с проверкой целостности:
 
 ```bash
 cat << 'EOF' > install.sh
@@ -211,16 +244,26 @@ elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
 fi
 
 INSTALL_DIR="/opt/project-elaheh"
-if [ ! -d "$INSTALL_DIR" ]; then
-    # Если Git требует пароль, используем ZIP
-    if ! GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/EHSANKiNG/project-elaheh.git "$INSTALL_DIR" 2>/dev/null; then
-        echo "Git clone failed. Downloading archive..."
-        curl -L -o /tmp/elaheh.zip https://github.com/EHSANKiNG/project-elaheh/archive/main.zip
-        unzip -o /tmp/elaheh.zip -d /tmp
-        mv /tmp/project-elaheh-main "$INSTALL_DIR"
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+
+download_and_extract() {
+    URL="$1"
+    echo "Trying $URL..."
+    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
+    if [ "$HTTP_CODE" -eq 200 ] && [ $(wc -c < /tmp/elaheh.zip) -gt 1000 ]; then
+        unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract
+        mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
+        rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
+        return 0
     fi
-else
-    cd "$INSTALL_DIR" && git pull origin main || true
+    return 1
+}
+
+if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
+    if ! download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
+        download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"
+    fi
 fi
 
 cd "$INSTALL_DIR"

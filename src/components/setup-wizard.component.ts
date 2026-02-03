@@ -148,10 +148,10 @@ export class SetupWizardComponent {
   edgeNodeKey = signal('');
   showLangDropdown = signal(false);
 
-  // Robust Script
+  // Updated Robust Script with Version Targeting and Fallback
   manualScriptContent = `#!/bin/bash
 # Project Elaheh Installer v2.2.0
-# Auto-detects OS and installs via ZIP to avoid Git auth issues.
+# Auto-detects OS and installs via ZIP (Releases/Main) to avoid Git auth issues.
 
 set -e
 
@@ -180,18 +180,53 @@ if ! command -v node &> /dev/null; then
     apt-get install -y nodejs || dnf install -y nodejs
 fi
 
-# 3. Clean Install via ZIP (Bypasses Git Password Prompt)
+# 3. Download Project (Robust Method with Fallbacks)
 INSTALL_DIR="/opt/project-elaheh"
 rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 
-echo ">>> Downloading Project Archive..."
-curl -L -o /tmp/elaheh.zip "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"
+download_and_extract() {
+    URL="$1"
+    echo ">>> Trying to download: $URL"
+    # Download, verify HTTP 200, save to temp
+    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
+    
+    if [ "$HTTP_CODE" -eq 200 ]; then
+        # Check if file is actually a zip (size > 1000 bytes prevents downloading small 404 pages)
+        FILE_SIZE=$(wc -c < /tmp/elaheh.zip)
+        if [ "$FILE_SIZE" -gt 1000 ]; then
+            echo ">>> Download successful. Extracting..."
+            if unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract; then
+                # Move content (handles variable root folder names from GitHub)
+                mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
+                rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
+                return 0
+            else
+                echo ">>> Warning: Downloaded file is corrupt. Trying next source..."
+            fi
+        else
+            echo ">>> Warning: File too small (likely 404 text). Trying next source..."
+        fi
+    else
+        echo ">>> Warning: HTTP $HTTP_CODE. Trying next source..."
+    fi
+    return 1
+}
 
-echo ">>> Extracting..."
-unzip -o /tmp/elaheh.zip -d /tmp/elaheh-extract
-mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/"
-rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
+echo ">>> Downloading Project Archive..."
+# Priority 1: Specific Release Tag (v2.2.0) - Best for Stability
+if download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/tags/v2.2.0.zip"; then
+    echo ">>> Version v2.2.0 Installed."
+# Priority 2: Main Branch - Latest Code
+elif download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/main.zip"; then
+    echo ">>> Main Branch Installed."
+# Priority 3: Master Branch - Legacy Fallback
+elif download_and_extract "https://github.com/EHSANKiNG/project-elaheh/archive/refs/heads/master.zip"; then
+    echo ">>> Master Branch Installed."
+else
+    echo ">>> ERROR: Failed to download repository. Please check internet connection or repo visibility."
+    exit 1
+fi
 
 cd "$INSTALL_DIR"
 
