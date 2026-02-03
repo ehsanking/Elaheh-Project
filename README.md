@@ -1,6 +1,9 @@
 # Project Elaheh - Advanced Tunneling Management System
 
-**Version:** 1.0.0  
+> **"اینترنت آزاد برای همه یا هیچکس"**  
+> **"Free Internet for everyone or no one."**
+
+**Version:** 1.0.1  
 **Creator:** EHSANKiNG
 
 Project Elaheh is a sophisticated, web-based management dashboard designed to facilitate secure, high-performance tunneling between domestic servers (Edge/Iran) and foreign upstream servers. It leverages modern obfuscation techniques, automated routing optimization, and a user-friendly interface to manage VLESS, VMess, and SSH/IAP connections.
@@ -26,24 +29,19 @@ Project Elaheh is a sophisticated, web-based management dashboard designed to fa
 - **Auto-Pilot Mode:** Continuously monitors connection quality (every 10 minutes) across multiple providers (Cloudflare, AWS, Hetzner, Blockchain relays) and switches to the lowest latency route.
 - **Camouflage Traffic:** Simulates realistic traffic patterns (AI Training, E-Commerce, Media Streaming) to mask tunnel activity.
 
-### 4. User Management
-- **Auto-Generate:** Create a user and automatically generate subscription links for all available protocols using randomized subdomains.
-- **Client Area:** Dedicated subscription page for users to view configs and scan QR codes.
-- **QR Code Support:** Integrated QR generation for easy mobile connection.
-
-### 5. Advanced Networking
-- **NAT Traversal:** STUN/TURN support for servers behind restrictive firewalls.
-- **DoH (DNS over HTTPS):** Encrypted DNS resolution.
-- **Subdomain Manager:** Auto-generates and manages clean subdomains for config links.
-
 ## Installation
 
-### Prerequisites
-- **OS:** Rocky Linux (Preferred) or Debian/Ubuntu.
-- **Node.js:** v18+.
-- **Angular:** v17+.
+**Note:** This repository must be **Public** for the easy install script to work without authentication.
 
-### Quick Start
+### One-Line Install (Recommended)
+
+Run this command on your VPS (Debian/Ubuntu/Rocky Linux):
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/EHSANKiNG/project-elaheh/main/install.sh)
+```
+
+### Manual Installation
 
 1.  **Clone the Repository:**
     ```bash
@@ -62,14 +60,12 @@ Project Elaheh is a sophisticated, web-based management dashboard designed to fa
     ```
     Access the panel at `http://localhost:4200`.
 
-### Server Deployment
+## Server Deployment
 
 Use the built-in **Setup Wizard** on the first run. It will guide you through:
 1.  Selecting Server Role (Iran vs. External).
 2.  System checks.
 3.  Generating the final installation command.
-
-Run the generated command on your VPS to install the backend core services.
 
 ## Usage Guide
 

@@ -2,8 +2,9 @@ import { Injectable, signal, computed, effect } from '@angular/core';
 import { GoogleGenAI, GenerateContentResponse, GenerateContentParameters } from "@google/genai";
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.1';
 export const APP_AUTHOR = 'EHSANKiNG';
+export const APP_SLOGAN = 'اینترنت آزاد برای همه یا هیچکس - Free Internet for everyone or no one';
 
 // --- Interfaces ---
 export interface LinkConfig {
@@ -293,6 +294,7 @@ export class ElahehCoreService {
   constructor() {
     this.initSimulatedMetrics();
     this.addLog('INFO', `Elaheh Core Service Initialized v${APP_VERSION}`);
+    this.addLog('INFO', APP_SLOGAN);
     
     const apiKey = process.env.API_KEY;
     if (apiKey) { this.ai = new GoogleGenAI({ apiKey }); }

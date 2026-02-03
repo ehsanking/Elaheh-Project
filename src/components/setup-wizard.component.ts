@@ -74,7 +74,6 @@ interface DnsProvider {
         }
 
         <!-- Steps 2-6 omitted for brevity in XML output but logic assumed preserved or standard UI -->
-        <!-- Just handling the key transitions required by the user prompt -->
         @if (currentStep() > 1 && currentStep() < 7) {
              <!-- Standard Wizard Content Placeholder for Steps 2-6 -->
              <div class="flex-1 flex flex-col items-center justify-center text-gray-400">
@@ -97,6 +96,9 @@ interface DnsProvider {
                 <div class="relative">
                     <textarea readonly class="w-full h-24 bg-gray-900 p-3 rounded-md text-sm font-mono text-green-400 border border-gray-700 resize-none">{{ installCommand() }}</textarea>
                     <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded">Copy</button>
+                </div>
+                <div class="text-xs text-gray-500 mt-2 italic">
+                    Note: This requires the repository to be Public on GitHub.
                 </div>
             </div>
 
@@ -132,7 +134,7 @@ export class SetupWizardComponent {
   // ... (Other signals from previous implementation retained) ...
   isCheckingSystem = signal(false);
   checkLogs = signal<string[]>([]);
-  isCheckComplete = signal(true); // Simulating checks for brevity
+  isCheckComplete = signal(true); 
   dnsProviders = signal<DnsProvider[]>([]);
   isDnsTestingComplete = signal(true);
   selectedStrategy = signal<EndpointType | null>(null);
@@ -157,14 +159,15 @@ export class SetupWizardComponent {
 
   installCommand = computed(() => {
       const role = this.selectedRole();
-      const os = this.selectedOS() || 'deb';
-      const pkgMgr = os === 'deb' ? 'apt-get' : 'dnf';
       const key = this.edgeNodeKey();
       
+      // Public Repo One-Liner
+      const baseCmd = `bash <(curl -Ls https://raw.githubusercontent.com/EHSANKiNG/project-elaheh/main/install.sh)`;
+      
       if (role === 'iran') {
-          return `sudo ${pkgMgr} update && sudo ${pkgMgr} install -y curl && curl -fsSL https://get.elaheh.run/install.sh | sudo bash -s -- --role edge --key ${key}`;
+          return `${baseCmd} --role edge --key ${key}`;
       } else {
-          return `sudo ${pkgMgr} update && sudo ${pkgMgr} install -y curl && curl -fsSL https://get.elaheh.run/install.sh | sudo bash -s -- --role upstream`;
+          return `${baseCmd} --role upstream`;
       }
   });
 
@@ -184,7 +187,6 @@ export class SetupWizardComponent {
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
   selectOS(os: 'rpm' | 'deb') { this.selectedOS.set(os); this.core.selectedOS.set(os); }
   
-  // Simplified Logic for Demo
   runSystemCheck() { this.isCheckingSystem.set(true); setTimeout(() => { this.isCheckComplete.set(true); this.isDnsTestingComplete.set(true); }, 1000); }
   selectStrategy(type: EndpointType) { this.selectedStrategy.set(type); }
   confirmArchitecture() { this.isArchitectureConfirmed.set(true); }
