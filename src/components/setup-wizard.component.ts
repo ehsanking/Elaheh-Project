@@ -17,12 +17,33 @@ interface DnsProvider {
   imports: [CommonModule, FormsModule],
   template: `
     <div class="p-6 max-w-5xl mx-auto">
-      <h2 class="text-2xl font-bold text-teal-400 mb-6 flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-        </svg>
-        {{ languageService.translate('wizard.title') }}
-      </h2>
+      
+      <!-- Header with Language Switcher -->
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-teal-400 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+            {{ languageService.translate('wizard.title') }}
+        </h2>
+
+        <div class="relative">
+            <button (click)="showLangDropdown.set(!showLangDropdown())" class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-black/5 dark:bg-black/30 px-3 py-1.5 rounded border border-gray-200 dark:border-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9V3" /></svg>
+                <span>{{ languageService.getCurrentLanguageName() }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+            </button>
+            @if(showLangDropdown()) {
+                <div class="fixed inset-0 z-20" (click)="showLangDropdown.set(false)"></div>
+                <div class="absolute top-full right-0 mt-2 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-30">
+                <button (click)="setLanguage('en')" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">🇬🇧 English</button>
+                <button (click)="setLanguage('fa')" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">🇮🇷 فارسی</button>
+                <button (click)="setLanguage('zh')" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">🇨🇳 中文</button>
+                <button (click)="setLanguage('ru')" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">🇷🇺 Русский</button>
+                </div>
+            }
+        </div>
+      </div>
 
       <!-- Progress Steps -->
       <div class="flex justify-between mb-8 border-b border-gray-700 pb-4">
@@ -93,23 +114,22 @@ interface DnsProvider {
                 <div class="flex justify-between items-center mb-2">
                     <h4 class="text-green-400 font-bold flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        OFFLINE INSTALLATION (Fixed)
+                        Standard Install Command (Guaranteed)
                     </h4>
-                    <span class="text-xs text-gray-500">Method: Base64 Injection</span>
+                    <span class="text-xs text-gray-500">Method: Direct Write</span>
                 </div>
 
                 <p class="text-gray-300 text-sm mb-4">
-                    Since the GitHub file is unreachable (404), copy this command. 
-                    It <strong>generates the installer directly on your server</strong> without downloading anything.
+                    Copy and paste the block below into your terminal. This creates the installation script locally and runs it, <strong>avoiding all 404 errors</strong>.
                 </p>
                 
                 <div class="relative">
-                    <textarea readonly class="w-full h-48 bg-gray-900 p-3 rounded-md text-xs font-mono text-green-400 border border-gray-700 resize-none break-all outline-none focus:border-green-500 transition-colors" (click)="$event.target.select()">{{ installCommand() }}</textarea>
-                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded border border-gray-600">Copy Command</button>
+                    <textarea readonly class="w-full h-48 bg-gray-900 p-3 rounded-md text-xs font-mono text-green-400 border border-gray-700 resize-none break-all outline-none focus:border-green-500 transition-colors whitespace-pre" (click)="$event.target.select()">{{ installCommand() }}</textarea>
+                    <button (click)="copyCommand()" class="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded border border-gray-600">Copy All</button>
                 </div>
                 <div class="text-xs text-gray-500 mt-2 font-mono flex gap-4">
                     <span>1. Copy</span>
-                    <span>2. Paste in VPS Terminal</span>
+                    <span>2. Paste in VPS</span>
                     <span>3. Press Enter</span>
                 </div>
             </div>
@@ -232,19 +252,20 @@ npm start`;
       const role = this.selectedRole();
       const key = this.edgeNodeKey();
       
-      // UTF-8 Safe Base64 Encoding of the script
-      const base64Script = btoa(unescape(encodeURIComponent(this.manualScriptContent)));
+      // Instead of Base64 injection which can be confusing or fail on some stripped systems,
+      // we use a standard 'cat << EOF' heredoc block. This is the most reliable way 
+      // to create a file without external fetching.
       
-      // Generate Self-Extracting Command
-      // This command creates the file from base64, makes it executable, and runs it.
-      // This completely bypasses the need for the file to exist on GitHub.
-      const baseCmd = `echo "${base64Script}" | base64 -d > install.sh && chmod +x install.sh && ./install.sh`;
+      let cmd = `cat << 'EOF' > install.sh\n${this.manualScriptContent}\nEOF\n`;
+      cmd += `chmod +x install.sh && ./install.sh`;
       
       if (role === 'iran') {
-          return `${baseCmd} --role edge --key ${key}`;
+          cmd += ` --role edge --key ${key}`;
       } else {
-          return `${baseCmd} --role upstream`;
+          cmd += ` --role upstream`;
       }
+      
+      return cmd;
   });
 
   nextStep() {
