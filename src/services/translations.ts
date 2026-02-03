@@ -152,7 +152,7 @@ export const translations: any = {
     wizard: {
       title: 'Setup Wizard',
       role: { title: 'Server Role', description: 'Select the role of this server.', germany: 'Upstream (Foreign)', germanyDesc: 'Located outside Iran (e.g., Germany, Netherlands).', iran: 'Edge (Iran)', iranDesc: 'Located inside Iran (Tunnel Entry).', next: 'Next Step' },
-      finish: { title: 'Installation Command', description: 'Run this command on your server terminal.', key: 'Connection Key' },
+      finish: { title: 'Generated Server Command', description: 'Copy the command below and run it as root on your server. After installation, access the panel using the URL shown in your terminal.', key: 'Connection Key', doneButton: 'Done' },
       steps: { serverRole: 'Role', selectOS: 'OS', systemCheck: 'Check', endpoint: 'Strategy', doh: 'DoH', camouflage: 'Camouflage', finalConfig: 'Install' },
       endpoint: {
           cdn: 'CDN Relay', cdnTag: 'High Availability', cdnDesc: 'Uses Cloudflare/ArvanCloud workers.',
@@ -366,7 +366,7 @@ export const translations: any = {
     wizard: {
       title: 'نصب و راه‌اندازی',
       role: { title: 'نقش سرور', description: 'نقش این سرور را مشخص کنید.', germany: 'سرور خارج (Upstream)', germanyDesc: 'دیتاسنتر خارجی (واسط).', iran: 'سرور ایران (Edge)', iranDesc: 'دیتاسنتر داخلی (ترافیک نیم‌بها).', next: 'مرحله بعد' },
-      finish: { title: 'دستور نصب', description: 'این دستور را در ترمینال کپی کنید.', key: 'لایسنس کی' },
+      finish: { title: 'دستور نصب سرور', description: 'دستور زیر را کپی کرده و به عنوان کاربر root در ترمینال سرور خود اجرا کنید. پس از اتمام نصب، از طریق آدرس نمایش داده شده در ترمینال به پنل دسترسی پیدا کنید.', key: 'لایسنس کی', doneButton: 'اتمام' },
       steps: { serverRole: 'نقش', selectOS: 'سیستم‌عامل', systemCheck: 'بررسی', endpoint: 'استراتژی', doh: 'DNS', camouflage: 'استتار', finalConfig: 'نصب' },
       endpoint: {
           cdn: 'رله CDN', cdnTag: 'آپتایم بالا', cdnDesc: 'استفاده از ورکر Cloudflare/Arvan.',
@@ -558,7 +558,7 @@ export const translations: any = {
     wizard: {
       title: '设置向导',
       role: { title: '服务器角色', description: '选择此服务器的角色。', germany: '上游 (国外)', germanyDesc: '位于伊朗境外 (例如德国、荷兰)。', iran: '边缘 (伊朗)', iranDesc: '位于伊朗境内 (隧道入口)。', next: '下一步' },
-      finish: { title: '安装命令', description: '在您的服务器终端上运行此命令。', key: '连接密钥' },
+      finish: { title: '生成的服务器命令', description: '复制下面的命令，并在您的服务器终端上以 root 用户身份运行。安装完成后，使用终端中显示的 URL 访问面板。', key: '连接密钥', doneButton: '完成' },
       steps: { serverRole: '角色', selectOS: '操作系统', systemCheck: '检查', endpoint: '策略', doh: 'DoH', camouflage: '伪装', finalConfig: '安装' },
       endpoint: {
           cdn: 'CDN中继', cdnTag: '高可用性', cdnDesc: '使用Cloudflare/ArvanCloud workers。',
@@ -750,7 +750,7 @@ export const translations: any = {
     wizard: {
       title: 'Мастер установки',
       role: { title: 'Роль сервера', description: 'Выберите роль этого сервера.', germany: 'Внешний (Upstream)', germanyDesc: 'Расположен за пределами Ирана (например, Германия).', iran: 'Пограничный (Edge)', iranDesc: 'Расположен внутри Ирана (вход в туннель).', next: 'Далее' },
-      finish: { title: 'Команда установки', description: 'Выполните эту команду в терминале вашего сервера.', key: 'Ключ подключения' },
+      finish: { title: 'Сгенерированная команда для сервера', description: 'Скопируйте команду ниже и выполните ее от имени root в терминале вашего сервера. После завершения установки, получите доступ к панели по URL, указанному в терминале.', key: 'Ключ подключения', doneButton: 'Готово' },
       steps: { serverRole: 'Роль', selectOS: 'ОС', systemCheck: 'Проверка', endpoint: 'Стратегия', doh: 'DoH', camouflage: 'Маскировка', finalConfig: 'Установка' },
       endpoint: {
           cdn: 'CDN-реле', cdnTag: 'Высокая доступность', cdnDesc: 'Использует воркеры Cloudflare/ArvanCloud.',

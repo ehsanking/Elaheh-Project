@@ -107,7 +107,7 @@ import { FormsModule } from '@angular/forms';
                     </div>
                     
                     <div class="relative">
-                        <textarea readonly class="w-full h-64 bg-transparent p-2 rounded-md text-xs font-mono text-gray-300 border-none resize-none outline-none focus:ring-0 whitespace-pre scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent" (click)="$event.target.select()">{{ installCommand() }}</textarea>
+                        <textarea readonly class="w-full h-24 bg-transparent p-2 rounded-md text-xs font-mono text-gray-300 border-none resize-none outline-none focus:ring-0 whitespace-pre scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent" (click)="$event.target.select()">{{ installCommand() }}</textarea>
                         <button (click)="copyCommand()" class="absolute top-0 right-0 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 transition-colors flex items-center gap-2">
                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                             {{ languageService.translate('common.copy') }}
@@ -129,7 +129,7 @@ import { FormsModule } from '@angular/forms';
                         {{ languageService.translate('common.back') }}
                     </button>
                     <button (click)="finishSetup()" class="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg transform hover:scale-105">
-                        Enter Dashboard
+                        {{ languageService.translate('wizard.finish.doneButton') }}
                     </button>
                 </div>
             </div>
@@ -148,110 +148,18 @@ export class SetupWizardComponent {
   edgeNodeKey = signal('');
   showLangDropdown = signal(false);
 
-  // Updated Robust Script with Version Targeting and Fallback
-  manualScriptContent = `#!/bin/bash
-# Project Elaheh Installer v2.2.0
-# Auto-detects OS and installs via ZIP (Releases/Main) to avoid Git auth issues.
-
-set -e
-
-echo ">>> Initializing Installer..."
-
-# 1. OS Detection & Dependency Install
-if [ -f /etc/os-release ]; then . /etc/os-release; fi
-echo ">>> Detected OS: $NAME"
-
-if [[ "$NAME" == *"Ubuntu"* ]] || [[ "$NAME" == *"Debian"* ]]; then
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq
-    apt-get install -y -qq curl unzip nodejs sqlite3
-elif [[ "$NAME" == *"CentOS"* ]] || [[ "$NAME" == *"Rocky"* ]]; then
-    dnf install -y -q curl unzip nodejs sqlite3
-else
-    echo "Unsupported OS. Proceeding with generic assumptions..."
-    command -v curl >/dev/null || { echo "curl not found"; exit 1; }
-    command -v unzip >/dev/null || { echo "unzip not found"; exit 1; }
-fi
-
-# 2. Node.js Check
-if ! command -v node &> /dev/null; then
-    echo ">>> Installing Node.js..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs || dnf install -y nodejs
-fi
-
-# 3. Download Project (Robust Method with Fallbacks)
-INSTALL_DIR="/opt/project-elaheh"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
-download_and_extract() {
-    URL="$1"
-    echo ">>> Trying to download: $URL"
-    # Download, verify HTTP 200, save to temp
-    HTTP_CODE=$(curl -L -w "%{http_code}" -o /tmp/elaheh.zip "$URL")
-    
-    if [ "$HTTP_CODE" -eq 200 ]; then
-        # Check if file is actually a zip (size > 1000 bytes prevents downloading small 404 pages)
-        FILE_SIZE=$(wc -c < /tmp/elaheh.zip)
-        if [ "$FILE_SIZE" -gt 1000 ]; then
-            echo ">>> Download successful. Extracting..."
-            if unzip -o -q /tmp/elaheh.zip -d /tmp/elaheh-extract; then
-                # Move content (handles variable root folder names from GitHub)
-                mv /tmp/elaheh-extract/*/* "$INSTALL_DIR/" 2>/dev/null || mv /tmp/elaheh-extract/* "$INSTALL_DIR/"
-                rm -rf /tmp/elaheh.zip /tmp/elaheh-extract
-                return 0
-            else
-                echo ">>> Warning: Downloaded file is corrupt. Trying next source..."
-            fi
-        else
-            echo ">>> Warning: File too small (likely 404 text). Trying next source..."
-        fi
-    else
-        echo ">>> Warning: HTTP $HTTP_CODE. Trying next source..."
-    fi
-    return 1
-}
-
-echo ">>> Downloading Project Archive..."
-# Priority 1: Specific Release Tag (v2.2.0) - Best for Stability
-if download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/tags/v2.2.0.zip"; then
-    echo ">>> Version v2.2.0 Installed."
-# Priority 2: Main Branch - Latest Code
-elif download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip"; then
-    echo ">>> Main Branch Installed."
-# Priority 3: Master Branch - Legacy Fallback
-elif download_and_extract "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/master.zip"; then
-    echo ">>> Master Branch Installed."
-else
-    echo ">>> ERROR: Failed to download repository. Please check internet connection or repo visibility."
-    exit 1
-fi
-
-cd "$INSTALL_DIR"
-
-# 4. Install Node Modules
-echo ">>> Installing Dependencies..."
-npm install --silent --production
-
-# 5. Configuration
-echo ">>> Applying Configuration..."
-mkdir -p src/assets
-cat <<EOF > src/assets/server-config.json
-{ "role": "__ROLE__", "key": "__KEY__", "installedAt": "$(date)" }
-EOF
-
-echo ">>> Starting Service..."
-# Use nohup or systemd in real deployment. Here we just start.
-npm start &
-
-echo ">>> DONE! Dashboard is running on port 4200"`;
-
   installCommand = computed(() => {
-      const role = this.selectedRole() || 'unknown';
+    const role = this.selectedRole();
+    if (!role) return '';
+
+    const baseUrl = "bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)";
+    
+    if (role === 'iran') {
       const key = this.edgeNodeKey();
-      let script = this.manualScriptContent.replace('__ROLE__', role).replace('__KEY__', key);
-      return `cat << 'EOF' > install.sh\n${script}\nEOF\nchmod +x install.sh && ./install.sh`;
+      return `${baseUrl} --role iran --key ${key}`;
+    } else {
+      return `${baseUrl} --role external`;
+    }
   });
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
