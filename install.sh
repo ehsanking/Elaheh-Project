@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.4 (Ensure lsb-release and unhide logs)
+# Version 1.3.5 (Direct Node.js Binary Install)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.4"
+echo "   Version 1.3.5"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -37,27 +37,37 @@ fi
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y -qq
-    # Install prerequisites including lsb-release for OS detection, and fix any broken packages.
-    apt-get install -y -qq ca-certificates curl lsb-release
-    apt-get install -f -y -qq
+    # Install standard dependencies, but not Node.js via apt. xz-utils is needed for decompression.
+    apt-get install -y -qq curl git unzip ufw xz-utils
     
-    # Install Node.js 20 using the official NodeSource setup script.
-    echo -e "${GREEN}[+] Setting up Node.js 20 LTS repository...${NC}"
-    # The script uses lsb-release to find the correct distribution codename.
-    # Output is no longer hidden to allow for debugging if it fails.
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    echo -e "${GREEN}[+] Using direct binary installation for Node.js to ensure compatibility...${NC}"
     
-    echo -e "${GREEN}[+] Installing Node.js and other dependencies...${NC}"
-    # We need to update again after adding the new repo
-    apt-get update -y -qq
-    apt-get install -y -qq nodejs git unzip ufw
+    NODE_VERSION="v20.15.1" # Using a specific LTS version
+    
+    # Detect architecture
+    MACHINE_ARCH=$(uname -m)
+    if [ "${MACHINE_ARCH}" == "x86_64" ]; then
+        NODE_ARCH="x64"
+    elif [ "${MACHINE_ARCH}" == "aarch64" ]; then
+        NODE_ARCH="arm64"
+    else
+        echo -e "${RED}Error: Unsupported architecture '${MACHINE_ARCH}'. Only x86_64 and aarch64 are supported.${NC}"
+        exit 1
+    fi
+    
+    DOWNLOAD_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
+    echo -e "${GREEN}[+] Downloading Node.js from ${DOWNLOAD_URL}...${NC}"
+    curl -L "${DOWNLOAD_URL}" -o "/tmp/node.tar.xz"
+    
+    echo -e "${GREEN}[+] Installing Node.js to /usr/local/...${NC}"
+    tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
+    rm "/tmp/node.tar.xz"
 
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
     dnf install -y -q curl git unzip firewalld
     
-    # Install Node.js 20
     echo -e "${GREEN}[+] Installing Node.js 20 LTS...${NC}"
-    dnf module reset -y nodejs &> /dev/null # Reset to be safe
+    dnf module reset -y nodejs &> /dev/null
     dnf module enable -y nodejs:20 &> /dev/null
     dnf install -y -q nodejs
 fi
