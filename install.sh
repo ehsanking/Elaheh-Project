@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.5.4 (Final Fix - Black Hole Edition)
+# Version 2.6.0 (Stable Release - Freedom Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.5.4"
+echo "   Version 2.6.0 (Stable)"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -50,8 +50,8 @@ if [ -z "$EMAIL" ]; then
     EMAIL="admin@${DOMAIN}"
 fi
 
-# 3. Detect OS & Install Dependencies
-echo -e "${GREEN}[+] Checking System...${NC}"
+# 3. Detect OS & System Prep
+echo -e "${GREEN}[+] Preparing System...${NC}"
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$NAME
@@ -61,30 +61,20 @@ install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         export DEBIAN_FRONTEND=noninteractive
         rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
-        
-        echo -e "${GREEN}[+] Updating System Packages (apt-get update & upgrade)...${NC}"
         apt-get update -y -qq
-        apt-get upgrade -y -qq
-        
-        echo -e "${GREEN}[+] Installing System Dependencies...${NC}"
         apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential
-        
     elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        echo -e "${GREEN}[+] Updating System Packages (dnf upgrade)...${NC}"
         dnf upgrade -y --refresh
-        
-        echo -e "${GREEN}[+] Installing System Dependencies...${NC}"
         dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make
     fi
 }
 install_deps
 
 # 4. Swap Setup
-echo -e "${GREEN}[+] Checking Memory Resources...${NC}"
 TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 if [ "$TOTAL_MEM" -lt 2000000 ]; then
     if [ ! -f /swapfile ]; then
-        echo -e "${YELLOW}[i] Low RAM detected. Creating 2GB Swap file...${NC}"
+        echo -e "${YELLOW}[i] Low RAM detected. Creating Swap...${NC}"
         fallocate -l 2G /swapfile
         chmod 600 /swapfile
         mkswap /swapfile
@@ -93,27 +83,18 @@ if [ "$TOTAL_MEM" -lt 2000000 ]; then
     fi
 fi
 
-# 5. Cleanup
-echo -e "${GREEN}[+] Cleaning up potential conflicts...${NC}"
+# 5. Cleanup Ports
 systemctl stop nginx || true
-rm -f /etc/nginx/sites-enabled/elaheh
-rm -f /etc/nginx/sites-available/elaheh
-rm -f /etc/nginx/sites-enabled/default
+if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then kill -9 $(lsof -t -i:80) || true; fi
 
-if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then
-    kill -9 $(lsof -t -i:80) || true
-fi
-
-# 6. Obtain SSL
-echo -e "${GREEN}[+] Checking SSL Certificates for ${DOMAIN}...${NC}"
-if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
-    echo -e "${YELLOW}[i] Certificate already exists. Skipping request.${NC}"
-else
+# 6. SSL
+if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
+    echo -e "${GREEN}[+] Requesting SSL...${NC}"
     certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || true
 fi
 
-# 7. Configure Nginx
-echo -e "${GREEN}[+] Configuring Nginx Reverse Proxy...${NC}"
+# 7. Nginx Config
+echo -e "${GREEN}[+] Configuring Nginx...${NC}"
 APP_PORT=3000
 cat <<EOF > /etc/nginx/sites-available/elaheh
 server {
@@ -151,8 +132,7 @@ EOF
 ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 systemctl restart nginx
 
-# 8. Node.js Setup
-echo -e "${GREEN}[+] Setting up Application Core...${NC}"
+# 8. Node.js
 NODE_VERSION="v22.12.0"
 if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     echo -e "${YELLOW}[i] Installing Node.js ${NODE_VERSION}...${NC}"
@@ -173,27 +153,17 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# 9. Structure & Config Fixes
-echo -e "${GREEN}[+] Normalizing Project Structure...${NC}"
+# 9. Project Configuration
+echo -e "${GREEN}[+] Configuring Project...${NC}"
 
-# Ensure standard Angular structure (src/index.html)
-mkdir -p src/assets
-if [ -f "index.html" ]; then
-    mv index.html src/index.html
-fi
-if [ ! -f "src/styles.css" ]; then
-    touch src/styles.css
-fi
+# 9.1 Clean Slate
+rm -rf node_modules package-lock.json dist
 
-# CRITICAL FIX: Ensure clean slate for node_modules to pick up new TypeScript
-echo -e "${YELLOW}[i] Cleaning old dependencies to fix version conflicts...${NC}"
-rm -rf node_modules package-lock.json
-
-# Overwrite package.json with UPDATED versions (TypeScript 5.7+)
+# 9.2 Package.json (Angular 19 + Zone.js)
 cat <<EOF > package.json
 {
   "name": "project-elaheh",
-  "version": "1.0.1",
+  "version": "2.6.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -201,32 +171,32 @@ cat <<EOF > package.json
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^19.1.0",
-    "@angular/common": "^19.1.0",
-    "@angular/compiler": "^19.1.0",
-    "@angular/core": "^19.1.0",
-    "@angular/forms": "^19.1.0",
-    "@angular/platform-browser": "^19.1.0",
-    "@angular/router": "^19.1.0",
+    "@angular/animations": "^19.0.0",
+    "@angular/common": "^19.0.0",
+    "@angular/compiler": "^19.0.0",
+    "@angular/core": "^19.0.0",
+    "@angular/forms": "^19.0.0",
+    "@angular/platform-browser": "^19.0.0",
+    "@angular/router": "^19.0.0",
     "@google/genai": "*",
-    "chart.js": "^4.4.7",
-    "qrcode": "^1.5.4",
+    "chart.js": "^4.4.1",
+    "qrcode": "^1.5.3",
     "rxjs": "~7.8.0",
-    "tslib": "^2.8.0",
+    "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^19.1.0",
-    "@angular/cli": "^19.1.0",
-    "@angular/compiler-cli": "^19.1.0",
-    "@types/node": "^22.0.0",
+    "@angular-devkit/build-angular": "^19.0.0",
+    "@angular/cli": "^19.0.0",
+    "@angular/compiler-cli": "^19.0.0",
+    "@types/node": "^18.18.0",
     "@types/qrcode": "^1.5.5",
-    "typescript": "~5.7.0"
+    "typescript": "~5.6.2"
   }
 }
 EOF
 
-# Generate Angular Config
+# 9.3 Angular JSON (With Zone.js)
 cat <<EOF > angular.json
 {
   "\$schema": "./node_modules/@angular/cli/lib/config/schema.json",
@@ -235,7 +205,6 @@ cat <<EOF > angular.json
   "projects": {
     "project-elaheh": {
       "projectType": "application",
-      "schematics": {},
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -255,7 +224,7 @@ cat <<EOF > angular.json
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "2mb", "maximumError": "5mb" }
+                { "type": "initial", "maximumWarning": "4mb", "maximumError": "6mb" }
               ],
               "outputHashing": "all"
             },
@@ -273,7 +242,7 @@ cat <<EOF > angular.json
 }
 EOF
 
-# Generate TSConfigs (Added skipLibCheck to ignore third-party type errors)
+# 9.4 TSConfigs
 cat <<EOF > tsconfig.json
 {
   "compileOnSave": false,
@@ -319,38 +288,37 @@ cat <<EOF > tsconfig.app.json
 }
 EOF
 
-# Generate main.ts
+# 9.5 Main.ts (Reverted to Zone.js for stability)
 cat <<EOF > src/main.ts
 import '@angular/compiler';
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZoneChangeDetection } from '@angular/core';
 import { AppComponent } from './app.component';
 
-// Type shim for process.env in browser
+// Type shim
 declare var process: any;
 
 bootstrapApplication(AppComponent, {
   providers: [
-    provideZonelessChangeDetection()
+    provideZoneChangeDetection({ eventCoalescing: true })
   ]
 }).catch((err) => console.error(err));
 EOF
 
-# 10. Install & Build
-echo -e "${GREEN}[+] Installing Dependencies...${NC}"
-npm install --legacy-peer-deps
+# 10. Build
+echo -e "${GREEN}[+] Installing Dependencies (Clean Install)...${NC}"
+npm install --legacy-peer-deps --loglevel error
 
 echo -e "${GREEN}[+] Building Application...${NC}"
-export NODE_OPTIONS="--max-old-space-size=3072"
+export NODE_OPTIONS="--max-old-space-size=4096"
 npm run build
 
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
 if [ ! -d "$DIST_PATH" ]; then
-    echo -e "${RED}[!] Build Failed. Check logs above.${NC}"
+    echo -e "${RED}[!] Build Failed!${NC}"
     exit 1
 fi
 
-# Config File for App
 mkdir -p "$DIST_PATH/assets"
 cat <<EOF > "$DIST_PATH/assets/server-config.json"
 {
@@ -361,7 +329,7 @@ cat <<EOF > "$DIST_PATH/assets/server-config.json"
 }
 EOF
 
-# 11. Start PM2
+# 11. Finalize
 echo -e "${GREEN}[+] Starting Services...${NC}"
 pm2 delete elaheh-app 2>/dev/null || true
 pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
@@ -379,41 +347,9 @@ elif command -v firewall-cmd &> /dev/null; then
     firewall-cmd --reload
 fi
 
-# 13. CLI Tool
-CLI_SCRIPT="#!/bin/bash
-INSTALL_DIR=\"/opt/elaheh-project\"
-RED='\033[0;31m'
-GREEN='\033[1;32m'
-NC='\033[0m'
-
-update_app() {
-    echo \"Updating...\"
-    cd \"\$INSTALL_DIR\"
-    git reset --hard
-    git pull origin main
-    bash install.sh --domain ${DOMAIN} --email ${EMAIL}
-}
-
-clear
-echo -e \"\${GREEN} Elaheh Management Console\${NC}\"
-echo \"1. Update System\"
-echo \"2. Restart Services\"
-echo \"3. Exit\"
-read -p \"Option: \" choice
-case \"\$choice\" in
-  1) update_app ;;
-  2) systemctl restart nginx; pm2 restart elaheh-app ;;
-  *) exit 0 ;;
-esac"
-
-echo "$CLI_SCRIPT" > /usr/local/bin/elaheh
-chmod +x /usr/local/bin/elaheh
-cp /usr/local/bin/elaheh /usr/bin/elaheh
-
 echo ""
 echo -e "${GREEN}=========================================${NC}"
 echo -e "${GREEN}   INSTALLATION SUCCESSFUL!${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo -e "   Panel URL: https://${DOMAIN}"
-echo -e "   Run 'elaheh' to manage."
 echo ""

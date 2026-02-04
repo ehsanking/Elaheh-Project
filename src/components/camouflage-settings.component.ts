@@ -1,5 +1,4 @@
 
-// FIX: Import 'signal' from '@angular/core'
 import { Component, inject, computed, ChangeDetectionStrategy, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -121,7 +120,7 @@ export class CamouflageSettingsComponent implements OnInit, OnDestroy {
   }
 
   lastRun = computed(() => {
-    this.timer(); // Depend on the timer
+    this.timer();
     const lastUpdate = this.core.lastCamouflageUpdate();
     if (!lastUpdate) {
       return this.languageService.translate('dashboard.camouflage.never');

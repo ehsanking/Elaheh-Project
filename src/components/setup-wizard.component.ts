@@ -97,7 +97,6 @@ import { FormsModule } from '@angular/forms';
         @if (currentStep() === 2) {
             <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
                 @if(selectedRole() === 'iran') {
-                    <!-- IRAN SERVER: Show Identity Token -->
                     <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.finish.identityKeyTitle') }}</h3>
                     <p class="text-gray-400 mb-6">{{ languageService.translate('wizard.finish.identityKeyDesc') }}</p>
                     
@@ -121,7 +120,6 @@ import { FormsModule } from '@angular/forms';
                         </p>
                     </div>
                 } @else {
-                    <!-- EXTERNAL SERVER: Ask for Iran Key & Validation -->
                     <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.external.enterKeyTitle') }}</h3>
                     <p class="text-gray-400 mb-6">{{ languageService.translate('wizard.external.enterKeyDesc') }}</p>
                     
@@ -145,7 +143,6 @@ import { FormsModule } from '@angular/forms';
                             </button>
                         </div>
                         
-                        <!-- Validation Status -->
                         @if (verificationError()) {
                             <div class="mt-3 p-3 bg-red-900/30 border border-red-800 rounded flex items-center gap-2 text-red-300 text-xs animate-in fade-in slide-in-from-top-2">
                                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -208,7 +205,6 @@ export class SetupWizardComponent {
   iranKeyInput = signal('');
   showLangDropdown = signal(false);
 
-  // Verification State
   isVerifying = signal(false);
   verificationError = signal<string | null>(null);
   verifiedNode = signal<EdgeNodeInfo | null>(null);

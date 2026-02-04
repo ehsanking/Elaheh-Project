@@ -108,7 +108,6 @@ export class ApplicationCamouflageComponent {
   setEnabled(event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
     const currentProfile = this.core.applicationCamouflageProfile();
-    // If enabling, ensure a default profile is set
     if (isChecked && !currentProfile) {
       this.core.updateApplicationCamouflage(true, 'COD_MOBILE');
     } else {
