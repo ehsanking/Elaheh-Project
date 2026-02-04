@@ -5,8 +5,8 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '2.3.2'; // Updated Version
-export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; // Renamed Default
+export const APP_VERSION = '2.3.4'; // Updated Version
+export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; 
 
 // --- Interfaces ---
 export interface LinkConfig {
@@ -74,7 +74,7 @@ export interface PaymentGateway {
   name: string;
   logo: string;
   url: string;
-  merchantId: string; // Added Merchant ID
+  merchantId: string;
   isEnabled: boolean;
   type: 'FIAT' | 'CRYPTO' | 'INTL';
 }
@@ -104,10 +104,10 @@ export class ElahehCoreService {
   // Theme & Branding
   theme = signal<'light' | 'dark'>('dark');
   brandName = signal<string>('توسعه‌دهنده هوشمند');
-  brandLogo = signal<string | null>(null); // Base64 logo
+  brandLogo = signal<string | null>(null); 
   
   // Store Config
-  currency = signal<string>('تومان'); // User defined currency
+  currency = signal<string>('تومان'); 
 
   // Authentication State
   isAuthenticated = signal<boolean>(false);
@@ -128,7 +128,7 @@ export class ElahehCoreService {
   packetLossRate = signal<number>(0);
   jitterMs = signal<number>(0);
   geoDistribution = signal<any[]>([
-    { country: 'Iran', code: 'IR', percent: 95, count: 0 }, // Focused on Iran
+    { country: 'Iran', code: 'IR', percent: 95, count: 0 }, 
     { country: 'Germany', code: 'DE', percent: 5, count: 0 },
   ]);
   
@@ -192,8 +192,6 @@ export class ElahehCoreService {
   isConfigured = signal<boolean>(false);
   serverRole = signal<'iran' | 'external' | null>(null);
   selectedOS = signal<'rpm' | 'deb' | null>(null);
-  aiModel = signal<string>('gemini-2.5-flash');
-  optimalDnsResolver = signal<string | null>(null);
   
   customDomain = signal<string>('');
   subscriptionDomain = signal<string>('');
@@ -316,7 +314,6 @@ export class ElahehCoreService {
       .then(config => {
         if (config.domain) {
            this.customDomain.set(config.domain);
-           // Automatically set standard Let's Encrypt paths if not already customized
            if (!this.sslCertPath() || this.sslCertPath().includes('example')) {
                 this.sslCertPath.set(`/etc/letsencrypt/live/${config.domain}/fullchain.pem`);
                 this.sslKeyPath.set(`/etc/letsencrypt/live/${config.domain}/privkey.pem`);
@@ -329,7 +326,7 @@ export class ElahehCoreService {
         }
       })
       .catch(() => {
-        // Silent catch: file might not exist in dev or non-installed env
+        // Silent catch
       });
   }
 
@@ -394,12 +391,8 @@ export class ElahehCoreService {
 
   addUser(username: string, quota: number, days: number, concurrentLimit: number, mode: 'auto' | 'manual' = 'auto', manualConfig: any = null): User {
     const userId = Math.random().toString(36).substring(2);
-    // Use the custom domain if available, otherwise localhost/IP (though Nginx setup enforces domain)
     const host = this.customDomain() || 'YOUR_IP_OR_DOMAIN';
     const subUrl = `https://${host}/sub/${userId}`;
-    
-    // Auto-generate a VLESS link
-    // Standard VLESS over WebSocket on port 443 (handled by Nginx path /ws)
     const uuid = crypto.randomUUID();
     const vlessLink = `vless://${uuid}@${host}:443?type=ws&security=tls&path=%2Fws#${username}_Auto`;
 
@@ -420,7 +413,6 @@ export class ElahehCoreService {
     };
 
     if (manualConfig) {
-        // If manual, we append that as well, respecting user ports
         const port = manualConfig.port || 443;
         const proto = manualConfig.protocol || 'vless';
         const manualLink = `${proto}://${uuid}@${host}:${port}?type=${manualConfig.transport}&security=${manualConfig.security}&path=%2Fws#${username}_Manual`;
@@ -441,7 +433,20 @@ export class ElahehCoreService {
   removeLinkFromUser(userId: string, linkIndex: number) { this.users.update(users => users.map(u => { if (u.id === userId) { const newLinks = [...u.links]; newLinks.splice(linkIndex, 1); return { ...u, links: newLinks }; } return u; })); }
   updateUserLinks(userId: string, links: LinkConfig[]) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...links] }; } return u; })); }
   addLog(level: any, message: string) { const entry: LogEntry = { timestamp: new Date().toLocaleTimeString(), level, message }; this.logs.update(l => [entry, ...l].slice(0, 50)); }
-  generateEdgeNodeKey(): string { return 'edg_key_' + Math.random().toString(36).substring(2); }
+  
+  // New: Secure Key Generation with stronger entropy simulation
+  generateSecureEdgeKey(): string { 
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const randomPart = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+      const timestamp = Date.now().toString(36);
+      const signature = 'EL-SEC-' + btoa(timestamp + randomPart).substring(0, 20); // Simulated signature
+      return `${signature}-${randomPart.substring(0, 16).toUpperCase()}-${timestamp.toUpperCase()}`;
+  }
+  
+  // Deprecated simplified version, kept for compatibility but redirecting to secure one
+  generateEdgeNodeKey(): string { return this.generateSecureEdgeKey(); }
+
   updateEdgeNodeConfig(address: string, key: string) { this.edgeNodeAddress.set(address); this.edgeNodeAuthKey.set(key); this.testEdgeNodeConnection(); }
   updateProxyConfig(config: any) { this.isProxyEnabled.set(config.isEnabled); this.proxyHost.set(config.host); this.proxyPort.set(config.port); this.proxyType.set(config.type); }
   updateNatConfig(config: any) { this.natConfig.set(config); this.startNatKeepAlive(); }

@@ -93,34 +93,52 @@ import { FormsModule } from '@angular/forms';
             </div>
         }
 
-        <!-- Step 2: Code Generation -->
+        <!-- Step 2: Key Generation OR Config Display -->
         @if (currentStep() === 2) {
             <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-                <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.finish.title') }}</h3>
-                <p class="text-gray-400 mb-6">{{ languageService.translate('wizard.finish.description') }}</p>
-                
-                <div class="bg-black p-4 rounded-lg border border-gray-600 mb-6 relative group">
-                    <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
-                        <h4 class="text-green-400 font-bold flex items-center gap-2 text-xs uppercase tracking-wider">
-                           <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                           BASH
-                        </h4>
-                    </div>
-                    
-                    <div class="relative">
-                        <textarea readonly class="w-full h-24 bg-transparent p-2 rounded-md text-xs font-mono text-gray-300 border-none resize-none outline-none focus:ring-0 whitespace-pre scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent" (click)="$event.target.select()">{{ installCommand() }}</textarea>
-                        <button (click)="copyCommand()" class="absolute top-0 right-0 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 transition-colors flex items-center gap-2">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                            {{ languageService.translate('common.copy') }}
-                        </button>
-                    </div>
-                </div>
-                
                 @if(selectedRole() === 'iran') {
-                    <div class="bg-yellow-900/20 p-4 rounded border border-yellow-700/50 mb-6">
-                         <p class="text-yellow-400 text-xs font-bold mb-1 uppercase tracking-wide">⚠ Important:</p>
-                         <p class="text-yellow-200 text-xs opacity-80 mb-2">This key links your Edge Node to the Core Panel. Keep it secret.</p>
-                         <div class="bg-black/50 p-3 rounded text-xs font-mono text-gray-300 border border-yellow-900/30 break-all select-all">{{ edgeNodeKey() }}</div>
+                    <!-- IRAN SERVER: Show Identity Token -->
+                    <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.finish.identityKeyTitle') }}</h3>
+                    <p class="text-gray-400 mb-6">{{ languageService.translate('wizard.finish.identityKeyDesc') }}</p>
+                    
+                    <div class="bg-black/40 p-6 rounded-lg border border-teal-500/30 mb-6 relative group">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-teal-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                {{ languageService.translate('wizard.finish.tokenLabel') }}
+                            </span>
+                        </div>
+                        
+                        <div class="relative bg-black p-4 rounded border border-gray-700 font-mono text-sm break-all text-green-400 shadow-inner">
+                            {{ edgeNodeKey() }}
+                            <button (click)="copyKey()" class="absolute top-2 right-2 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded transition-colors group-hover:opacity-100 opacity-80" [title]="languageService.translate('common.copy')">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </button>
+                        </div>
+                        <p class="text-xs text-yellow-500 mt-2 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                            {{ languageService.translate('wizard.finish.secureWarning') }}
+                        </p>
+                    </div>
+                } @else {
+                    <!-- EXTERNAL SERVER: Show Command (Standard flow) -->
+                    <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.finish.title') }}</h3>
+                    <p class="text-gray-400 mb-6">{{ languageService.translate('wizard.finish.description') }}</p>
+                    
+                    <div class="bg-black p-4 rounded-lg border border-gray-600 mb-6 relative group">
+                        <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
+                            <h4 class="text-green-400 font-bold flex items-center gap-2 text-xs uppercase tracking-wider">
+                               <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                               BASH
+                            </h4>
+                        </div>
+                        <div class="relative">
+                            <textarea readonly class="w-full h-24 bg-transparent p-2 rounded-md text-xs font-mono text-gray-300 border-none resize-none outline-none focus:ring-0 whitespace-pre scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent" (click)="$event.target.select()">{{ installCommand() }}</textarea>
+                            <button (click)="copyCommand()" class="absolute top-0 right-0 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 transition-colors flex items-center gap-2">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                {{ languageService.translate('common.copy') }}
+                            </button>
+                        </div>
                     </div>
                 }
 
@@ -150,18 +168,9 @@ export class SetupWizardComponent {
   showLangDropdown = signal(false);
 
   installCommand = computed(() => {
-    const role = this.selectedRole();
-    if (!role) return '';
-
+    // Only used for External role now in display, logic simplified
     const baseUrl = "bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)";
-    
-    // Now prompting for domain inside the script arguments simulation
-    if (role === 'iran') {
-      const key = this.edgeNodeKey();
-      return `${baseUrl} --role iran --key ${key} --domain YOUR_DOMAIN`;
-    } else {
-      return `${baseUrl} --role external --domain YOUR_DOMAIN`;
-    }
+    return `${baseUrl} --role external --domain YOUR_DOMAIN`;
   });
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
@@ -169,7 +178,7 @@ export class SetupWizardComponent {
   nextStep() {
     this.currentStep.set(2);
     if (this.selectedRole() === 'iran') {
-        this.edgeNodeKey.set(this.core.generateEdgeNodeKey());
+        this.edgeNodeKey.set(this.core.generateSecureEdgeKey());
     }
   }
 
@@ -179,6 +188,7 @@ export class SetupWizardComponent {
   }
 
   copyCommand() { navigator.clipboard.writeText(this.installCommand()); }
+  copyKey() { navigator.clipboard.writeText(this.edgeNodeKey()); }
 
   setLanguage(lang: 'en' | 'fa' | 'zh' | 'ru') {
       this.languageService.setLanguage(lang);

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.3.2 (Build Fix & Robustness)
+# Version 2.3.3 (Node Upgrade & Dep Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.3.2"
+echo "   Version 2.3.3"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -73,7 +73,6 @@ install_deps
 # 4. Swap Setup (Prevent OOM during build)
 echo -e "${GREEN}[+] Checking Memory Resources...${NC}"
 TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-# If RAM < 2GB (approx 2000000 KB), ensure swap exists
 if [ "$TOTAL_MEM" -lt 2000000 ]; then
     if [ ! -f /swapfile ]; then
         echo -e "${YELLOW}[i] Low RAM detected. Creating 2GB Swap file for build stability...${NC}"
@@ -184,8 +183,10 @@ systemctl restart nginx
 
 # 8. Node.js & Project Setup
 echo -e "${GREEN}[+] Setting up Application Core...${NC}"
-NODE_VERSION="v20.15.1"
-if ! command -v node &> /dev/null; then
+# Upgrade to Node 22.12.0 LTS to match Angular requirements
+NODE_VERSION="v22.12.0"
+if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
+    echo -e "${YELLOW}[i] Installing Node.js ${NODE_VERSION}...${NC}"
     MACHINE_ARCH=$(uname -m)
     if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; else NODE_ARCH="arm64"; fi
     curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
@@ -205,12 +206,12 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# 9. Build Application (Critical for solving 403 Forbidden)
+# 9. Build Application
 echo -e "${GREEN}[+] Installing Dependencies (This may take a moment)...${NC}"
-npm install --legacy-peer-deps
+# Use --force to bypass strict peer dependency conflicts if any
+npm install --legacy-peer-deps --force
 
 echo -e "${GREEN}[+] Building Application (Optimized for Production)...${NC}"
-# Increase Node memory limit for build process
 export NODE_OPTIONS="--max-old-space-size=2048"
 npm run build
 
@@ -249,9 +250,8 @@ pm2 save --force
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 systemctl enable pm2-root >/dev/null 2>&1 || true
 
-# 11. Firewall (FIXED: Robust Port Detection)
+# 11. Firewall
 echo -e "${GREEN}[+] Securing Ports...${NC}"
-# Handle grep fail case gracefully
 SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n 1)
 if [ -z "$SSH_PORT" ]; then
     SSH_PORT=22
@@ -282,7 +282,7 @@ update_app() {
     echo \"Updating...\"
     cd \"\$INSTALL_DIR\" && git pull origin main
     echo \"Installing dependencies...\"
-    npm install --legacy-peer-deps
+    npm install --legacy-peer-deps --force
     echo \"Rebuilding...\"
     npm run build
     pm2 restart elaheh-app
