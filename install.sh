@@ -372,18 +372,31 @@ cat <<EOF > /usr/local/bin/elaheh
 
 GREEN='\033[1;32m'
 CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
+# NOTE: User management commands are simulated.
+# In a real-world scenario, this script would interact with a backend service
+# or a file-based database instead of the browser's localStorage.
+
 echo -e "\${GREEN}Elaheh Management Console\${NC}"
+echo "--- System ---"
 echo "1. Update Application"
 echo "2. Enable Google BBR"
 echo "3. Restart Services"
-echo "4. Uninstall"
-echo "5. Exit"
-read -p "Select option [1-5]: " OPT
+echo "4. Show App Logs"
+echo "--- Users (Simulated) ---"
+echo "5. List Users"
+echo "6. Add User"
+echo "7. Delete User"
+echo "--- Danger Zone ---"
+echo "8. Uninstall"
+echo "9. Exit"
+read -p "Select option [1-9]: " OPT
 
 case "\$OPT" in
-  1)
+  1) # UPDATE
     echo "Updating..."
     cd /opt/elaheh-project
     git pull origin main
@@ -392,19 +405,48 @@ case "\$OPT" in
     pm2 restart elaheh-app
     echo -e "\${GREEN}Update Complete.\${NC}"
     ;;
-  2)
+  2) # BBR
     echo "Enabling BBR..."
     echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
     sysctl -p
     echo -e "\${GREEN}BBR Enabled.\${NC}"
     ;;
-  3)
+  3) # RESTART
     systemctl restart nginx
     pm2 restart elaheh-app
     echo -e "\${GREEN}Services Restarted.\${NC}"
     ;;
-  4)
+  4) # LOGS
+    echo "Showing last 20 lines of logs for 'elaheh-app'..."
+    pm2 logs elaheh-app --lines 20 --nostream
+    ;;
+  5) # LIST USERS (SIMULATED)
+    echo -e "\${CYAN}Listing users (simulation)...${NC}"
+    echo "  - username: demo, quota: 10 GB, status: active"
+    echo "  - username: test_user, quota: 50 GB, status: expired"
+    echo -e "\${YELLOW}Note: This is simulated. Real data is in the web panel.${NC}"
+    ;;
+  6) # ADD USER (SIMULATED)
+    echo -e "\${CYAN}Add a new user (simulation)...${NC}"
+    read -p "Enter username: " username
+    read -p "Enter quota (GB): " quota
+    read -p "Enter expiry (days): " days
+    echo -e "\${GREEN}User '\$username' with \${quota}GB for \${days} days would be created.${NC}"
+    echo -e "\${YELLOW}Note: This is simulated. Please use the web panel to manage users.${NC}"
+    ;;
+  7) # DELETE USER (SIMULATED)
+    echo -e "\${CYAN}Delete a user (simulation)...${NC}"
+    read -p "Enter username to delete: " username
+    read -p "Are you sure you want to delete '\$username'? (y/N) " confirm
+    if [[ "\$confirm" == "y" ]]; then
+      echo -e "\${RED}User '\$username' would be deleted.${NC}"
+    else
+      echo "Deletion cancelled."
+    fi
+    echo -e "\${YELLOW}Note: This is simulated. Please use the web panel to manage users.${NC}"
+    ;;
+  8) # UNINSTALL
     read -p "Are you sure? This will remove everything. (y/N) " CONFIRM
     if [[ "\$CONFIRM" == "y" ]]; then
         pm2 delete elaheh-app
@@ -415,7 +457,7 @@ case "\$OPT" in
         echo -e "\${GREEN}Uninstalled.\${NC}"
     fi
     ;;
-  *)
+  *) # EXIT
     echo "Exiting."
     exit 0
     ;;
