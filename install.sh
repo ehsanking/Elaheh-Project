@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.4.0 (Improved Service Start & Verification)
+# Version 2.0.0 (Production Grade - Nginx/SSL/Port 443)
 # Author: EHSANKiNG
 
 set -e
@@ -15,8 +15,8 @@ NC='\033[0m' # No Color
 
 echo -e "${CYAN}"
 echo "################################################################"
-echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.4.0"
+echo "   Project Elaheh - Stealth Tunnel Management System"
+echo "   Version 2.0.0"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -27,68 +27,65 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Detect OS & Install Dependencies
-echo -e "${GREEN}[+] Detecting OS and installing dependencies...${NC}"
+# 2. Input Collection (Domain & Ports)
+DOMAIN=""
+EMAIL=""
+EXTRA_PORTS=""
+
+# Parse Args
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --domain) DOMAIN="$2"; shift 2;;
+    --email) EMAIL="$2"; shift 2;;
+    --role) ROLE="$2"; shift 2;;
+    --key) KEY="$2"; shift 2;;
+    *) shift 1;;
+  esac
+done
+
+if [ -z "$DOMAIN" ]; then
+    echo -e "${YELLOW}Enter your Domain (A record must point to this IP):${NC}"
+    read -p "Domain: " DOMAIN
+fi
+
+if [ -z "$EMAIL" ]; then
+    echo -e "${YELLOW}Enter Email for SSL (Let's Encrypt):${NC}"
+    read -p "Email: " EMAIL
+fi
+
+echo -e "${YELLOW}Do you want to open extra ports for VLESS/VMess? (Optional, default is 443 only)${NC}"
+read -p "Extra Ports (comma separated, e.g. 8080,2053 or leave empty): " EXTRA_PORTS
+
+# 3. Detect OS & Install Dependencies (Nginx + Certbot)
+echo -e "${GREEN}[+] Installing System Dependencies (Nginx, Certbot)...${NC}"
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$NAME
 fi
 
-if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-    export DEBIAN_FRONTEND=noninteractive
-    
-    # --- AGGRESSIVE CLEANUP: Find and remove all NodeSource-related files to fix persistent apt errors ---
-    echo -e "${YELLOW}[!] Aggressively cleaning up old Node.js repository configurations...${NC}"
-    find /etc/apt/ -type f -name "*nodesource*" -delete
-    apt-get clean
-    # --- End of fix ---
-
-    apt-get update -y -qq
-    # Install standard dependencies, but not Node.js via apt. xz-utils is needed for decompression.
-    apt-get install -y -qq curl git unzip ufw xz-utils
-    
-    echo -e "${GREEN}[+] Using direct binary installation for Node.js to ensure compatibility...${NC}"
-    
-    NODE_VERSION="v20.15.1" # Using a specific LTS version
-    
-    # Detect architecture
-    MACHINE_ARCH=$(uname -m)
-    if [ "${MACHINE_ARCH}" == "x86_64" ]; then
-        NODE_ARCH="x64"
-    elif [ "${MACHINE_ARCH}" == "aarch64" ]; then
-        NODE_ARCH="arm64"
-    else
-        echo -e "${RED}Error: Unsupported architecture '${MACHINE_ARCH}'. Only x86_64 and aarch64 are supported.${NC}"
-        exit 1
+install_deps() {
+    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -y -qq
+        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat
+    elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat
     fi
-    
-    DOWNLOAD_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
-    echo -e "${GREEN}[+] Downloading Node.js from ${DOWNLOAD_URL}...${NC}"
-    curl -L "${DOWNLOAD_URL}" -o "/tmp/node.tar.xz"
-    
-    echo -e "${GREEN}[+] Installing Node.js to /usr/local/...${NC}"
-    tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
-    rm "/tmp/node.tar.xz"
+}
+install_deps
 
-elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-    dnf install -y -q curl git unzip firewalld
-    
-    echo -e "${GREEN}[+] Installing Node.js 20 LTS...${NC}"
-    dnf module reset -y nodejs &> /dev/null
-    dnf module enable -y nodejs:20 &> /dev/null
-    dnf install -y -q nodejs
-fi
+# 4. Node.js Installation
+echo -e "${GREEN}[+] Installing Node.js Environment...${NC}"
+NODE_VERSION="v20.15.1"
+MACHINE_ARCH=$(uname -m)
+if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; elif [ "${MACHINE_ARCH}" == "aarch64" ]; then NODE_ARCH="arm64"; else echo -e "${RED}Error: Arch not supported.${NC}"; exit 1; fi
+DOWNLOAD_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
+curl -L "${DOWNLOAD_URL}" -o "/tmp/node.tar.xz"
+tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
+rm "/tmp/node.tar.xz"
+if ! command -v pm2 &> /dev/null; then npm install -g pm2; fi
 
-echo -e "${GREEN}[+] Node.js ($(node -v)) and NPM ($(npm -v)) are ready.${NC}"
-
-
-# 3. Install PM2
-if ! command -v pm2 &> /dev/null; then
-    echo -e "${GREEN}[+] Installing PM2 process manager...${NC}"
-    npm install -g pm2
-fi
-
-# 4. Setup Directory & Clone
+# 5. Setup Project Files
 INSTALL_DIR="/opt/elaheh-project"
 REPO_URL="https://github.com/ehsanking/Elaheh-Project.git"
 
@@ -103,229 +100,159 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# 5. Use Pre-built Application
-echo -e "${GREEN}[+] Using pre-built application to ensure stability on all servers...${NC}"
-# The 'npm install' and 'npm run build' steps, which can fail on low-memory servers,
-# have been removed. The application's 'dist' folder is now expected to be 
-# included directly in the Git repository.
-
-# 6. Parse Arguments & Save Configuration
-ROLE="unknown"
-KEY=""
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --role) ROLE="$2"; shift 2;;
-    --key) KEY="$2"; shift 2;;
-    *) shift 1;;
-  esac
-done
-
 PROJECT_NAME=$(node -p "require('./package.json').name")
 DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
-
 mkdir -p "$DIST_PATH/assets"
-echo -e "${GREEN}[+] Saving configuration...${NC}"
+
+# Save Config
 cat <<EOF > "$DIST_PATH/assets/server-config.json"
 {
-  "role": "$ROLE",
-  "key": "$KEY",
+  "role": "${ROLE:-external}",
+  "key": "${KEY}",
+  "domain": "${DOMAIN}",
   "installedAt": "$(date)"
 }
 EOF
 
-# 7. Set Initial Port & Configure Firewall
-PANEL_PORT=4200
-CONF_FILE="$INSTALL_DIR/elaheh.conf"
-echo "PORT=$PANEL_PORT" > "$CONF_FILE"
+# 6. Configure Nginx (Reverse Proxy & Port Sharing)
+echo -e "${GREEN}[+] Configuring Nginx for ${DOMAIN}...${NC}"
 
-echo -e "${GREEN}[+] Configuring firewall to allow port ${PANEL_PORT}...${NC}"
-if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-    if command -v ufw &> /dev/null; then
-        ufw allow ${PANEL_PORT}/tcp > /dev/null
-        yes | ufw enable > /dev/null
-    fi
-elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-    if command -v firewall-cmd &> /dev/null; then
-        systemctl start firewalld &> /dev/null
-        systemctl enable firewalld &> /dev/null
-        firewall-cmd --permanent --add-port=${PANEL_PORT}/tcp > /dev/null
-        firewall-cmd --reload > /dev/null
-    fi
+# Internal App Port (Not exposed to internet)
+APP_PORT=3000
+
+cat <<EOF > /etc/nginx/sites-available/elaheh
+server {
+    listen 80;
+    server_name ${DOMAIN};
+    
+    # Force HTTPS
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${DOMAIN};
+
+    root ${DIST_PATH};
+    index index.html;
+
+    # SSL Config (Placeholders - Certbot will update)
+    # ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+
+    # 1. Main Application (The Camouflage Site / Panel)
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    # 2. API Proxy (Internal)
+    location /api {
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+
+    # 3. VLESS/VMess WebSocket Path (Stealth Mode)
+    # Traffic to /vless or /vmess is forwarded to the Xray core port (e.g., 10000)
+    location /ws {
+        if (\$http_upgrade != "websocket") {
+            return 404;
+        }
+        proxy_redirect off;
+        proxy_pass http://127.0.0.1:10000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        # Show real IP in logs
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+}
+EOF
+
+# Enable Site
+rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
+systemctl stop nginx
+
+# 7. Obtain SSL
+echo -e "${GREEN}[+] Obtaining SSL Certificate...${NC}"
+certbot --nginx --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" --redirect || true
+
+systemctl start nginx
+
+# 8. Firewall Configuration (Standard Ports)
+SSH_PORT="22"
+if [ -f /etc/ssh/sshd_config ]; then
+    DETECTED_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
+    [ ! -z "$DETECTED_PORT" ] && SSH_PORT=$DETECTED_PORT
 fi
 
-# 8. Start Application with PM2 (serving static build)
-echo -e "${GREEN}[+] Starting application on port ${PANEL_PORT}...${NC}"
+echo -e "${GREEN}[+] Configuring Firewall (Ports: 80, 443, ${SSH_PORT})...${NC}"
+
+if command -v ufw &> /dev/null; then
+    ufw allow ${SSH_PORT}/tcp
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    if [ ! -z "$EXTRA_PORTS" ]; then
+        IFS=',' read -ra ADDR <<< "$EXTRA_PORTS"
+        for i in "${ADDR[@]}"; do ufw allow "$i"/tcp; done
+    fi
+    echo "y" | ufw enable
+elif command -v firewall-cmd &> /dev/null; then
+    systemctl start firewalld
+    firewall-cmd --permanent --add-port=${SSH_PORT}/tcp
+    firewall-cmd --permanent --add-port=80/tcp
+    firewall-cmd --permanent --add-port=443/tcp
+    if [ ! -z "$EXTRA_PORTS" ]; then
+        IFS=',' read -ra ADDR <<< "$EXTRA_PORTS"
+        for i in "${ADDR[@]}"; do firewall-cmd --permanent --add-port="$i"/tcp; done
+    fi
+    firewall-cmd --reload
+fi
+
+# 9. Start Application (Local Port)
+echo -e "${GREEN}[+] Starting Application on internal port ${APP_PORT}...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
-pm2 serve "$DIST_PATH" ${PANEL_PORT} --name "elaheh-app" --spa
+# Note: We bind to localhost only if possible, but serving on 0.0.0.0:3000 is blocked by firewall anyway
+pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
 pm2 save --force
 pm2 startup | tail -n 1 | bash || true
 
-# 9. Create 'elaheh' CLI tool
-echo -e "${GREEN}[+] Creating 'elaheh' management tool...${NC}"
-mkdir -p /usr/local/bin
-cat <<'EOF' > /usr/local/bin/elaheh
+# 10. CLI Tool
+cat <<EOF > /usr/local/bin/elaheh
 #!/bin/bash
-
-# Colors
-GREEN='\033[1;32m'
-CYAN='\033[0;36m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
 INSTALL_DIR="/opt/elaheh-project"
-CONF_FILE="$INSTALL_DIR/elaheh.conf"
-OS_NAME=""
-
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS_NAME=$NAME
-fi
-
 update_app() {
-    echo -e "${GREEN}Updating Project Elaheh...${NC}"
-    cd "$INSTALL_DIR"
-    git reset --hard
-    git pull origin main
-    echo -e "${GREEN}No build step required. Restarting server...${NC}"
+    cd "\$INSTALL_DIR" && git pull origin main
     pm2 restart elaheh-app
-    echo -e "${GREEN}Update complete!${NC}"
+    echo "Updated."
 }
-
-uninstall_app() {
-    echo -e "${YELLOW}Are you sure you want to uninstall Project Elaheh? This is irreversible. (y/N)${NC}"
-    read -r confirm
-    if [[ "$confirm" =~ ^[yY]$ ]]; then
-        echo -e "${RED}Uninstalling...${NC}"
-        pm2 stop elaheh-app 2>/dev/null || true
-        pm2 delete elaheh-app 2>/dev/null || true
-        pm2 unstartup > /dev/null
-        pm2 save --force
-        rm -rf "$INSTALL_DIR"
-        rm -f /usr/local/bin/elaheh
-        echo -e "${RED}Project Elaheh has been uninstalled.${NC}"
-    else
-        echo "Uninstall cancelled."
-    fi
-}
-
-change_port() {
-    source "$CONF_FILE"
-    CURRENT_PORT=$PORT
-    echo -e "${YELLOW}The current panel port is ${CURRENT_PORT}.${NC}"
-    echo -e "${YELLOW}Enter the new port number (1-65535):${NC}"
-    read -r new_port
-    if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1 ] || [ "$new_port" -gt 65535 ]; then
-        echo -e "${RED}Invalid port number.${NC}"
-        return
-    fi
-
-    echo -e "${GREEN}Changing port to ${new_port}...${NC}"
-
-    # Update firewall
-    if [[ "$OS_NAME" == *"Ubuntu"* ]] || [[ "$OS_NAME" == *"Debian"* ]]; then
-        ufw delete allow ${CURRENT_PORT}/tcp > /dev/null
-        ufw allow ${new_port}/tcp > /dev/null
-    elif [[ "$OS_NAME" == *"CentOS"* ]] || [[ "$OS_NAME" == *"Rocky"* ]]; then
-        firewall-cmd --permanent --remove-port=${CURRENT_PORT}/tcp > /dev/null
-        firewall-cmd --permanent --add-port=${new_port}/tcp > /dev/null
-        firewall-cmd --reload > /dev/null
-    fi
-    
-    # Update config file
-    echo "PORT=$new_port" > "$CONF_FILE"
-
-    # Restart app with new port
-    pm2 stop elaheh-app 2>/dev/null || true
-    pm2 delete elaheh-app 2>/dev/null || true
-    cd "$INSTALL_DIR"
-    PROJECT_NAME=$(node -p "require('./package.json').name")
-    DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
-    pm2 serve "$DIST_PATH" ${new_port} --name "elaheh-app" --spa
-    pm2 save --force
-    
-    PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
-    echo -e "${GREEN}Port changed successfully!${NC}"
-    echo -e "${GREEN}New Panel URL: http://${PUBLIC_IP}:${new_port}${NC}"
-}
-
-install_bbr() {
-    echo -e "${GREEN}Installing BBR...${NC}"
-    if sysctl net.ipv4.tcp_congestion_control | grep -q "bbr"; then
-        echo -e "${GREEN}BBR is already enabled.${NC}"
-        return
-    fi
-    
-    echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-    sysctl -p
-    
-    if sysctl net.ipv4.tcp_congestion_control | grep -q "bbr"; then
-        echo -e "${GREEN}BBR has been enabled successfully! A reboot is recommended.${NC}"
-    else
-        echo -e "${RED}Failed to enable BBR.${NC}"
-    fi
-}
-
-show_menu() {
-    echo -e "${CYAN}====================================${NC}"
-    echo -e "${CYAN}   Project Elaheh Management Tool   ${NC}"
-    echo -e "${CYAN}====================================${NC}"
-    echo "1. Update Project"
-    echo "2. Uninstall Project"
-    echo "3. Change Panel Port"
-    echo "4. Install BBR"
-    echo "5. Exit"
-    echo -e "------------------------------------"
-    echo -n "Enter your choice: "
-}
-
-while true; do
-    show_menu
-    read -r choice
-    case "$choice" in
-        1) update_app; break ;;
-        2) uninstall_app; break ;;
-        3) change_port; break ;;
-        4) install_bbr; break ;;
-        5) break ;;
-        *) echo -e "${RED}Invalid option. Please try again.${NC}";;
-    esac
-done
+echo "Elaheh Management Tool"
+echo "1. Update App"
+echo "2. Restart Nginx"
+echo "3. Renew SSL"
+read -p "Select: " choice
+case "\$choice" in
+  1) update_app ;;
+  2) systemctl restart nginx; echo "Nginx Restarted." ;;
+  3) certbot renew --force-renewal; echo "SSL Renewed." ;;
+esac
 EOF
-
 chmod +x /usr/local/bin/elaheh
 
-# 10. Verify CLI tool creation
-if [ -s /usr/local/bin/elaheh ]; then
-    echo -e "${GREEN}[+] 'elaheh' management tool created successfully.${NC}"
-else
-    echo -e "${RED}[!] WARNING: Failed to create the 'elaheh' management tool. Manual intervention may be required.${NC}"
-fi
-
-# 11. Final Verification & Output
-if ! pm2 describe elaheh-app &> /dev/null; then
-    echo -e "${RED}[!] FATAL ERROR: The application failed to start with PM2."
-    echo -e "${RED}Please check logs using 'pm2 logs elaheh-app' and report the issue."
-    exit 1
-fi
-
-PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
-
+# 11. Final Output
 echo ""
-echo -e "${CYAN}================================================================${NC}"
-echo -e "${GREEN}   INSTALLATION COMPLETED SUCCESSFULLY! ${NC}"
-echo -e "${CYAN}================================================================${NC}"
+echo -e "${GREEN}=========================================${NC}"
+echo -e "${GREEN}   INSTALLATION COMPLETED SUCCESSFULLY!${NC}"
+echo -e "${GREEN}=========================================${NC}"
+echo -e "   Website:  https://${DOMAIN}"
+echo -e "   Panel:    Log in via the 'Client Portal' button on the site."
+echo -e "   VLESS:    Port 443 (TLS enabled)"
+echo -e "   Camouflage: Active (Corporate Landing Page)"
 echo ""
-echo -e "   Access your Dashboard at:"
-echo -e "   ${GREEN}👉 http://$PUBLIC_IP:${PANEL_PORT} 👈${NC}"
-echo ""
-echo -e "   ----------------------------------------"
-echo -e "   To manage your installation, simply type:"
-echo -e "   ${YELLOW}elaheh${NC}"
-echo -e "   ${CYAN}(If command not found, please re-login to your server)${NC}"
-echo -e "   ----------------------------------------"
-echo ""
-echo -e "   To check logs run: ${YELLOW}pm2 logs elaheh-app${NC}"
-echo -e "${CYAN}================================================================${NC}"

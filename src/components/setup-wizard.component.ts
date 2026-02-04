@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
@@ -154,11 +155,12 @@ export class SetupWizardComponent {
 
     const baseUrl = "bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)";
     
+    // Now prompting for domain inside the script arguments simulation
     if (role === 'iran') {
       const key = this.edgeNodeKey();
-      return `${baseUrl} --role iran --key ${key}`;
+      return `${baseUrl} --role iran --key ${key} --domain YOUR_DOMAIN`;
     } else {
-      return `${baseUrl} --role external`;
+      return `${baseUrl} --role external --domain YOUR_DOMAIN`;
     }
   });
 

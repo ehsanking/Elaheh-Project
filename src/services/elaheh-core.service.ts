@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { GoogleGenAI } from "@google/genai";
 import { DatabaseService } from './database.service';
@@ -198,7 +199,7 @@ export class ElahehCoreService {
   subscriptionDomain = signal<string>('');
   sslCertPath = signal<string>('');
   sslKeyPath = signal<string>('');
-  isSslActive = computed(() => this.customDomain() !== '' && this.sslCertPath() !== '' && this.sslKeyPath() !== '');
+  isSslActive = computed(() => this.customDomain() !== '');
   
   smtpConfig = signal<SmtpConfig>({ host: '', port: 587, user: '', pass: '', secure: false, senderName: 'Admin', senderEmail: '' });
   iapConfig = signal<{projectId: string, zone: string, instanceName: string}>({ projectId: '', zone: 'europe-west3-c', instanceName: 'upstream' });
@@ -368,13 +369,49 @@ export class ElahehCoreService {
   }
 
   addUser(username: string, quota: number, days: number, concurrentLimit: number, mode: 'auto' | 'manual' = 'auto', manualConfig: any = null): User {
-    // ... (Keep existing implementation)
     const userId = Math.random().toString(36).substring(2);
-    const newUser: User = { id: userId, username, quotaGb: quota, usedGb: 0, expiryDays: days, status: 'active', links: [], concurrentConnectionsLimit: concurrentLimit, currentConnections: 0, subscriptionLink: `sub/${userId}`, udpEnabled: true };
+    // Use the custom domain if available, otherwise localhost/IP (though Nginx setup enforces domain)
+    const host = this.customDomain() || 'YOUR_IP_OR_DOMAIN';
+    const subUrl = `https://${host}/sub/${userId}`;
+    
+    // Auto-generate a VLESS link
+    // Standard VLESS over WebSocket on port 443 (handled by Nginx path /ws)
+    const uuid = crypto.randomUUID();
+    const vlessLink = `vless://${uuid}@${host}:443?type=ws&security=tls&path=%2Fws#${username}_Auto`;
+
+    const newUser: User = { 
+        id: userId, 
+        username, 
+        quotaGb: quota, 
+        usedGb: 0, 
+        expiryDays: days, 
+        status: 'active', 
+        links: [
+            { alias: 'Default VLESS', url: vlessLink, quotaGb: null, expiryDate: null, protocol: 'vless' }
+        ], 
+        concurrentConnectionsLimit: concurrentLimit, 
+        currentConnections: 0, 
+        subscriptionLink: subUrl, 
+        udpEnabled: true 
+    };
+
+    if (manualConfig) {
+        // If manual, we append that as well, respecting user ports
+        const port = manualConfig.port || 443;
+        const proto = manualConfig.protocol || 'vless';
+        const manualLink = `${proto}://${uuid}@${host}:${port}?type=${manualConfig.transport}&security=${manualConfig.security}&path=%2Fws#${username}_Manual`;
+        newUser.links.push({ alias: 'Manual Config', url: manualLink, quotaGb: null, expiryDate: null, protocol: proto });
+    }
+
     this.users.update(u => [...u, newUser]);
     return newUser;
   }
-  generateLinkString(userId: string, config: any, alias: string): string { return `vless://${userId}@example.com:443#${alias}`; }
+  
+  generateLinkString(userId: string, config: any, alias: string): string { 
+      const host = this.customDomain() || 'example.com';
+      return `vless://${userId}@${host}:443?type=ws&security=tls&path=%2Fws#${alias}`; 
+  }
+  
   removeUser(id: string) { this.users.update(u => u.filter(x => x.id !== id)); }
   addLinkToUser(userId: string, link: LinkConfig) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...u.links, link] }; } return u; })); }
   removeLinkFromUser(userId: string, linkIndex: number) { this.users.update(users => users.map(u => { if (u.id === userId) { const newLinks = [...u.links]; newLinks.splice(linkIndex, 1); return { ...u, links: newLinks }; } return u; })); }
