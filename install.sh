@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.3.0 (Smart SSL & Auto-Config)
+# Version 2.3.1 (Hotfix: Port Detection & PM2)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.3.0"
+echo "   Version 2.3.1"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -48,7 +48,6 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 if [ -z "$EMAIL" ]; then
-    # Default placeholder email if not provided
     EMAIL="admin@${DOMAIN}"
 fi
 
@@ -71,47 +70,43 @@ install_deps() {
 }
 install_deps
 
-# 4. Cleanup Previous Failed Installs (CRITICAL STEP)
+# 4. Cleanup Previous Failed Installs
 echo -e "${GREEN}[+] Cleaning up potential conflicts...${NC}"
 systemctl stop nginx || true
-# Remove broken configs that prevent Nginx from starting/testing
 rm -f /etc/nginx/sites-enabled/elaheh
 rm -f /etc/nginx/sites-available/elaheh
 rm -f /etc/nginx/sites-enabled/default
 
-# Kill any process hogging port 80 (needed for Certbot Standalone)
+# Kill any process hogging port 80
 if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then
-    echo -e "${YELLOW}[!] Port 80 is busy. Stopping conflicting processes...${NC}"
+    echo -e "${YELLOW}[!] Port 80 is busy. Cleaning up...${NC}"
     kill -9 $(lsof -t -i:80) || true
 fi
 
 # 5. Obtain SSL (Smart Standalone Mode)
-echo -e "${GREEN}[+] Requesting SSL Certificate for ${DOMAIN}...${NC}"
+echo -e "${GREEN}[+] Checking SSL Certificates for ${DOMAIN}...${NC}"
 
 if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     echo -e "${YELLOW}[i] Certificate already exists. Skipping request.${NC}"
 else
-    # Try to get cert for both DOMAIN and www.DOMAIN
     echo -e "${YELLOW}[i] Attempting to secure ${DOMAIN} and www.${DOMAIN}...${NC}"
     if certbot certonly --standalone --preferred-challenges http \
         --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" -d "www.${DOMAIN}"; then
         echo -e "${GREEN}[✓] Certificate obtained for domain and subdomains.${NC}"
     else
         echo -e "${YELLOW}[!] Failed to get cert for www subdomain. Retrying for root domain only...${NC}"
-        # Fallback to just DOMAIN
         certbot certonly --standalone --preferred-challenges http \
             --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}"
     fi
 fi
 
-# Verify SSL Exists
 if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     echo -e "${RED}[!] CRITICAL ERROR: SSL Certificate could not be obtained.${NC}"
     echo -e "${RED}[!] Please ensure your Domain A record points to $(curl -s ifconfig.me) and Port 80 is open.${NC}"
     exit 1
 fi
 
-# 6. Configure Nginx (Now safe because certs exist)
+# 6. Configure Nginx
 echo -e "${GREEN}[+] Configuring Nginx Reverse Proxy...${NC}"
 
 APP_PORT=3000
@@ -210,63 +205,73 @@ pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
 pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
 pm2 save --force
-pm2 startup | tail -n 1 | bash || true
+# Fixed: Explicitly set up startup instead of relying on pipe output parsing which was failing
+pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 
-# 9. Firewall
+# 9. Firewall (FIXED: Robust Port Detection)
 echo -e "${GREEN}[+] Securing Ports...${NC}"
-SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n 1 || echo "22")
+# Use a more robust way to default to 22 if grep returns nothing
+DETECTED_SSH=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n 1)
+SSH_PORT=${DETECTED_SSH:-22}
+
 if command -v ufw &> /dev/null; then
     ufw allow ${SSH_PORT}/tcp
     ufw allow 80/tcp
     ufw allow 443/tcp
+    # Force enable without prompt
     echo "y" | ufw enable
+elif command -v firewall-cmd &> /dev/null; then
+    systemctl start firewalld
+    firewall-cmd --permanent --add-port=${SSH_PORT}/tcp
+    firewall-cmd --permanent --add-port=80/tcp
+    firewall-cmd --permanent --add-port=443/tcp
+    firewall-cmd --reload
 fi
 
-# 10. CLI Tool (Install early to ensure availability)
+# 10. CLI Tool (Guaranteed Installation)
 echo -e "${GREEN}[+] Installing 'elaheh' Command Line Tool...${NC}"
-cat <<EOF > /usr/local/bin/elaheh
-#!/bin/bash
-INSTALL_DIR="/opt/elaheh-project"
+CLI_SCRIPT="#!/bin/bash
+INSTALL_DIR=\"/opt/elaheh-project\"
 RED='\033[0;31m'
 GREEN='\033[1;32m'
 NC='\033[0m'
 
-show_menu() {
-    clear
-    echo -e "${GREEN} Elaheh Management Console${NC}"
-    echo "1. Update Panel & Core"
-    echo "2. Restart Services (Nginx/PM2)"
-    echo "3. Renew SSL Certificates"
-    echo "4. View Logs"
-    echo "5. Exit"
-}
-
 update_app() {
-    echo "Updating..."
-    cd "\$INSTALL_DIR" && git pull origin main
+    echo \"Updating...\"
+    cd \"\$INSTALL_DIR\" && git pull origin main
     pm2 restart elaheh-app
-    echo -e "${GREEN}Update Complete.${NC}"
+    echo -e \"\${GREEN}Update Complete.\${NC}\"
 }
 
 renew_ssl() {
-    echo "Stopping Nginx..."
+    echo \"Stopping Nginx...\"
     systemctl stop nginx
     certbot renew
     systemctl start nginx
-    echo -e "${GREEN}SSL Renewed.${NC}"
+    echo -e \"\${GREEN}SSL Renewed.\${NC}\"
 }
 
-read -p "Select option: " choice
-case "\$choice" in
+clear
+echo -e \"\${GREEN} Elaheh Management Console\${NC}\"
+echo \"1. Update Panel & Core\"
+echo \"2. Restart Services\"
+echo \"3. Renew SSL Certificates\"
+echo \"4. View Logs\"
+echo \"5. Exit\"
+read -p \"Select option: \" choice
+case \"\$choice\" in
   1) update_app ;;
-  2) systemctl restart nginx; pm2 restart elaheh-app; echo "Services Restarted." ;;
+  2) systemctl restart nginx; pm2 restart elaheh-app; echo \"Services Restarted.\" ;;
   3) renew_ssl ;;
   4) pm2 logs elaheh-app --lines 50 ;;
   5) exit 0 ;;
-  *) echo "Invalid option" ;;
-esac
-EOF
+  *) echo \"Invalid option\" ;;
+esac"
+
+echo "$CLI_SCRIPT" > /usr/local/bin/elaheh
 chmod +x /usr/local/bin/elaheh
+# Also create in /usr/bin to ensure it's in PATH immediately
+cp /usr/local/bin/elaheh /usr/bin/elaheh
 
 # 11. Final Output
 PUBLIC_IP=$(curl -s ifconfig.me)
