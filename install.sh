@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.5.0 (Stable Build Fix)
+# Version 2.5.2 (System Upgrade & Build Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.5.0"
+echo "   Version 2.5.2"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -51,7 +51,7 @@ if [ -z "$EMAIL" ]; then
 fi
 
 # 3. Detect OS & Install Dependencies
-echo -e "${GREEN}[+] Installing System Dependencies...${NC}"
+echo -e "${GREEN}[+] Checking System...${NC}"
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$NAME
@@ -60,10 +60,21 @@ fi
 install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         export DEBIAN_FRONTEND=noninteractive
+        # Fix lock issues
         rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
+        
+        echo -e "${GREEN}[+] Updating System Packages (apt-get update & upgrade)...${NC}"
         apt-get update -y -qq
+        apt-get upgrade -y -qq
+        
+        echo -e "${GREEN}[+] Installing System Dependencies...${NC}"
         apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential
+        
     elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        echo -e "${GREEN}[+] Updating System Packages (dnf upgrade)...${NC}"
+        dnf upgrade -y --refresh
+        
+        echo -e "${GREEN}[+] Installing System Dependencies...${NC}"
         dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make
     fi
 }
@@ -175,7 +186,7 @@ if [ ! -f "src/styles.css" ]; then
     touch src/styles.css
 fi
 
-# Overwrite package.json with known working versions
+# Overwrite package.json with loose versions to prevent ETARGET errors
 cat <<EOF > package.json
 {
   "name": "project-elaheh",
@@ -194,7 +205,7 @@ cat <<EOF > package.json
     "@angular/forms": "^19.0.0",
     "@angular/platform-browser": "^19.0.0",
     "@angular/router": "^19.0.0",
-    "@google/genai": "0.1.1",
+    "@google/genai": "*",
     "chart.js": "^4.4.1",
     "qrcode": "^1.5.3",
     "rxjs": "~7.8.0",
