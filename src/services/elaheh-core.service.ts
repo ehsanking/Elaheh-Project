@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.1'; 
+export const APP_VERSION = '1.2.0'; 
 export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; 
 
 // Declare process for type checking
@@ -17,7 +17,8 @@ export interface LinkConfig {
   alias: string;
   quotaGb: number | null;
   expiryDate: string | null;
-  protocol: string;
+  protocol: 'vless' | 'vmess' | 'trojan' | 'trusttunnel' | 'openvpn' | 'shadowsocks';
+  description?: string;
 }
 
 export interface User {
@@ -40,7 +41,7 @@ export interface LogEntry {
   message: string;
 }
 
-export type EndpointType = 'CDN' | 'CLOUD' | 'VPS' | 'EDGE' | 'BLOCKCHAIN' | 'P2P' | 'SATELLITE';
+export type EndpointType = 'CDN' | 'CLOUD' | 'VPS' | 'EDGE' | 'BLOCKCHAIN' | 'P2P' | 'TRUST_TUNNEL';
 export type CamouflageProfile = 'AI_TRAINING' | 'DATA_SYNC' | 'MEDIA_FETCH';
 export type GameProfile = 'COD_MOBILE' | 'PUBG' | 'CLASH_ROYALE' | 'MMORPG';
 
@@ -114,7 +115,7 @@ export class ElahehCoreService {
 
   // Theme & Branding
   theme = signal<'light' | 'dark'>('dark');
-  brandName = signal<string>('توسعه‌دهنده هوشمند');
+  brandName = signal<string>('Project Elaheh');
   brandLogo = signal<string | null>(null); 
   
   // Store Config
@@ -152,7 +153,7 @@ export class ElahehCoreService {
     return 'Poor';
   });
 
-  upstreamNode = computed(() => this.edgeNodeAddress() || 'Scanning...');
+  upstreamNode = signal<string>('Not Connected');
   downstreamNode = signal<string>('Local Relay');
   
   activeStrategy = signal<EndpointStrategy>({
@@ -164,13 +165,11 @@ export class ElahehCoreService {
 
   isTestingTunnels = signal<boolean>(false);
   tunnelProviders = signal<TunnelProvider[]>([
+    { id: 'trusttunnel', name: 'TrustTunnel (AdGuard)', type: 'TRUST_TUNNEL', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'arvan', name: 'ArvanCloud Relay', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'derak', name: 'Derak Cloud', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'hetzner', name: 'Hetzner Direct', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'cloudflare', name: 'Cloudflare Worker', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
-    // Background Service Targets
-    { id: 'cf-tunnel', name: 'Cloudflare Tunnel', type: 'EDGE', status: 'untested', latencyMs: null, jitterMs: null },
-    { id: 'localxpose', name: 'LocalXpose', type: 'EDGE', status: 'untested', latencyMs: null, jitterMs: null },
   ]);
 
   logs = signal<LogEntry[]>([]);
@@ -245,7 +244,6 @@ export class ElahehCoreService {
   dohStatus = signal<'inactive' | 'creating' | 'active' | 'failed'>('inactive');
   dohUrl = computed(() => (this.dohStatus() === 'active' && this.customDomain()) ? `https://${this.dohSubdomain()}.${this.customDomain()}/dns-query` : null);
   
-  // FIX: Added missing signal used in Dashboard
   optimalDnsResolver = signal<string | null>(null);
 
   private ai: GoogleGenAI | null = null;
@@ -260,7 +258,7 @@ export class ElahehCoreService {
     this.initSimulatedMetrics();
     this.addLog('INFO', `Core Service Initialized v${APP_VERSION}`);
     this.loadPersistedData();
-    this.loadServerConfig(); // Auto-load server-config.json
+    this.loadServerConfig(); 
 
     const apiKey = typeof process !== 'undefined' ? process.env?.API_KEY : null;
     if (apiKey) { this.ai = new GoogleGenAI({ apiKey }); }
@@ -295,13 +293,13 @@ export class ElahehCoreService {
 
     effect(() => {
       if (this.isConfigured() && this.serverRole() === 'external') {
-        this.addLog('INFO', 'System configured.');
+        this.addLog('INFO', 'System configured as Upstream.');
         this.startCamouflageSimulation();
         if (this.tunnelMode() === 'auto') {
             this.startAutoTesting();
         }
       } else if (this.isConfigured() && this.serverRole() === 'iran') {
-        this.addLog('INFO', 'Iran Node Configured.');
+        this.addLog('INFO', 'Iran Node Configured. Connecting to Upstream: ' + this.upstreamNode());
         this.startNatKeepAlive();
       }
     });
@@ -347,18 +345,12 @@ export class ElahehCoreService {
       });
   }
 
-  // --- IP Detection Method ---
   async fetchIpLocation(ip?: string): Promise<any> {
-    // Switching to ipwho.is for better browser/CORS/HTTPS compatibility
-    // ip-api.com (free) does not support HTTPS/CORS from browser
     const url = ip ? `https://ipwho.is/${ip}` : 'https://ipwho.is/';
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-        
-        // Normalize response to match existing application structure
-        // ipwho.is returns { success: true, country_code: 'IR', country: 'Iran', ip: '...' }
         if (data.success) {
             return {
                 status: 'success',
@@ -413,20 +405,22 @@ export class ElahehCoreService {
 
   runTunnelAnalysis() {
       this.isTestingTunnels.set(true);
-      this.addLog('INFO', 'Background Service: Scanning tunnel providers (Cloudflare, LocalXpose, CDN)...');
+      this.addLog('INFO', 'Background Service: Scanning tunnel providers (TrustTunnel, Cloudflare, CDN)...');
       
       setTimeout(() => {
           const updates = this.tunnelProviders().map(p => {
-              // Simulate realistic network conditions based on provider type
+              // Simulate realistic network conditions
               let latencyBase = 40;
               let jitterBase = 5;
               
-              if (p.type === 'EDGE') {
-                  // Tunnels like CF/LocalXpose often have slightly higher latency due to double-hop but good stability
+              if (p.id === 'trusttunnel') {
+                  // TrustTunnel usually has good performance due to HTTP/3
+                  latencyBase = 35;
+                  jitterBase = 2;
+              } else if (p.type === 'EDGE') {
                   latencyBase = 65;
                   jitterBase = 3;
               } else if (p.type === 'VPS') {
-                  // Direct VPS usually lowest latency
                   latencyBase = 30;
                   jitterBase = 10;
               }
@@ -434,7 +428,6 @@ export class ElahehCoreService {
               const latency = Math.floor(Math.random() * 50) + latencyBase; 
               const jitter = Math.floor(Math.random() * 10) + jitterBase;
               
-              // Simulate occasional provider outage (5% chance)
               const status: 'optimal' | 'suboptimal' | 'failed' = 
                 (Math.random() > 0.95) ? 'failed' : 
                 (latency < 60 && jitter < 15) ? 'optimal' : 'suboptimal';
@@ -448,14 +441,10 @@ export class ElahehCoreService {
           this.tunnelProviders.set(updates as any);
           
           if (this.tunnelMode() === 'auto') {
-              // Select best provider
               const candidates = updates.filter(u => u.status !== 'failed' && u.latencyMs !== null);
               if (candidates.length > 0) {
-                  // Sort by latency + jitter weight
                   candidates.sort((a, b) => (a.latencyMs! + a.jitterMs!) - (b.latencyMs! + b.jitterMs!));
                   const best = candidates[0];
-                  
-                  // Only switch if different from current active (simple check by name for now)
                   if (best.name !== this.activeStrategy().providerName) {
                       this.addLog('SUCCESS', `Auto-Switch: Switching to ${best.name} (${best.latencyMs}ms)`);
                       this.activateProvider(best);
@@ -473,10 +462,57 @@ export class ElahehCoreService {
 
   addUser(username: string, quota: number, days: number, concurrentLimit: number, mode: 'auto' | 'manual' = 'auto', manualConfig: any = null): User {
     const userId = Math.random().toString(36).substring(2);
-    const host = this.customDomain() || 'YOUR_IP_OR_DOMAIN';
+    // Determine the host: If external role, use custom domain. If Iran role, use the Iran Server IP/Domain.
+    const host = this.customDomain() || 'YOUR_SERVER_IP';
     const subUrl = `https://${host}/sub/${userId}`;
     const uuid = crypto.randomUUID();
-    const vlessLink = `vless://${uuid}@${host}:443?type=ws&security=tls&path=%2Fws#${username}_Auto`;
+    
+    // Generate Multiple Links for Auto Mode
+    const links: LinkConfig[] = [];
+
+    if (mode === 'auto') {
+        // 1. VLESS Reality (Standard)
+        links.push({
+            alias: 'VLESS Reality (Auto)',
+            url: `vless://${uuid}@${host}:443?type=tcp&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com#${username}_VLESS`,
+            quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Best for general use'
+        });
+
+        // 2. VMess WS (CDN)
+        links.push({
+            alias: 'VMess WS CDN',
+            url: `vmess://${btoa(JSON.stringify({v: "2", ps: username + "_VMess", add: host, port: "443", id: uuid, aid: "0", scy: "auto", net: "ws", type: "none", host: host, path: "/ws", tls: "tls"}))}`,
+            quotaGb: null, expiryDate: null, protocol: 'vmess', description: 'Good for CDN tunneling'
+        });
+
+        // 3. TrustTunnel (AdGuard - HTTPS/3)
+        links.push({
+            alias: 'TrustTunnel (AdGuard)',
+            url: `trust://${username}:${uuid}@${host}:443?mode=http3&sni=${host}#${username}_Trust`,
+            quotaGb: null, expiryDate: null, protocol: 'trusttunnel', description: 'Stealth HTTPS/HTTP3, Hard to detect'
+        });
+
+        // 4. OpenVPN (Legacy)
+        links.push({
+            alias: 'OpenVPN (TCP)',
+            url: `https://${host}/api/ovpn/${userId}.ovpn`,
+            quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Legacy compatibility'
+        });
+
+        // 5. Trojan (Direct)
+        links.push({
+            alias: 'Trojan Direct',
+            url: `trojan://${uuid}@${host}:443?security=tls&sni=${host}#${username}_Trojan`,
+            quotaGb: null, expiryDate: null, protocol: 'trojan', description: 'Simple & Fast'
+        });
+
+    } else if (manualConfig) {
+        // Manual Construction
+        const port = manualConfig.port || 443;
+        const proto = manualConfig.protocol || 'vless';
+        const linkStr = `${proto}://${uuid}@${host}:${port}?type=${manualConfig.transport}&security=${manualConfig.security}&path=%2Fws#${username}_Manual`;
+        links.push({ alias: 'Manual Config', url: linkStr, quotaGb: null, expiryDate: null, protocol: proto as any });
+    }
 
     const newUser: User = { 
         id: userId, 
@@ -485,29 +521,15 @@ export class ElahehCoreService {
         usedGb: 0, 
         expiryDays: days, 
         status: 'active', 
-        links: [
-            { alias: 'Default VLESS', url: vlessLink, quotaGb: null, expiryDate: null, protocol: 'vless' }
-        ], 
+        links: links, 
         concurrentConnectionsLimit: concurrentLimit, 
         currentConnections: 0, 
         subscriptionLink: subUrl, 
         udpEnabled: true 
     };
 
-    if (manualConfig) {
-        const port = manualConfig.port || 443;
-        const proto = manualConfig.protocol || 'vless';
-        const manualLink = `${proto}://${uuid}@${host}:${port}?type=${manualConfig.transport}&security=${manualConfig.security}&path=%2Fws#${username}_Manual`;
-        newUser.links.push({ alias: 'Manual Config', url: manualLink, quotaGb: null, expiryDate: null, protocol: proto });
-    }
-
     this.users.update(u => [...u, newUser]);
     return newUser;
-  }
-  
-  generateLinkString(userId: string, config: any, alias: string): string { 
-      const host = this.customDomain() || 'example.com';
-      return `vless://${userId}@${host}:443?type=ws&security=tls&path=%2Fws#${alias}`; 
   }
   
   removeUser(id: string) { this.users.update(u => u.filter(x => x.id !== id)); }
@@ -516,53 +538,57 @@ export class ElahehCoreService {
   updateUserLinks(userId: string, links: LinkConfig[]) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...links] }; } return u; })); }
   addLog(level: any, message: string) { const entry: LogEntry = { timestamp: new Date().toLocaleTimeString(), level, message }; this.logs.update(l => [entry, ...l].slice(0, 50)); }
   
-  // New: Secure Key Generation with stronger entropy simulation
+  // --- Connection Key Generation (Upstream/External) ---
+  generateConnectionToken(): string {
+      // Used by External Server to generate a key for Iran Server to connect
+      const host = this.customDomain() || '127.0.0.1'; // In real app, detect Public IP
+      const token = this.generateSecureEdgeKey(); // The auth token
+      // Format: EL-LINK-base64(HOST|TOKEN)
+      const payload = btoa(`${host}|${token}`);
+      return `EL-LINK-${payload}`;
+  }
+
+  // --- Connection Key Parsing (Edge/Iran) ---
+  parseConnectionToken(tokenString: string): { host: string, token: string } | null {
+      if (!tokenString.startsWith('EL-LINK-')) return null;
+      try {
+          const payload = atob(tokenString.replace('EL-LINK-', ''));
+          const parts = payload.split('|');
+          if (parts.length !== 2) return null;
+          return { host: parts[0], token: parts[1] };
+      } catch (e) {
+          return null;
+      }
+  }
+
   generateSecureEdgeKey(): string { 
       const array = new Uint8Array(32);
       crypto.getRandomValues(array);
       const randomPart = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-      const timestamp = Date.now().toString(36);
-      const signature = 'EL-SEC-' + btoa(timestamp + randomPart).substring(0, 20); // Simulated signature
-      return `${signature}-${randomPart.substring(0, 16).toUpperCase()}-${timestamp.toUpperCase()}`;
+      return randomPart;
   }
   
-  // Deprecated simplified version, kept for compatibility but redirecting to secure one
-  generateEdgeNodeKey(): string { return this.generateSecureEdgeKey(); }
-
-  // New: Method to register the key from the wizard (for External role)
-  registerEdgeNode(key: string) {
-      if(!key) return;
-      this.edgeNodeAuthKey.set(key);
-      this.addLog('SUCCESS', 'Edge Identity Token registered.');
-      // Simulate handshake process
+  // Connect Iran Server TO External Server
+  connectToUpstream(tokenString: string) {
+      const data = this.parseConnectionToken(tokenString);
+      if(!data) {
+          this.addLog('ERROR', 'Invalid Connection Token format.');
+          return;
+      }
+      
+      this.edgeNodeAuthKey.set(data.token);
+      this.upstreamNode.set(data.host);
+      
+      this.addLog('INFO', `Connecting to Upstream: ${data.host}...`);
       this.edgeNodeStatus.set('connecting');
+      
+      // Simulate Connection Handshake
       setTimeout(() => {
           this.edgeNodeStatus.set('connected');
-          this.addLog('INFO', 'Edge Node Handshake Successful.');
-      }, 1500);
-  }
-
-  // --- Identity Validation Logic ---
-  verifyEdgeIdentity(key: string): Promise<EdgeNodeInfo> {
-    return new Promise((resolve, reject) => {
-      // Simulate network delay
-      setTimeout(() => {
-        // Basic format check simulation
-        if (key.startsWith('EL-SEC-') && key.length > 20) {
-          // Success Mock
-          resolve({
-            ip: '5.200.14.' + Math.floor(Math.random() * 255),
-            location: 'Tehran, Iran (Asiatech)',
-            hostname: 'ir-edge-node-01',
-            latency: '24ms',
-            provider: 'Asiatech Cloud'
-          });
-        } else {
-          // Failure Mock
-          reject('Invalid Identity Token signature.');
-        }
-      }, 2000); // 2s delay
-    });
+          this.addLog('SUCCESS', 'Tunnel established with Upstream Server.');
+          // Enable NAT traversal as client
+          this.natStatus.set('Connected');
+      }, 2000);
   }
 
   updateEdgeNodeConfig(address: string, key: string) { this.edgeNodeAddress.set(address); this.edgeNodeAuthKey.set(key); this.testEdgeNodeConnection(); }

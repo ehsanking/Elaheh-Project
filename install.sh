@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Project Elaheh Installer
@@ -179,7 +178,7 @@ cat <<EOF > package.json
     "@angular/forms": "^19.0.0",
     "@angular/platform-browser": "^19.0.0",
     "@angular/router": "^19.0.0",
-    "@google/genai": "*",
+    "@google/genai": "^0.1.1",
     "chart.js": "^4.4.1",
     "qrcode": "^1.5.3",
     "rxjs": "~7.8.0",

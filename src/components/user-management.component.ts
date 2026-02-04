@@ -54,30 +54,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       sni: ['google.com']
   });
 
-  // Just for link management modal
-  linkGenForm = this.fb.group({
-    protocol: ['vless', Validators.required],
-    transport: ['ws', Validators.required],
-    security: ['reality', Validators.required],
-    port: [443, [Validators.required, Validators.min(1), Validators.max(65535)]],
-    sni: ['google.com', Validators.required],
-    linkQuota: [null as number | null],
-    linkExpiry: [null as string | null],
-    fingerprint: ['chrome', Validators.required],
-    alpn: ['h2,http/1.1', Validators.required],
-    allowInsecure: [false, Validators.required],
-    udp: [true], // UDP support toggle
-    // SSH Controls
-    sshTunnelType: ['dynamic'],
-    sshLocalPort: [1080],
-    sshRemoteHost: ['localhost'],
-    sshRemotePort: [8080],
-    // IAP Controls
-    iapProjectId: [''],
-    iapZone: [''],
-    iapInstance: [''],
-  });
-
   private destroy$ = new Subject<void>();
 
   filteredUsers = computed(() => {
@@ -160,4 +136,36 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   }
 
   getProtocolFromUrl(url: string) { return 'vless'; } // simplified for display
+
+  // --- App Recommendation Logic ---
+  getRecommendedApps(protocol: string) {
+      const p = protocol.toLowerCase();
+      
+      // VLESS, VMess, Trojan, Shadowsocks
+      if (p.startsWith('vless') || p.startsWith('vmess') || p.startsWith('trojan') || p.startsWith('shadow')) {
+          return [
+              { name: 'Hiddify (Universal)', icon: '🚀', url: 'https://github.com/hiddify/hiddify-next/releases' },
+              { name: 'v2rayNG (Android)', icon: '🤖', url: 'https://play.google.com/store/apps/details?id=com.v2ray.ang' },
+              { name: 'V2Box (iOS)', icon: '🍎', url: 'https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690' },
+              { name: 'v2rayN (Windows)', icon: '🪟', url: 'https://github.com/2dust/v2rayN/releases' }
+          ];
+      }
+      
+      // TrustTunnel (AdGuard)
+      if (p.startsWith('trust')) {
+          return [
+              { name: 'AdGuard VPN', icon: '🛡️', url: 'https://adguard-vpn.com/en/welcome.html' },
+              { name: 'Trust Client (Custom)', icon: '🔒', url: '#' } // Placeholder for custom client
+          ];
+      }
+
+      // OpenVPN
+      if (p.includes('openvpn') || p.includes('ovpn')) {
+          return [
+              { name: 'OpenVPN Connect', icon: '🌐', url: 'https://openvpn.net/client-connect-vpn-for-windows/' }
+          ];
+      }
+
+      return [];
+  }
 }
