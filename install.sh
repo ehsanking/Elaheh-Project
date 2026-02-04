@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.5 (Direct Node.js Binary Install)
+# Version 1.3.7 (Aggressive Repo Cleanup & Direct Binary Install)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.5"
+echo "   Version 1.3.7"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -36,6 +36,13 @@ fi
 
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     export DEBIAN_FRONTEND=noninteractive
+    
+    # --- AGGRESSIVE CLEANUP: Find and remove all NodeSource-related files to fix persistent apt errors ---
+    echo -e "${YELLOW}[!] Aggressively cleaning up old Node.js repository configurations...${NC}"
+    find /etc/apt/ -type f -name "*nodesource*" -delete
+    apt-get clean
+    # --- End of fix ---
+
     apt-get update -y -qq
     # Install standard dependencies, but not Node.js via apt. xz-utils is needed for decompression.
     apt-get install -y -qq curl git unzip ufw xz-utils
