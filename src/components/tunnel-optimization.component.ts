@@ -19,7 +19,7 @@ import { LanguageService } from '../services/language.service';
       <div class="flex justify-between items-center mb-6 bg-gray-800 p-3 rounded-lg border border-gray-700">
           <div class="flex items-center gap-4">
               <div class="flex items-center gap-1 bg-gray-700 p-1 rounded-lg">
-                <button (click)="core.setTunnelMode('auto')"
+                <button type="button" (click)="core.setTunnelMode('auto')"
                         class="px-3 py-1 text-sm font-medium rounded-md transition-colors w-28"
                         [class.bg-teal-600]="core.tunnelMode() === 'auto'"
                         [class.text-white]="core.tunnelMode() === 'auto'"
@@ -28,7 +28,7 @@ import { LanguageService } from '../services/language.service';
                         [attr.data-tooltip]="languageService.translate('tooltips.settings.autoPilot')">
                     {{ languageService.translate('tunnel.autoPilot') }}
                 </button>
-                <button (click)="core.setTunnelMode('manual')"
+                <button type="button" (click)="core.setTunnelMode('manual')"
                         class="px-3 py-1 text-sm font-medium rounded-md transition-colors w-28"
                         [class.bg-teal-600]="core.tunnelMode() === 'manual'"
                         [class.text-white]="core.tunnelMode() === 'manual'"
@@ -49,7 +49,7 @@ import { LanguageService } from '../services/language.service';
               }
           </div>
           
-          <button (click)="core.runTunnelAnalysis()" [disabled]="core.isTestingTunnels()"
+          <button type="button" (click)="core.runTunnelAnalysis()" [disabled]="core.isTestingTunnels()"
                   class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-wait text-white font-bold py-2 px-4 rounded transition-colors shadow-lg text-sm flex items-center gap-2">
               @if(core.isTestingTunnels()) {
                 <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -115,7 +115,7 @@ import { LanguageService } from '../services/language.service';
 
                 <div class="w-24 text-right">
                     @if (core.tunnelMode() === 'manual' && provider.status !== 'optimal') {
-                        <button (click)="activateProvider(provider)"
+                        <button type="button" (click)="activateProvider(provider)"
                                 [disabled]="provider.status === 'failed' || provider.status === 'untested' || provider.status === 'testing'"
                                 class="bg-gray-700 hover:bg-gray-600 text-teal-400 px-3 py-1 rounded text-xs uppercase font-bold tracking-wider shadow border border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
                             {{ languageService.translate('tunnel.activate') }}

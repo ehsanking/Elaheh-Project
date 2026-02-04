@@ -1,3 +1,4 @@
+
 <div class="bg-gray-800 rounded-lg shadow-xl border border-gray-700 max-w-4xl mx-auto">
   <!-- Header & Tabs -->
   <div class="px-6 pt-6">
@@ -124,11 +125,17 @@
         <div class="space-y-8">
             <app-domain-ssl></app-domain-ssl>
             <app-endpoint-settings></app-endpoint-settings>
+            <app-tunnel-optimization></app-tunnel-optimization>
+            <app-nat-traversal></app-nat-traversal>
+            <app-iap-settings></app-iap-settings>
+            <app-ssh-settings></app-ssh-settings>
         </div>
       }
       @case ('security') {
         <div class="space-y-8">
           <app-camouflage-settings></app-camouflage-settings>
+          <app-application-camouflage></app-application-camouflage>
+          <app-doh-settings></app-doh-settings>
         </div>
       }
     }
