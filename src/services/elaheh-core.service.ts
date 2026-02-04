@@ -781,24 +781,38 @@ export class ElahehCoreService {
           this.totalDataTransferred.update(v => v + 0.01);
           this.transferRateMbps.set(Math.floor(Math.random() * 50) + 20);
           
-          this.packetLossRate.set(parseFloat((Math.random() * 2).toFixed(2)));
-          this.jitterMs.set(Math.floor(Math.random() * 30) + 5);
+          // Enhanced Network Metrics Simulation
+          this.packetLossRate.set(parseFloat((Math.random() * 2).toFixed(2))); // 0% - 2%
+          this.jitterMs.set(Math.floor(Math.random() * 30) + 5); // 5ms - 35ms
           
+          // Simulate active user connections and enforce limits
           this.users.update(users => users.map(u => {
               if (u.status === 'active') {
+                  // Fluctuate connections randomly
                   let newConns = u.currentConnections;
+                  
+                  // Small chance to fluctuate
                   if (Math.random() > 0.7) {
-                      const change = Math.floor(Math.random() * 3) - 1;
+                      const change = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
                       newConns = Math.max(0, newConns + change);
-                      if (Math.random() > 0.95) newConns = u.concurrentConnectionsLimit + 1;
+                      
+                      // Occasional spike above limit for testing enforcement
+                      if (Math.random() > 0.95) {
+                          newConns = u.concurrentConnectionsLimit + 1;
+                      }
                   }
 
+                  // Enforcement Logic
                   if (newConns > u.concurrentConnectionsLimit) {
+                      // 30% chance to ban, 70% chance to disconnect oldest session (clamp)
                       if (Math.random() > 0.7) {
-                          this.addLog('WARN', `User ${u.username} banned for excessive connections (${newConns}/${u.concurrentConnectionsLimit}).`);
-                          return { ...u, currentConnections: newConns, status: 'banned', uploadGb: u.uploadGb || 0, downloadGb: u.downloadGb || 0 };
+                          this.addLog('WARN', `User ${u.username} banned for excessive concurrent connections (${newConns}/${u.concurrentConnectionsLimit}).`);
+                          return { ...u, currentConnections: newConns, status: 'banned' };
                       } else {
-                          if (Math.random() > 0.8) this.addLog('INFO', `User ${u.username} session terminated. Limit exceeded (${newConns}/${u.concurrentConnectionsLimit}).`);
+                          // Disconnect/Clamp
+                          if (Math.random() > 0.8) { // Don't spam logs
+                             this.addLog('INFO', `User ${u.username} session terminated. Limit exceeded (${newConns}/${u.concurrentConnectionsLimit}).`);
+                          }
                           newConns = u.concurrentConnectionsLimit;
                       }
                   }
@@ -824,7 +838,7 @@ export class ElahehCoreService {
                   }
                   return updatedUser;
               }
-              return { ...u, uploadGb: u.uploadGb || 0, downloadGb: u.downloadGb || 0 };
+              return u;
           }));
       }, 3000);
   }
