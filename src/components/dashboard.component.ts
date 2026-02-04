@@ -1,5 +1,5 @@
 
-import { Component, inject, OnInit, OnDestroy, signal, effect, ChangeDetectionStrategy, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, effect, ChangeDetectionStrategy, computed, untracked } from '@angular/core';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { CommonModule } from '@angular/common';
 import { LanguageService } from '../services/language.service';
@@ -48,19 +48,34 @@ import { LanguageService } from '../services/language.service';
         <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ languageService.translate('dashboard.encryptedPayload') }}</div>
       </div>
 
-      <!-- Card 4: Camouflage Status -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-gray-300 dark:hover:border-gray-600" [attr.data-tooltip]="languageService.translate('tooltips.dashboard.camouflageCard')">
-        <h3 class="text-gray-500 dark:text-gray-400 text-sm font-uppercase font-bold tracking-wider">{{ languageService.translate('dashboard.camouflage.title') }}</h3>
-        <div class="text-lg font-bold text-teal-600 dark:text-teal-400 mt-1 truncate">{{ languageService.translate('settings.camouflage.profileDesc.' + core.camouflageProfile().split('_')[0].toLowerCase()) }}</div>
-        <div class="flex flex-col gap-1 mt-2 text-xs font-mono">
-            <div><span class="text-gray-400 dark:text-gray-500">{{ languageService.translate('dashboard.camouflage.jobStatus') }}:</span> 
-                @if(core.camouflageJobStatus() === 'RUNNING') {
-                    <span class="text-yellow-500 dark:text-yellow-400 animate-pulse">{{ languageService.translate('dashboard.camouflage.running') }}</span>
-                } @else {
-                    <span class="text-green-500 dark:text-green-400">{{ languageService.translate('dashboard.camouflage.idle') }}</span>
-                }
+      <!-- Card 4: System Load (Vertical Bars) -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-lg relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-gray-300 dark:hover:border-gray-600">
+        <h3 class="text-gray-500 dark:text-gray-400 text-sm font-uppercase font-bold tracking-wider mb-2">System Load</h3>
+        <div class="flex items-end justify-center gap-6 h-16">
+            <!-- CPU Bar -->
+            <div class="flex flex-col items-center gap-1 group/cpu">
+                <div class="w-4 bg-gray-200 dark:bg-gray-700 rounded-t-sm h-12 relative overflow-hidden">
+                    <div class="absolute bottom-0 left-0 w-full bg-blue-500 transition-all duration-500 ease-out" [style.height.%]="core.serverLoad()"></div>
+                </div>
+                <div class="text-[10px] font-mono text-gray-500 dark:text-gray-400">CPU</div>
+                <div class="absolute -top-8 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/cpu:opacity-100 transition-opacity">{{ core.serverLoad() }}%</div>
             </div>
-             <div><span class="text-gray-400 dark:text-gray-500">{{ languageService.translate('dashboard.camouflage.lastRun') }}:</span> <span class="text-gray-600 dark:text-gray-300">{{ lastRun() }}</span></div>
+            <!-- RAM Bar -->
+            <div class="flex flex-col items-center gap-1 group/ram">
+                <div class="w-4 bg-gray-200 dark:bg-gray-700 rounded-t-sm h-12 relative overflow-hidden">
+                    <div class="absolute bottom-0 left-0 w-full bg-purple-500 transition-all duration-500 ease-out" [style.height.%]="core.memoryUsage()"></div>
+                </div>
+                <div class="text-[10px] font-mono text-gray-500 dark:text-gray-400">RAM</div>
+                <div class="absolute -top-8 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/ram:opacity-100 transition-opacity">{{ core.memoryUsage() }}%</div>
+            </div>
+             <!-- DISK Bar -->
+            <div class="flex flex-col items-center gap-1 group/disk">
+                <div class="w-4 bg-gray-200 dark:bg-gray-700 rounded-t-sm h-12 relative overflow-hidden">
+                    <div class="absolute bottom-0 left-0 w-full bg-orange-500 transition-all duration-500 ease-out" [style.height.%]="core.diskUsagePercent()"></div>
+                </div>
+                <div class="text-[10px] font-mono text-gray-500 dark:text-gray-400">DSK</div>
+                <div class="absolute -top-8 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/disk:opacity-100 transition-opacity">{{ core.diskUsagePercent() | number:'1.0-0' }}%</div>
+            </div>
         </div>
       </div>
     </div>
@@ -229,11 +244,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private timerInterval: any;
 
   lastRun = computed(() => {
-    this.timer(); // Depend on the timer signal
+    const now = this.timer();
     const lastUpdate = this.core.lastCamouflageUpdate();
     if (!lastUpdate) return this.languageService.translate('dashboard.camouflage.never');
     
-    const now = this.timer();
     const seconds = Math.round((now - lastUpdate.getTime()) / 1000);
     
     if (seconds < 60) return `${seconds}s ago`;
@@ -331,19 +345,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     effect(() => {
-      // Update data
+      // Safely read signals for effect triggering
       const transferRate = this.core.transferRateMbps();
       const jobStatus = this.core.camouflageJobStatus();
       const jitter = this.core.jitterMs();
       const latency = this.core.activeStrategy().latencyMs;
       
-      this.updateChartData(transferRate, jobStatus);
-      this.updateStabilityData(latency, jitter);
+      // Execute chart updates safely
+      untracked(() => {
+          this.updateChartData(transferRate, jobStatus);
+          this.updateStabilityData(latency, jitter);
+      });
     });
   }
 
   ngOnInit(): void {
-    // Dynamically load Chart.js if not present (handled in index.html but safety check)
+    // Dynamically load Chart.js if not present
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
     script.onload = () => this.initCharts();
@@ -440,39 +457,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private updateChartData(transferRate: number, jobStatus: 'IDLE' | 'RUNNING'): void {
     if (!this.chart) return;
     
-    requestAnimationFrame(() => {
-      if (!this.chart) return; 
-      
-      const realTraffic = transferRate + (Math.random() * 20 - 10);
-      this.chart.data.datasets[0].data.shift();
-      this.chart.data.datasets[0].data.push(Math.max(0, realTraffic));
-      
-      let camouflageTraffic = 0;
-      if(jobStatus === 'RUNNING') {
-          camouflageTraffic = Math.random() * 50 + 20;
-      }
-      this.chart.data.datasets[1].data.shift();
-      this.chart.data.datasets[1].data.push(camouflageTraffic);
+    // We update the data structure immediately but rely on Chart.js to render
+    const realTraffic = transferRate + (Math.random() * 20 - 10);
+    this.chart.data.datasets[0].data.shift();
+    this.chart.data.datasets[0].data.push(Math.max(0, realTraffic));
+    
+    let camouflageTraffic = 0;
+    if(jobStatus === 'RUNNING') {
+        camouflageTraffic = Math.random() * 50 + 20;
+    }
+    this.chart.data.datasets[1].data.shift();
+    this.chart.data.datasets[1].data.push(camouflageTraffic);
 
-      this.chart.update('quiet');
+    // Defer update to ensure no synchronous layout thrashing affects NG check
+    requestAnimationFrame(() => {
+        if(this.chart) this.chart.update('quiet');
     });
   }
 
   private updateStabilityData(latency: number, jitter: number): void {
       if(!this.stabilityChart) return;
 
+      const currentLatency = latency + (Math.random() * 5 - 2.5);
+      this.stabilityChart.data.datasets[0].data.shift();
+      this.stabilityChart.data.datasets[0].data.push(currentLatency);
+
+      this.stabilityChart.data.datasets[1].data.shift();
+      this.stabilityChart.data.datasets[1].data.push(jitter);
+
       requestAnimationFrame(() => {
-          if (!this.stabilityChart) return;
-
-          // Latency with small jitter
-          const currentLatency = latency + (Math.random() * 5 - 2.5);
-          this.stabilityChart.data.datasets[0].data.shift();
-          this.stabilityChart.data.datasets[0].data.push(currentLatency);
-
-          this.stabilityChart.data.datasets[1].data.shift();
-          this.stabilityChart.data.datasets[1].data.push(jitter);
-
-          this.stabilityChart.update('quiet');
+          if(this.stabilityChart) this.stabilityChart.update('quiet');
       });
   }
 
