@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.4 (Secure Architecture Edition)
+# Version 1.0.5 (Secure Architecture Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.4"
+echo "   Version 1.0.5"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -422,6 +422,8 @@ case "\$OPT" in
 esac
 EOF
 chmod +x /usr/local/bin/elaheh
+# Add to global path for convenience if not already there
+ln -sf /usr/local/bin/elaheh /usr/bin/elaheh
 
 # 13. Firewall - Allow Specific Ports
 echo -e "${GREEN}[+] Configuring Firewall (Standard & Reserved Ports)...${NC}"

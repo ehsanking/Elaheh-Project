@@ -101,8 +101,9 @@ import { LanguageService } from '../services/language.service';
                     <div class="text-sm font-mono text-gray-200">{{ provider.latencyMs }}ms <span class="text-gray-500">/</span> {{ provider.jitterMs }} Jitter</div>
                     <div class="text-xs mt-1 capitalize"
                       [class.text-green-400]="provider.status === 'optimal'"
-                      [class.text-yellow-400]="provider.status === 'suboptimal'"
-                    >{{ provider.status }}</div>
+                      [class.text-yellow-400]="provider.status === 'suboptimal'">
+                      {{ provider.status }}
+                    </div>
                   } @else if (provider.status === 'failed') {
                     <div class="text-sm font-mono text-red-400">{{ languageService.translate('tunnel.failed') }}</div>
                   } @else if (provider.status === 'testing') {

@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, computed, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { ElahehCoreService, EdgeNodeInfo } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
 import { CommonModule } from '@angular/common';
@@ -23,14 +23,44 @@ import { FormsModule } from '@angular/forms';
                 </div>
                 <h2 class="text-3xl font-bold text-white tracking-tight">{{ languageService.translate('wizard.title') }}</h2>
             </div>
-            <!-- Language -->
-            <button (click)="toggleLang()" class="flex items-center gap-2 text-sm text-gray-300 hover:text-white bg-black/30 px-3 py-2 rounded border border-gray-600">
-               {{ languageService.getCurrentLanguageName() }}
-            </button>
+            <!-- Progress Indicator -->
+            <div class="flex gap-2">
+                <div class="h-2 w-8 rounded-full transition-all" [class.bg-teal-500]="currentStep() >= 1" [class.bg-gray-700]="currentStep() < 1"></div>
+                <div class="h-2 w-8 rounded-full transition-all" [class.bg-teal-500]="currentStep() >= 2" [class.bg-gray-700]="currentStep() < 2"></div>
+                <div class="h-2 w-8 rounded-full transition-all" [class.bg-teal-500]="currentStep() >= 3" [class.bg-gray-700]="currentStep() < 3"></div>
+                <div class="h-2 w-8 rounded-full transition-all" [class.bg-teal-500]="currentStep() >= 4" [class.bg-gray-700]="currentStep() < 4"></div>
+            </div>
         </div>
         
-        <!-- Step 1: Branding -->
+        <!-- Step 1: Language Selection -->
         @if (currentStep() === 1) {
+            <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                <h3 class="text-xl font-bold text-white mb-2 text-center">Select Language / انتخاب زبان</h3>
+                <p class="text-gray-400 mb-8 text-center">Please choose your preferred language to continue.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto w-full">
+                    <button type="button" (click)="selectLanguage('en')" class="p-6 bg-gray-700 hover:bg-teal-900 border border-gray-600 hover:border-teal-500 rounded-xl transition-all flex flex-col items-center gap-2 group">
+                        <span class="text-4xl">🇬🇧</span>
+                        <span class="font-bold text-white group-hover:text-teal-400">English</span>
+                    </button>
+                    <button type="button" (click)="selectLanguage('fa')" class="p-6 bg-gray-700 hover:bg-teal-900 border border-gray-600 hover:border-teal-500 rounded-xl transition-all flex flex-col items-center gap-2 group">
+                        <span class="text-4xl">🇮🇷</span>
+                        <span class="font-bold text-white group-hover:text-teal-400">فارسی</span>
+                    </button>
+                    <button type="button" (click)="selectLanguage('zh')" class="p-6 bg-gray-700 hover:bg-teal-900 border border-gray-600 hover:border-teal-500 rounded-xl transition-all flex flex-col items-center gap-2 group">
+                        <span class="text-4xl">🇨🇳</span>
+                        <span class="font-bold text-white group-hover:text-teal-400">中文</span>
+                    </button>
+                    <button type="button" (click)="selectLanguage('ru')" class="p-6 bg-gray-700 hover:bg-teal-900 border border-gray-600 hover:border-teal-500 rounded-xl transition-all flex flex-col items-center gap-2 group">
+                        <span class="text-4xl">🇷🇺</span>
+                        <span class="font-bold text-white group-hover:text-teal-400">Русский</span>
+                    </button>
+                </div>
+            </div>
+        }
+
+        <!-- Step 2: Branding -->
+        @if (currentStep() === 2) {
             <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
                 <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.branding.title') }}</h3>
                 <p class="text-gray-400 mb-8">{{ languageService.translate('wizard.branding.description') }}</p>
@@ -46,16 +76,17 @@ import { FormsModule } from '@angular/forms';
                     </div>
                 </div>
 
-                <div class="mt-auto flex justify-end">
-                  <button type="button" (click)="currentStep.set(2)" [disabled]="!siteTitle()" class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-colors">
+                <div class="mt-auto flex justify-between">
+                  <button type="button" (click)="currentStep.set(1)" class="text-gray-400 hover:text-white">{{ languageService.translate('common.back') }}</button>
+                  <button type="button" (click)="currentStep.set(3)" [disabled]="!siteTitle()" class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-colors">
                     {{ languageService.translate('common.next') }}
                   </button>
                 </div>
             </div>
         }
 
-        <!-- Step 2: Role Selection -->
-        @if (currentStep() === 2) {
+        <!-- Step 3: Role Selection -->
+        @if (currentStep() === 3) {
             <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
                 <div class="flex justify-between items-start mb-2">
                     <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.role.title') }}</h3>
@@ -112,7 +143,7 @@ import { FormsModule } from '@angular/forms';
                 </div>
 
                 <div class="mt-auto flex justify-between">
-                  <button type="button" (click)="currentStep.set(1)" class="text-gray-400 hover:text-white">{{ languageService.translate('common.back') }}</button>
+                  <button type="button" (click)="currentStep.set(2)" class="text-gray-400 hover:text-white">{{ languageService.translate('common.back') }}</button>
                   <button type="button" (click)="nextStep()" [disabled]="!selectedRole()" class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-colors">
                     {{ languageService.translate('common.next') }}
                   </button>
@@ -120,8 +151,8 @@ import { FormsModule } from '@angular/forms';
             </div>
         }
 
-        <!-- Step 3: Connection Logic -->
-        @if (currentStep() === 3) {
+        <!-- Step 4: Connection Logic -->
+        @if (currentStep() === 4) {
             <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
                 @if(selectedRole() === 'external') {
                     <!-- EXTERNAL SERVER: GENERATE TOKEN -->
@@ -173,7 +204,7 @@ import { FormsModule } from '@angular/forms';
                 }
 
                 <div class="mt-auto flex justify-between items-center">
-                    <button type="button" (click)="currentStep.set(2)" class="text-gray-400 hover:text-white">{{ languageService.translate('common.back') }}</button>
+                    <button type="button" (click)="currentStep.set(3)" class="text-gray-400 hover:text-white">{{ languageService.translate('common.back') }}</button>
                     <button type="button" (click)="finishSetup()" [disabled]="selectedRole() === 'iran' && !verifiedNode()" class="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg disabled:opacity-50">
                         {{ languageService.translate('wizard.finish.doneButton') }}
                     </button>
@@ -214,16 +245,16 @@ export class SetupWizardComponent implements OnInit {
       }
   }
 
-  toggleLang() {
-      const current = this.languageService.currentLang();
-      this.languageService.setLanguage(current === 'en' ? 'fa' : 'en');
+  selectLanguage(lang: 'en' | 'fa' | 'zh' | 'ru') {
+      this.languageService.setLanguage(lang);
+      this.currentStep.set(2);
   }
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
 
   nextStep() {
     this.currentStep.update(s => s + 1);
-    if (this.currentStep() === 3 && this.selectedRole() === 'external') {
+    if (this.currentStep() === 4 && this.selectedRole() === 'external') {
         this.generatedToken.set(this.core.generateConnectionToken());
     }
   }
