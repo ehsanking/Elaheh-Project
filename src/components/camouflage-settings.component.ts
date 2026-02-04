@@ -24,7 +24,7 @@ import { LanguageService } from '../services/language.service';
             <div>
               <label class="flex items-center p-3 rounded-lg border cursor-pointer transition-all"
                 [class.border-teal-500]="core.camouflageProfile() === 'AI_TRAINING'"
-                [ngClass]="{'bg-teal-900/20': core.camouflageProfile() === 'AI_TRAINING'}"
+                [class.bg-teal-900/20]="core.camouflageProfile() === 'AI_TRAINING'"
                 [class.border-gray-700]="core.camouflageProfile() !== 'AI_TRAINING'">
                 <input type="radio" name="camouflageProfile" value="AI_TRAINING" 
                        [ngModel]="core.camouflageProfile()"
@@ -37,7 +37,7 @@ import { LanguageService } from '../services/language.service';
              <div>
               <label class="flex items-center p-3 rounded-lg border cursor-pointer transition-all"
                 [class.border-teal-500]="core.camouflageProfile() === 'DATA_SYNC'"
-                [ngClass]="{'bg-teal-900/20': core.camouflageProfile() === 'DATA_SYNC'}"
+                [class.bg-teal-900/20]="core.camouflageProfile() === 'DATA_SYNC'"
                 [class.border-gray-700]="core.camouflageProfile() !== 'DATA_SYNC'">
                 <input type="radio" name="camouflageProfile" value="DATA_SYNC" 
                        [ngModel]="core.camouflageProfile()"
@@ -50,7 +50,7 @@ import { LanguageService } from '../services/language.service';
              <div>
               <label class="flex items-center p-3 rounded-lg border cursor-pointer transition-all"
                 [class.border-teal-500]="core.camouflageProfile() === 'MEDIA_FETCH'"
-                [ngClass]="{'bg-teal-900/20': core.camouflageProfile() === 'MEDIA_FETCH'}"
+                [class.bg-teal-900/20]="core.camouflageProfile() === 'MEDIA_FETCH'"
                 [class.border-gray-700]="core.camouflageProfile() !== 'MEDIA_FETCH'">
                 <input type="radio" name="camouflageProfile" value="MEDIA_FETCH"
                        [ngModel]="core.camouflageProfile()"

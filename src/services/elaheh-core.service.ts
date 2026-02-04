@@ -781,10 +781,30 @@ export class ElahehCoreService {
           this.totalDataTransferred.update(v => v + 0.01);
           this.transferRateMbps.set(Math.floor(Math.random() * 50) + 20);
           
-          // Enhanced Network Metrics Simulation
-          this.packetLossRate.set(parseFloat((Math.random() * 2).toFixed(2))); // 0% - 2%
-          this.jitterMs.set(Math.floor(Math.random() * 30) + 5); // 5ms - 35ms
-          
+          // Enhanced Network Metrics Simulation with Failover Trigger
+          let newPacketLoss: number;
+          let newJitter: number;
+
+          // Occasionally simulate a bad connection to trigger failover
+          if (this.serverRole() === 'iran' && Math.random() < 0.15) { // 15% chance for a spike
+              newPacketLoss = parseFloat((Math.random() * 5 + 5).toFixed(2)); // 5% - 10%
+              newJitter = Math.floor(Math.random() * 50) + 80; // 80ms - 130ms
+              this.addLog('WARN', `[Auto-Pilot] Network degradation detected! Loss: ${newPacketLoss}%, Jitter: ${newJitter}ms.`);
+          } else {
+              newPacketLoss = parseFloat((Math.random() * 2).toFixed(2)); // 0% - 2%
+              newJitter = Math.floor(Math.random() * 30) + 5; // 5ms - 35ms
+          }
+
+          this.packetLossRate.set(newPacketLoss);
+          this.jitterMs.set(newJitter);
+
+          // Check for auto-failover condition
+          const quality = this.connectionQuality();
+          if (this.tunnelMode() === 'auto' && this.serverRole() === 'iran' && quality === 'Poor' && !this.isTestingTunnels()) {
+              this.addLog('WARN', '[Auto-Pilot] Poor connection quality detected. Initiating automatic tunnel re-routing...');
+              this.runTunnelAnalysis();
+          }
+
           // Simulate active user connections and enforce limits
           this.users.update(users => users.map(u => {
               if (u.status === 'active') {

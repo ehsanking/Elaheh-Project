@@ -112,7 +112,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   async showQrCode(link: LinkConfig) {
     try {
-      const dataUrl = await QRCode.toDataURL(link.url, { width: 256, margin: 2, color: { dark: '#FFFFFF', light: '#00000000' } });
+      const dataUrl = await QRCode.toDataURL(link.url, { width: 256, margin: 2 });
       this.qrCodeDataUrl.set(dataUrl);
       this.qrCodeLinkAlias.set(link.alias);
     } catch (err) { console.error(err); }

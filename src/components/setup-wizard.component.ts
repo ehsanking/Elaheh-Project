@@ -107,7 +107,7 @@ import { FormsModule } from '@angular/forms';
                   <!-- External -->
                   <button type="button" (click)="selectRole('external')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
                     [class.border-teal-500]="selectedRole() === 'external'" 
-                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'external'}"
+                    [class.bg-teal-900/20]="selectedRole() === 'external'"
                     [class.border-gray-600]="selectedRole() !== 'external'">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
@@ -124,7 +124,7 @@ import { FormsModule } from '@angular/forms';
                   <!-- Iran -->
                   <button type="button" (click)="selectRole('iran')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
                     [class.border-teal-500]="selectedRole() === 'iran'" 
-                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'iran'}"
+                    [class.bg-teal-900/20]="selectedRole() === 'iran'"
                     [class.border-gray-600]="selectedRole() !== 'iran'">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
