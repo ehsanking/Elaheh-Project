@@ -16,11 +16,12 @@ import { IapSettingsComponent } from './iap-settings.component';
 import { NatTraversalComponent } from './nat-traversal.component';
 import { SshSettingsComponent } from './ssh-settings.component';
 import { EmailService } from '../services/email.service';
+import { TelegramBotComponent } from './telegram-bot.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,7 +35,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security'>('general');
+  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security' | 'integrations'>('general');
   successMessage = signal('');
   
   // Store Mgmt Signals
@@ -47,7 +48,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   // Forms
   adminForm = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
-    password: ['', [Validators.required, Validators.minLength(4)]]
+    password: ['', [Validators.required, Validators.minLength(4)]],
+    email: ['', [Validators.required, Validators.email]]
   });
 
   brandingForm = this.fb.group({
@@ -70,7 +72,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.adminForm.setValue({
       username: this.core.adminUsername(),
-      password: this.core.adminPassword()
+      password: this.core.adminPassword(),
+      email: this.core.adminEmail() || ''
     });
     this.brandingForm.setValue({
         brandName: this.core.brandName(),
@@ -89,8 +92,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   saveCredentials() {
     if (this.adminForm.valid) {
-      const { username, password } = this.adminForm.value;
+      const { username, password, email } = this.adminForm.value;
       this.core.updateAdminCredentials(username!, password!);
+      this.core.updateAdminEmail(email!);
       this.showSuccess(this.languageService.translate('settings.credentials.success'));
     }
   }

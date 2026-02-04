@@ -92,15 +92,19 @@ import { LogoComponent } from './logo.component';
             <!-- Admin Settings -->
             <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase">Admin Credentials</h3>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" [(ngModel)]="newUsername" placeholder="New Username" class="bg-gray-900 border border-gray-600 rounded p-2 text-xs text-white outline-none">
-                    <input type="password" [(ngModel)]="newPassword" placeholder="New Password" class="bg-gray-900 border border-gray-600 rounded p-2 text-xs text-white outline-none">
+                <div class="space-y-2">
+                    <input type="text" [(ngModel)]="newUsername" placeholder="New Username (optional)" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-xs text-white outline-none">
+                    <input type="password" [(ngModel)]="newPassword" placeholder="New Password (optional)" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-xs text-white outline-none">
+                    <input type="email" [(ngModel)]="newEmail" placeholder="Recovery Email (optional)" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-xs text-white outline-none">
                 </div>
-                <button (click)="updateCreds()" [disabled]="!newUsername || !newPassword" class="mt-2 w-full bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-xs font-bold py-2 rounded transition-colors">
+                <button (click)="updateCreds()" [disabled]="!newUsername && !newPassword && !newEmail" class="mt-2 w-full bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-xs font-bold py-2 rounded transition-colors">
                     Update Credentials
                 </button>
                 @if(credsUpdated()) {
                     <div class="text-center text-[10px] text-green-400 mt-1">Credentials updated successfully.</div>
+                }
+                @if(updateError()) {
+                    <div class="text-center text-[10px] text-red-400 mt-1">{{ updateError() }}</div>
                 }
             </div>
             
@@ -119,7 +123,9 @@ export class UpstreamDashboardComponent {
     
     newUsername = '';
     newPassword = '';
+    newEmail = '';
     credsUpdated = signal(false);
+    updateError = signal('');
 
     toggleDonationMode() {
         this.isDonationMode.update(v => !v);
@@ -134,12 +140,28 @@ export class UpstreamDashboardComponent {
     }
 
     updateCreds() {
+        this.updateError.set('');
+        if ((this.newUsername && !this.newPassword) || (!this.newUsername && this.newPassword)) {
+            this.updateError.set('Both username and password are required to change them.');
+            return;
+        }
+
+        let updated = false;
         if (this.newUsername && this.newPassword) {
             this.core.updateAdminCredentials(this.newUsername, this.newPassword);
+            updated = true;
+        }
+        if (this.newEmail) {
+            this.core.updateAdminEmail(this.newEmail);
+            updated = true;
+        }
+
+        if (updated) {
             this.credsUpdated.set(true);
             setTimeout(() => this.credsUpdated.set(false), 3000);
             this.newUsername = '';
             this.newPassword = '';
+            this.newEmail = '';
         }
     }
 }

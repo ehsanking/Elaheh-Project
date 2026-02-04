@@ -34,6 +34,8 @@ export interface User {
   username: string;
   quotaGb: number;
   usedGb: number;
+  uploadGb: number;
+  downloadGb: number;
   expiryDays: number;
   status: 'active' | 'expired' | 'banned';
   links: LinkConfig[];
@@ -123,6 +125,13 @@ export interface EdgeNodeInfo {
   provider: string;
 }
 
+export interface TelegramBotConfig {
+    token: string;
+    adminChatId: string;
+    isEnabled: boolean;
+    proxyEnabled: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -141,6 +150,7 @@ export class ElahehCoreService {
   isAuthenticated = signal<boolean>(false);
   adminUsername = signal<string>('admin');
   adminPassword = signal<string>('admin');
+  adminEmail = signal<string>('');
   
   // Dashboard State (Shared)
   serverLoad = signal<number>(0);
@@ -243,6 +253,8 @@ export class ElahehCoreService {
   isSslActive = computed(() => this.customDomain() !== '');
   
   smtpConfig = signal<SmtpConfig>({ host: '', port: 587, user: '', pass: '', secure: false, senderName: 'Admin', senderEmail: '' });
+  telegramBotConfig = signal<TelegramBotConfig>({ token: '', adminChatId: '', isEnabled: false, proxyEnabled: true });
+  
   iapConfig = signal<{projectId: string, zone: string, instanceName: string}>({ projectId: '', zone: 'europe-west3-c', instanceName: 'upstream' });
   natConfig = signal<any>({ mode: 'REVERSE_TUNNEL', keepAliveIntervalSec: 25 });
   natStatus = signal<'Idle' | 'Detecting' | 'Connected' | 'Relaying'>('Idle');
@@ -313,11 +325,13 @@ export class ElahehCoreService {
            users: this.users(),
            products: this.products(),
            sshRules: this.sshRules(),
-           edgeServers: this.edgeServers(), // Persist multi-server
+           edgeServers: this.edgeServers(),
            settings: {
                adminUsername: this.adminUsername(),
+               adminEmail: this.adminEmail(),
                domain: this.customDomain(),
                smtp: this.smtpConfig(),
+               telegram: this.telegramBotConfig(),
                brandName: this.brandName(),
                brandLogo: this.brandLogo(),
                currency: this.currency(),
@@ -354,9 +368,11 @@ export class ElahehCoreService {
           if (data.edgeServers) this.edgeServers.set(data.edgeServers);
           if (data.settings) {
               if(data.settings.adminUsername) this.adminUsername.set(data.settings.adminUsername);
+              if(data.settings.adminEmail) this.adminEmail.set(data.settings.adminEmail);
               if(data.settings.domain) this.customDomain.set(data.settings.domain);
               if(data.settings.brandName) this.brandName.set(data.settings.brandName);
               if(data.settings.currency) this.currency.set(data.settings.currency);
+              if(data.settings.telegram) this.telegramBotConfig.set(data.settings.telegram);
           }
       } else {
           // If Iran server and no users, add demo
@@ -401,6 +417,7 @@ export class ElahehCoreService {
     return false;
   }
   updateAdminCredentials(newUser: string, newPass: string) { this.adminUsername.set(newUser); this.adminPassword.set(newPass); }
+  updateAdminEmail(newEmail: string) { this.adminEmail.set(newEmail); }
   
   setEndpointStrategy(strategy: EndpointStrategy, manual = false) { 
     this.activeStrategy.set(strategy);
@@ -435,6 +452,36 @@ export class ElahehCoreService {
   }
 
   updateSmtpConfig(config: SmtpConfig) { this.smtpConfig.set(config); }
+  updateTelegramBotConfig(config: TelegramBotConfig) { this.telegramBotConfig.set(config); }
+  
+  // SIMULATION: Test Telegram Bot Connection
+  testTelegramBot(config: TelegramBotConfig): Promise<boolean> {
+      this.addLog('INFO', '[Telegram] Testing connection...');
+      return new Promise((resolve) => {
+          setTimeout(() => {
+            if (this.serverRole() === 'iran') {
+                if (config.proxyEnabled) {
+                    if (this.edgeNodeStatus() === 'connected') {
+                        this.addLog('INFO', '[Telegram] Routing test message via Upstream Server...');
+                        this.addLog('SUCCESS', '[Telegram] Upstream reported successful connection to Telegram API.');
+                        resolve(true);
+                    } else {
+                        this.addLog('ERROR', '[Telegram] Proxy enabled, but not connected to Upstream Server.');
+                        resolve(false);
+                    }
+                } else {
+                    this.addLog('ERROR', '[Telegram] Direct connection failed. Telegram API is likely blocked in this region.');
+                    resolve(false);
+                }
+            } else { // Foreign Server
+                 this.addLog('INFO', '[Telegram] Attempting direct connection to Telegram API...');
+                 this.addLog('SUCCESS', '[Telegram] Direct connection successful.');
+                 resolve(true);
+            }
+          }, 1500);
+      });
+  }
+
   setTunnelMode(mode: 'auto' | 'manual') { 
       this.tunnelMode.set(mode);
       if (mode === 'auto') { this.startAutoTesting(); this.runTunnelAnalysis(); } else { this.stopAutoTesting(); }
@@ -574,6 +621,8 @@ export class ElahehCoreService {
         username, 
         quotaGb: quota, 
         usedGb: 0, 
+        uploadGb: 0,
+        downloadGb: 0,
         expiryDays: days, 
         status: 'active', 
         links: links, 
@@ -732,45 +781,50 @@ export class ElahehCoreService {
           this.totalDataTransferred.update(v => v + 0.01);
           this.transferRateMbps.set(Math.floor(Math.random() * 50) + 20);
           
-          // Enhanced Network Metrics Simulation
-          this.packetLossRate.set(parseFloat((Math.random() * 2).toFixed(2))); // 0% - 2%
-          this.jitterMs.set(Math.floor(Math.random() * 30) + 5); // 5ms - 35ms
+          this.packetLossRate.set(parseFloat((Math.random() * 2).toFixed(2)));
+          this.jitterMs.set(Math.floor(Math.random() * 30) + 5);
           
-          // Simulate active user connections and enforce limits
           this.users.update(users => users.map(u => {
               if (u.status === 'active') {
-                  // Fluctuate connections randomly
                   let newConns = u.currentConnections;
-                  
-                  // Small chance to fluctuate
                   if (Math.random() > 0.7) {
-                      const change = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+                      const change = Math.floor(Math.random() * 3) - 1;
                       newConns = Math.max(0, newConns + change);
-                      
-                      // Occasional spike above limit for testing enforcement
-                      if (Math.random() > 0.95) {
-                          newConns = u.concurrentConnectionsLimit + 1;
-                      }
+                      if (Math.random() > 0.95) newConns = u.concurrentConnectionsLimit + 1;
                   }
 
-                  // Enforcement Logic
                   if (newConns > u.concurrentConnectionsLimit) {
-                      // 30% chance to ban, 70% chance to disconnect oldest session (clamp)
                       if (Math.random() > 0.7) {
-                          this.addLog('WARN', `User ${u.username} banned for excessive concurrent connections (${newConns}/${u.concurrentConnectionsLimit}).`);
-                          return { ...u, currentConnections: newConns, status: 'banned' };
+                          this.addLog('WARN', `User ${u.username} banned for excessive connections (${newConns}/${u.concurrentConnectionsLimit}).`);
+                          return { ...u, currentConnections: newConns, status: 'banned', uploadGb: u.uploadGb || 0, downloadGb: u.downloadGb || 0 };
                       } else {
-                          // Disconnect/Clamp
-                          if (Math.random() > 0.8) { // Don't spam logs
-                             this.addLog('INFO', `User ${u.username} session terminated. Limit exceeded (${newConns}/${u.concurrentConnectionsLimit}).`);
-                          }
+                          if (Math.random() > 0.8) this.addLog('INFO', `User ${u.username} session terminated. Limit exceeded (${newConns}/${u.concurrentConnectionsLimit}).`);
                           newConns = u.concurrentConnectionsLimit;
                       }
                   }
                   
-                  return { ...u, currentConnections: newConns };
+                  let updatedUser = { ...u, currentConnections: newConns };
+
+                  if (updatedUser.currentConnections > 0) {
+                      const trafficIncrement = updatedUser.currentConnections * (Math.random() * 0.0002);
+                      const newTotalUsed = updatedUser.usedGb + trafficIncrement;
+
+                      if (newTotalUsed >= updatedUser.quotaGb) {
+                          if (updatedUser.status !== 'expired') {
+                            this.addLog('WARN', `User ${u.username} reached quota. Status set to expired.`);
+                          }
+                          updatedUser.usedGb = updatedUser.quotaGb;
+                          updatedUser.status = 'expired';
+                      } else {
+                          updatedUser.usedGb = newTotalUsed;
+                          const uploadIncrement = trafficIncrement * 0.2;
+                          updatedUser.uploadGb = (updatedUser.uploadGb || 0) + uploadIncrement;
+                          updatedUser.downloadGb = (updatedUser.downloadGb || 0) + (trafficIncrement - uploadIncrement);
+                      }
+                  }
+                  return updatedUser;
               }
-              return u;
+              return { ...u, uploadGb: u.uploadGb || 0, downloadGb: u.downloadGb || 0 };
           }));
       }, 3000);
   }

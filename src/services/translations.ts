@@ -62,10 +62,27 @@ export const translations: any = {
     // ... Settings translations ...
     settings: {
         title: 'System Settings',
-        tabs: { general: 'General', store: 'Store & Plans', branding: 'Branding', network: 'Network', security: 'Security', installer: 'Installer' },
+        tabs: { general: 'General', store: 'Store & Plans', branding: 'Branding', network: 'Network', security: 'Security', installer: 'Installer', integrations: 'Integrations' },
         credentials: { title: 'Admin Credentials', newUser: 'New Username', newPass: 'New Password', success: 'Credentials updated successfully.' },
         branding: { title: 'Branding', name: 'Brand Name', logo: 'Logo URL / Upload', preview: 'Preview', saveSuccess: 'Branding updated.' },
         storeMgmt: { title: 'Store Configuration', currency: 'Currency Unit', gateways: 'Payment Gateways', merchant: 'Merchant ID / Token', packages: 'Service Packages', edit: 'Edit', save: 'Save' },
+        telegram: {
+            title: 'Telegram Bot',
+            description: 'Manage users and send notifications via Telegram.',
+            token: 'Bot Token',
+            adminId: 'Admin Chat ID',
+            enableBot: 'Enable Bot',
+            enableProxy: 'Route API through Foreign Server',
+            test: 'Test Connection',
+            testing: 'Testing...',
+            testSuccess: 'Connection successful!',
+            testFail: 'Connection failed. Check logs.',
+            instructionsTitle: 'How to get your credentials:',
+            instructions1: '1. Talk to <a href="https://t.me/BotFather" target="_blank" class="text-blue-400 underline">@BotFather</a> on Telegram and create a new bot to get your <strong class="text-white">Token</strong>.',
+            instructions2: '2. Talk to <a href="https://t.me/userinfobot" target="_blank" class="text-blue-400 underline">@userinfobot</a> to get your numerical <strong class="text-white">Chat ID</strong>.',
+            proxyNoteTitle: 'Important Note',
+            proxyNote: 'Because Telegram is blocked in your region, you MUST keep the proxy option enabled to communicate with the API via your foreign server.'
+        },
         domain: { 
             title: 'Domain & SSL', 
             description: 'Configure your custom domain for subscription links.', 
@@ -184,7 +201,7 @@ export const translations: any = {
       error: 'Invalid credentials.',
       authenticate: 'Login',
       statusLabel: 'System Status',
-      forgotPassword: { title: 'Recovery', description: 'Contact system administrator.', forgotLink: 'Forgot Password?', sendButton: 'Reset', backToLogin: 'Back', successTitle: 'Sent', successMessage: 'Check logs.' }
+      forgotPassword: { title: 'Password Recovery', description: 'Enter your admin email to receive a reset link.', forgotLink: 'Forgot Password?', sendButton: 'Send Reset Link', backToLogin: 'Back to Login', successTitle: 'Link Sent', successMessage: 'A password reset link has been sent to your email.' }
     },
     notFound: { title: '404', desc: 'Page not found.', home: 'Return Home' },
     terms: {
@@ -288,15 +305,31 @@ export const translations: any = {
       retry: 'تلاش مجدد',
       sanctionedApps: 'پشتیبانی از سرویس‌های',
       compliance: 'این سامانه منطبق بر قوانین جمهوری اسلامی ایران فعالیت می‌کند.',
-      noIllegal: 'دسترسی به محتوای مستهجن، قمار و سایت‌های معاند مسدود می‌باشد.',
+      noIllegal: 'دسترسی به محتوای غیراخلاقی، سایت‌های شرط‌بندی و سایت‌های معاند مسدود می‌باشد.',
       buy: 'خرید پکیج'
     },
     settings: {
       title: 'تنظیمات سیستم',
-      tabs: { general: 'عمومی', store: 'فروشگاه', branding: 'برندینگ', network: 'شبکه', security: 'امنیت', installer: 'نصاب' },
+      tabs: { general: 'عمومی', store: 'فروشگاه', branding: 'برندینگ', network: 'شبکه', security: 'امنیت', installer: 'نصاب', integrations: 'یکپارچه‌سازی' },
       credentials: { title: 'اطلاعات مدیر', newUser: 'نام کاربری جدید', newPass: 'رمز عبور جدید', success: 'ذخیره شد.' },
       branding: { title: 'شخصی‌سازی', name: 'نام برند', logo: 'آدرس لوگو', preview: 'پیش‌نمایش', saveSuccess: 'برندینگ ذخیره شد.' },
-      storeMgmt: { title: 'مدیریت فروشگاه', currency: 'واحد پول', gateways: 'درگاه‌های بانکی', merchant: 'مرچنت کد', packages: 'پکیج‌ها', edit: 'ویرایش', save: 'ذخیره' },
+      telegram: {
+          title: 'ربات تلگرام',
+          description: 'مدیریت کاربران و ارسال نوتیفیکیشن از طریق تلگرام.',
+          token: 'توکن ربات',
+          adminId: 'شناسه عددی ادمین',
+          enableBot: 'فعالسازی ربات',
+          enableProxy: 'ارسال درخواست از طریق سرور خارج',
+          test: 'تست اتصال',
+          testing: 'در حال تست...',
+          testSuccess: 'اتصال موفق بود!',
+          testFail: 'اتصال برقرار نشد. لاگ‌ها را بررسی کنید.',
+          instructionsTitle: 'راهنمای دریافت مشخصات:',
+          instructions1: '۱. برای دریافت <strong class="text-white">توکن</strong>، به ربات <a href="https://t.me/BotFather" target="_blank" class="text-blue-400 underline">@BotFather</a> در تلگرام پیام داده و یک ربات جدید بسازید.',
+          instructions2: '۲. برای دریافت <strong class="text-white">شناسه عددی</strong> خود، به ربات <a href="https://t.me/userinfobot" target="_blank" class="text-blue-400 underline">@userinfobot</a> پیام دهید.',
+          proxyNoteTitle: 'نکته مهم',
+          proxyNote: 'از آنجایی که تلگرام در منطقه شما فیلتر است، گزینه ارسال پراکسی باید فعال باشد تا ارتباط با سرورهای تلگرام از طریق سرور خارج انجام شود.'
+      },
       domain: { 
           title: 'دامنه و SSL', 
           description: 'تنظیم دامنه اختصاصی برای لینک‌های اشتراک.', 
@@ -415,7 +448,7 @@ export const translations: any = {
       error: 'اطلاعات اشتباه است.',
       authenticate: 'ورود به پنل',
       statusLabel: 'وضعیت سامانه',
-      forgotPassword: { title: 'بازیابی', description: 'با مدیر سیستم تماس بگیرید.', forgotLink: 'فراموشی رمز؟', sendButton: 'ارسال', backToLogin: 'بازگشت', successTitle: 'ارسال شد', successMessage: 'لاگ‌ها را بررسی کنید.' }
+      forgotPassword: { title: 'بازیابی رمز عبور', description: 'ایمیل ادمین را وارد کنید تا لینک بازیابی ارسال شود.', forgotLink: 'فراموشی رمز؟', sendButton: 'ارسال لینک', backToLogin: 'بازگشت به ورود', successTitle: 'لینک ارسال شد', successMessage: 'لینک بازیابی رمز عبور به ایمیل شما ارسال شد.' }
     },
     notFound: { title: '۴۰۴', desc: 'صفحه یافت نشد.', home: 'خانه' },
     terms: {

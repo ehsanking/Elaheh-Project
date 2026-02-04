@@ -11,6 +11,7 @@
       <button (click)="setTab('store')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-yellow-500]="currentTab() === 'store'" [class.text-white]="currentTab() === 'store'" [class.border-transparent]="currentTab() !== 'store'" [class.text-gray-400]="currentTab() !== 'store'">{{ languageService.translate('settings.tabs.store') }}</button>
       <button (click)="setTab('network')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'network'" [class.text-white]="currentTab() === 'network'" [class.border-transparent]="currentTab() !== 'network'" [class.text-gray-400]="currentTab() !== 'network'">{{ languageService.translate('settings.tabs.network') }}</button>
       <button (click)="setTab('security')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'security'" [class.text-white]="currentTab() === 'security'" [class.border-transparent]="currentTab() !== 'security'" [class.text-gray-400]="currentTab() !== 'security'">{{ languageService.translate('settings.tabs.security') }}</button>
+      <button (click)="setTab('integrations')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-indigo-500]="currentTab() === 'integrations'" [class.text-white]="currentTab() === 'integrations'" [class.border-transparent]="currentTab() !== 'integrations'" [class.text-gray-400]="currentTab() !== 'integrations'">{{ languageService.translate('settings.tabs.integrations') }}</button>
     </div>
   </div>
 
@@ -29,6 +30,10 @@
                 <div>
                   <label class="block text-gray-400 text-sm mb-1">{{ languageService.translate('settings.credentials.newPass') }}</label>
                   <input formControlName="password" type="password" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1">{{ languageService.translate('common.email') }} (Recovery)</label>
+                  <input formControlName="email" type="email" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white" placeholder="admin@example.com">
                 </div>
               </div>
               <button type="submit" [disabled]="adminForm.invalid" class="mt-4 bg-teal-600 text-white px-4 py-2 rounded w-full">{{ languageService.translate('common.saveChanges') }}</button>
@@ -177,6 +182,11 @@
           <app-camouflage-settings></app-camouflage-settings>
           <app-application-camouflage></app-application-camouflage>
           <app-doh-settings></app-doh-settings>
+        </div>
+      }
+      @case ('integrations') {
+        <div class="space-y-8">
+            <app-telegram-bot></app-telegram-bot>
         </div>
       }
     }

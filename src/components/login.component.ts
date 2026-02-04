@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, ChangeDetectionStrategy, AfterViewInit, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { FormsModule } from '@angular/forms';
@@ -76,13 +77,18 @@ import { LogoComponent } from './logo.component';
           <div>
             <h2 class="text-2xl font-bold text-center text-white mb-2">{{ languageService.translate('login.forgotPassword.title') }}</h2>
             <p class="text-center text-gray-400 text-sm mb-6">{{ languageService.translate('login.forgotPassword.description') }}</p>
-            <div class="space-y-6">
+            <div class="space-y-4">
               <div>
-                <label class="block text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-2">Email</label>
+                <label class="block text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-2">{{ languageService.translate('common.email') }}</label>
                 <input type="email" [(ngModel)]="resetEmail" 
                   class="w-full bg-gray-100 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-gray-900 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-1 focus:ring-teal-500 dark:focus:ring-teal-400 outline-none transition-all"
                   placeholder="admin@example.com">
               </div>
+               @if (errorMsg()) {
+                <div class="text-red-600 dark:text-red-400 text-sm text-center bg-red-100 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-900">
+                  {{ errorMsg() }}
+                </div>
+              }
               <button (click)="requestPasswordReset()" [disabled]="!resetEmail()"
                 class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition-all disabled:opacity-50">
                 {{ languageService.translate('login.forgotPassword.sendButton') }}
@@ -209,9 +215,11 @@ export class LoginComponent implements AfterViewInit {
   }
 
   requestPasswordReset() {
-    if (this.resetEmail()) {
+    if (this.resetEmail() && this.core.adminEmail() && this.resetEmail().toLowerCase() === this.core.adminEmail().toLowerCase()) {
       this.core.addLog('INFO', `Password reset requested for email: ${this.resetEmail()}`);
       this.setView('reset_sent');
+    } else {
+      this.errorMsg.set('Admin email not found or does not match.');
     }
   }
 }
