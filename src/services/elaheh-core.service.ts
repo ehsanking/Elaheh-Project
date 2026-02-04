@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '2.3.1'; // Updated Version
+export const APP_VERSION = '2.3.2'; // Updated Version
 export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; // Renamed Default
 
 // --- Interfaces ---

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.3.1 (Hotfix: Port Detection & PM2)
+# Version 2.3.2 (Build Fix & Robustness)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.3.1"
+echo "   Version 2.3.2"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -63,14 +63,31 @@ install_deps() {
         export DEBIAN_FRONTEND=noninteractive
         rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
         apt-get update -y -qq
-        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof
+        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential
     elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof
+        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make
     fi
 }
 install_deps
 
-# 4. Cleanup Previous Failed Installs
+# 4. Swap Setup (Prevent OOM during build)
+echo -e "${GREEN}[+] Checking Memory Resources...${NC}"
+TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+# If RAM < 2GB (approx 2000000 KB), ensure swap exists
+if [ "$TOTAL_MEM" -lt 2000000 ]; then
+    if [ ! -f /swapfile ]; then
+        echo -e "${YELLOW}[i] Low RAM detected. Creating 2GB Swap file for build stability...${NC}"
+        fallocate -l 2G /swapfile
+        chmod 600 /swapfile
+        mkswap /swapfile
+        swapon /swapfile
+        echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    else
+        echo -e "${GREEN}[✓] Swap file exists.${NC}"
+    fi
+fi
+
+# 5. Cleanup Previous Failed Installs
 echo -e "${GREEN}[+] Cleaning up potential conflicts...${NC}"
 systemctl stop nginx || true
 rm -f /etc/nginx/sites-enabled/elaheh
@@ -83,7 +100,7 @@ if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then
     kill -9 $(lsof -t -i:80) || true
 fi
 
-# 5. Obtain SSL (Smart Standalone Mode)
+# 6. Obtain SSL (Smart Standalone Mode)
 echo -e "${GREEN}[+] Checking SSL Certificates for ${DOMAIN}...${NC}"
 
 if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
@@ -106,7 +123,7 @@ if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     exit 1
 fi
 
-# 6. Configure Nginx
+# 7. Configure Nginx
 echo -e "${GREEN}[+] Configuring Nginx Reverse Proxy...${NC}"
 
 APP_PORT=3000
@@ -165,7 +182,7 @@ EOF
 ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 systemctl restart nginx
 
-# 7. Node.js & Project Setup
+# 8. Node.js & Project Setup
 echo -e "${GREEN}[+] Setting up Application Core...${NC}"
 NODE_VERSION="v20.15.1"
 if ! command -v node &> /dev/null; then
@@ -175,6 +192,8 @@ if ! command -v node &> /dev/null; then
     tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
 fi
 if ! command -v pm2 &> /dev/null; then npm install -g pm2; fi
+# Ensure Angular CLI is available for build
+if ! command -v ng &> /dev/null; then npm install -g @angular/cli; fi
 
 INSTALL_DIR="/opt/elaheh-project"
 if [ -d "$INSTALL_DIR" ]; then
@@ -186,8 +205,29 @@ else
     cd "$INSTALL_DIR"
 fi
 
+# 9. Build Application (Critical for solving 403 Forbidden)
+echo -e "${GREEN}[+] Installing Dependencies (This may take a moment)...${NC}"
+npm install --legacy-peer-deps
+
+echo -e "${GREEN}[+] Building Application (Optimized for Production)...${NC}"
+# Increase Node memory limit for build process
+export NODE_OPTIONS="--max-old-space-size=2048"
+npm run build
+
 PROJECT_NAME=$(node -p "require('./package.json').name")
 DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
+
+# Verify Build
+if [ ! -d "$DIST_PATH" ]; then
+    echo -e "${RED}[!] Build failed. Dist folder not found at $DIST_PATH.${NC}"
+    # Fallback check for non-browser folder structure
+    if [ -d "$INSTALL_DIR/dist/$PROJECT_NAME" ]; then
+        DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME"
+    else
+        exit 1
+    fi
+fi
+
 mkdir -p "$DIST_PATH/assets"
 
 cat <<EOF > "$DIST_PATH/assets/server-config.json"
@@ -199,26 +239,28 @@ cat <<EOF > "$DIST_PATH/assets/server-config.json"
 }
 EOF
 
-# 8. Start PM2
+# 10. Start PM2
 echo -e "${GREEN}[+] Starting Backend Services...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
 pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
 pm2 save --force
-# Fixed: Explicitly set up startup instead of relying on pipe output parsing which was failing
+# Robust PM2 Startup
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
+systemctl enable pm2-root >/dev/null 2>&1 || true
 
-# 9. Firewall (FIXED: Robust Port Detection)
+# 11. Firewall (FIXED: Robust Port Detection)
 echo -e "${GREEN}[+] Securing Ports...${NC}"
-# Use a more robust way to default to 22 if grep returns nothing
-DETECTED_SSH=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n 1)
-SSH_PORT=${DETECTED_SSH:-22}
+# Handle grep fail case gracefully
+SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n 1)
+if [ -z "$SSH_PORT" ]; then
+    SSH_PORT=22
+fi
 
 if command -v ufw &> /dev/null; then
     ufw allow ${SSH_PORT}/tcp
     ufw allow 80/tcp
     ufw allow 443/tcp
-    # Force enable without prompt
     echo "y" | ufw enable
 elif command -v firewall-cmd &> /dev/null; then
     systemctl start firewalld
@@ -228,7 +270,7 @@ elif command -v firewall-cmd &> /dev/null; then
     firewall-cmd --reload
 fi
 
-# 10. CLI Tool (Guaranteed Installation)
+# 12. CLI Tool
 echo -e "${GREEN}[+] Installing 'elaheh' Command Line Tool...${NC}"
 CLI_SCRIPT="#!/bin/bash
 INSTALL_DIR=\"/opt/elaheh-project\"
@@ -239,6 +281,10 @@ NC='\033[0m'
 update_app() {
     echo \"Updating...\"
     cd \"\$INSTALL_DIR\" && git pull origin main
+    echo \"Installing dependencies...\"
+    npm install --legacy-peer-deps
+    echo \"Rebuilding...\"
+    npm run build
     pm2 restart elaheh-app
     echo -e \"\${GREEN}Update Complete.\${NC}\"
 }
@@ -253,7 +299,7 @@ renew_ssl() {
 
 clear
 echo -e \"\${GREEN} Elaheh Management Console\${NC}\"
-echo \"1. Update Panel & Core\"
+echo \"1. Update Panel & Core (Git Pull + Rebuild)\"
 echo \"2. Restart Services\"
 echo \"3. Renew SSL Certificates\"
 echo \"4. View Logs\"
@@ -270,10 +316,9 @@ esac"
 
 echo "$CLI_SCRIPT" > /usr/local/bin/elaheh
 chmod +x /usr/local/bin/elaheh
-# Also create in /usr/bin to ensure it's in PATH immediately
 cp /usr/local/bin/elaheh /usr/bin/elaheh
 
-# 11. Final Output
+# 13. Final Output
 PUBLIC_IP=$(curl -s ifconfig.me)
 echo ""
 echo -e "${GREEN}=========================================${NC}"
