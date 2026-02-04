@@ -95,7 +95,7 @@ import { LanguageService } from '../services/language.service';
                     </div>
                 }
             </div>
-          </div>
+        </div>
       </div>
     </div>
   `,

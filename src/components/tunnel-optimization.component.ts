@@ -103,12 +103,11 @@ import { LanguageService } from '../services/language.service';
                       [class.text-green-400]="provider.status === 'optimal'"
                       [class.text-yellow-400]="provider.status === 'suboptimal'"
                     >{{ provider.status }}</div>
-                  } @else if(provider.status === 'failed') {
+                  } @else if (provider.status === 'failed') {
                     <div class="text-sm font-mono text-red-400">{{ languageService.translate('tunnel.failed') }}</div>
                   } @else if (provider.status === 'testing') {
                     <div class="text-sm font-mono text-blue-400 animate-pulse">{{ languageService.translate('tunnel.pinging') }}</div>
-                  }
-                  @else {
+                  } @else {
                     <div class="text-sm font-mono text-gray-500">{{ languageService.translate('tunnel.awaiting') }}</div>
                   }
                 </div>

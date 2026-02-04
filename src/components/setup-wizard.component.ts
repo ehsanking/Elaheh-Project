@@ -29,7 +29,7 @@ import { FormsModule } from '@angular/forms';
             </button>
         </div>
         
-        <!-- Step 1: Branding (Installer Style) -->
+        <!-- Step 1: Branding -->
         @if (currentStep() === 1) {
             <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
                 <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.branding.title') }}</h3>
@@ -224,7 +224,6 @@ export class SetupWizardComponent implements OnInit {
   nextStep() {
     this.currentStep.update(s => s + 1);
     if (this.currentStep() === 3 && this.selectedRole() === 'external') {
-        // Generate connection token for Iran server to use
         this.generatedToken.set(this.core.generateConnectionToken());
     }
   }
@@ -233,7 +232,6 @@ export class SetupWizardComponent implements OnInit {
       if (!this.iranKeyInput()) return;
       this.isVerifying.set(true);
       
-      // Simulate checking the key format
       setTimeout(() => {
           const parsed = this.core.parseConnectionToken(this.iranKeyInput());
           if (parsed) {
@@ -252,14 +250,10 @@ export class SetupWizardComponent implements OnInit {
   }
 
   finishSetup() {
-    // 1. Save Branding
     this.core.updateBranding(this.siteTitle(), this.logoUrl() || null, this.core.currency());
 
-    // 2. Configure Role
     if (this.selectedRole() === 'iran') {
         this.core.connectToUpstream(this.iranKeyInput());
-    } else {
-        // External
     }
     
     this.core.serverRole.set(this.selectedRole());

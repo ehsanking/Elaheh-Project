@@ -178,7 +178,7 @@ cat <<EOF > package.json
     "@angular/forms": "^19.0.0",
     "@angular/platform-browser": "^19.0.0",
     "@angular/router": "^19.0.0",
-    "@google/genai": "^0.1.1",
+    "@google/genai": "*",
     "chart.js": "^4.4.1",
     "qrcode": "^1.5.3",
     "rxjs": "~7.8.0",
@@ -307,7 +307,9 @@ EOF
 
 # 10. Build
 echo -e "${GREEN}[+] Installing Dependencies (Clean Install)...${NC}"
+# Use wildcard in package.json, then force update to latest just in case
 npm install --legacy-peer-deps --loglevel error
+npm install @google/genai@latest --legacy-peer-deps --save
 
 echo -e "${GREEN}[+] Building Application...${NC}"
 export NODE_OPTIONS="--max-old-space-size=4096"
