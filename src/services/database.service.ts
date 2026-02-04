@@ -1,3 +1,4 @@
+
 import { Injectable, signal } from '@angular/core';
 
 export interface AppBackup {
@@ -38,7 +39,7 @@ export class DatabaseService {
 
   exportDatabase(coreData: any): string {
     const backup: AppBackup = {
-      version: '1.0.3',
+      version: '1.0.0',
       timestamp: new Date().toISOString(),
       settings: {
         adminUsername: coreData.adminUsername(),

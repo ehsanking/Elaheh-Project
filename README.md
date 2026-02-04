@@ -1,3 +1,4 @@
+
 # Project Elaheh (پروژه الهه) - Advanced Tunneling Management System
 
 <div align="center">
@@ -5,7 +6,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
+  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>
