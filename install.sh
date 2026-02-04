@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.3.5 (NPM Cache Fix)
+# Version 2.4.0 (VPS Build Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.3.5"
+echo "   Version 2.4.0"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -213,6 +213,151 @@ npm cache clean --force
 # Use --force to bypass strict peer dependency conflicts if any
 npm install --legacy-peer-deps --force
 
+echo -e "${GREEN}[+] Generating Build Configuration...${NC}"
+
+# --- FIX: Generate Angular Configs required for VPS Build ---
+
+# 1. Generate src/main.ts (Required for Angular Browser Build)
+cat <<EOF > src/main.ts
+import '@angular/compiler';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideZonelessChangeDetection } from '@angular/core';
+import { AppComponent } from './app.component';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideZonelessChangeDetection()
+  ]
+}).catch((err) => console.error(err));
+EOF
+
+# 2. Generate tsconfig.json
+cat <<EOF > tsconfig.json
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "sourceMap": true,
+    "declaration": false,
+    "downlevelIteration": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "useDefineForClassFields": false,
+    "lib": ["ES2022", "dom"]
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  }
+}
+EOF
+
+# 3. Generate tsconfig.app.json
+cat <<EOF > tsconfig.app.json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/out-tsc",
+    "types": []
+  },
+  "files": [
+    "src/main.ts"
+  ],
+  "include": [
+    "src/**/*.d.ts"
+  ]
+}
+EOF
+
+# 4. Generate angular.json (Crucial for ng build)
+cat <<EOF > angular.json
+{
+  "\$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "project-elaheh": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/project-elaheh",
+            "index": "index.html",
+            "browser": "src/main.ts",
+            "polyfills": ["zone.js"],
+            "tsConfig": "tsconfig.app.json",
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "4kb"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "project-elaheh:build:production"
+            },
+            "development": {
+              "buildTarget": "project-elaheh:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    }
+  }
+}
+EOF
+
+# Ensure assets dir and styles exist
+mkdir -p src/assets
+touch src/styles.css
+
 echo -e "${GREEN}[+] Building Application (Optimized for Production)...${NC}"
 export NODE_OPTIONS="--max-old-space-size=2048"
 npm run build
@@ -286,7 +431,9 @@ update_app() {
     echo \"Installing dependencies...\"
     npm cache clean --force
     npm install --legacy-peer-deps --force
-    echo \"Rebuilding...\"
+    echo \"Generating Configs...\"
+    # Re-run install script's config generation logic if needed, or rely on manual update
+    # For now, simplistic rebuild:
     npm run build
     pm2 restart elaheh-app
     echo -e \"\${GREEN}Update Complete.\${NC}\"
