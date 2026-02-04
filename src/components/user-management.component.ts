@@ -5,7 +5,6 @@ import { ElahehCoreService, User, LinkConfig } from '../services/elaheh-core.ser
 import * as QRCode from 'qrcode';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 import { LanguageService } from '../services/language.service';
 
 @Component({
@@ -23,9 +22,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   
   showAddModal = signal(false);
   showLinkModal = signal(false);
-  showAdvancedOptions = signal(false);
   selectedUser = signal<User | null>(null);
-  toastMessage = signal<string | null>(null);
   copiedIndex = signal<number | null>(null);
 
   // QR Code State
@@ -45,7 +42,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     concurrentLimit: [2, [Validators.required, Validators.min(0)]]
   });
 
-  // Manual Protocol Config (if mode is manual)
   manualProtoForm = this.fb.group({
       protocol: ['vless'],
       transport: ['ws'],
@@ -89,19 +85,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (this.userForm.valid) {
       const { username, quota, days, concurrentLimit } = this.userForm.getRawValue();
       const mode = this.creationMode();
-      
       let manualConfig = null;
-      if (mode === 'manual') {
-          manualConfig = this.manualProtoForm.value;
-      }
+      if (mode === 'manual') manualConfig = this.manualProtoForm.value;
 
       this.core.addUser(username!, Number(quota!), Number(days!), Number(concurrentLimit!), mode, manualConfig);
       this.toggleAddModal();
     }
   }
 
-  // --- Link Management ---
-  
   openLinkManager(user: User) {
     this.selectedUser.set(user);
     this.showLinkModal.set(true);
@@ -135,34 +126,70 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       }
   }
 
-  getProtocolFromUrl(url: string) { return 'vless'; } // simplified for display
+  // --- Export/Import Logic ---
+  exportUsers() {
+      const json = this.core.exportUsersJSON();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `elaheh_users_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+  }
 
-  // --- App Recommendation Logic ---
+  triggerImport() {
+      document.getElementById('importFile')?.click();
+  }
+
+  onFileSelected(event: any) {
+      const file = event.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              const content = e.target?.result as string;
+              this.core.importUsersJSON(content);
+          };
+          reader.readAsText(file);
+      }
+  }
+
+  // --- App Recommendations (Specific URLs) ---
   getRecommendedApps(protocol: string) {
       const p = protocol.toLowerCase();
       
-      // VLESS, VMess, Trojan, Shadowsocks
-      if (p.startsWith('vless') || p.startsWith('vmess') || p.startsWith('trojan') || p.startsWith('shadow')) {
+      if (p.includes('trust')) {
           return [
-              { name: 'Hiddify (Universal)', icon: '🚀', url: 'https://github.com/hiddify/hiddify-next/releases' },
-              { name: 'v2rayNG (Android)', icon: '🤖', url: 'https://play.google.com/store/apps/details?id=com.v2ray.ang' },
-              { name: 'V2Box (iOS)', icon: '🍎', url: 'https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690' },
-              { name: 'v2rayN (Windows)', icon: '🪟', url: 'https://github.com/2dust/v2rayN/releases' }
+              { name: 'TrustTunnel iOS', icon: '🍏', url: 'https://apps.apple.com/us/app/trusttunnel/id6755807890' },
+              { name: 'TrustTunnel Android', icon: '🤖', url: 'https://play.google.com/store/apps/details?id=com.adguard.trusttunnel' }
           ];
       }
       
-      // TrustTunnel (AdGuard)
-      if (p.startsWith('trust')) {
+      if (p.includes('openvpn')) {
           return [
-              { name: 'AdGuard VPN', icon: '🛡️', url: 'https://adguard-vpn.com/en/welcome.html' },
-              { name: 'Trust Client (Custom)', icon: '🔒', url: '#' } // Placeholder for custom client
+              { name: 'OpenVPN Connect (Mac)', icon: '💻', url: 'https://openvpn.net/downloads/openvpn-connect-v3-macos.dmg' },
+              { name: 'OpenVPN Connect (iOS)', icon: '🍏', url: 'https://itunes.apple.com/us/app/openvpn-connect/id590379981?mt=8' },
+              { name: 'OpenVPN Android', icon: '🤖', url: 'https://play.google.com/store/apps/details?id=net.openvpn.openvpn' },
+              { name: 'OpenVPN Windows', icon: '🪟', url: 'https://openvpn.net/downloads/openvpn-connect-v3-windows.msi' }
           ];
       }
 
-      // OpenVPN
-      if (p.includes('openvpn') || p.includes('ovpn')) {
+      if (p.includes('wireguard')) {
           return [
-              { name: 'OpenVPN Connect', icon: '🌐', url: 'https://openvpn.net/client-connect-vpn-for-windows/' }
+              { name: 'WireGuard Windows', icon: '🪟', url: 'https://download.wireguard.com/windows-client/wireguard-installer.exe' },
+              { name: 'WireGuard iOS', icon: '🍏', url: 'https://itunes.apple.com/us/app/wireguard/id1451685025?ls=1&mt=12' },
+              { name: 'WireGuard Android', icon: '🤖', url: 'https://play.google.com/store/apps/details?id=com.wireguard.android' },
+              { name: 'WireGuard macOS', icon: '💻', url: 'https://itunes.apple.com/us/app/wireguard/id1441195209?ls=1&mt=8' }
+          ];
+      }
+
+      if (p.includes('vless') || p.includes('vmess') || p.includes('trojan')) {
+          return [
+              { name: 'v2rayNG (Android)', icon: '🤖', url: 'https://github.com/2dust/v2rayNG/releases' },
+              { name: 'Hiddify', icon: '🚀', url: 'https://play.google.com/store/apps/details?id=app.hiddify.com' },
+              { name: 'V2Box (iOS)', icon: '🍏', url: 'https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690' },
+              { name: 'v2rayN (Windows)', icon: '🪟', url: 'https://github.com/2dust/v2rayN/releases' },
+              { name: 'NapsternetV', icon: '🌐', url: 'https://play.google.com/store/apps/details?id=com.napsternetlabs.napsternetv' }
           ];
       }
 

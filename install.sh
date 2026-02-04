@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.1 (Stable Release - Freedom Edition)
+# Version 1.0.2 (Separation Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.1 (Stable)"
+echo "   Version 1.0.2"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -27,15 +27,28 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Input Collection
+# 2. Input Collection & Role Selection
 DOMAIN=""
 EMAIL=""
+ROLE=""
+
+echo -e "${YELLOW}Select Server Location/Role:${NC}"
+echo "1) Foreign Server (Upstream - Germany, Finland, etc.)"
+echo "2) Iran Server (Edge - Storefront, User Access, Tunnel Client)"
+read -p "Select [1 or 2]: " ROLE_CHOICE
+
+if [ "$ROLE_CHOICE" -eq 2 ]; then
+    ROLE="iran"
+    echo -e "${GREEN}>> Configuring as IRAN (Edge) Server...${NC}"
+else
+    ROLE="external"
+    echo -e "${GREEN}>> Configuring as FOREIGN (Upstream) Server...${NC}"
+fi
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --domain) DOMAIN="$2"; shift 2;;
     --email) EMAIL="$2"; shift 2;;
-    --role) ROLE="$2"; shift 2;;
     --key) KEY="$2"; shift 2;;
     *) shift 1;;
   esac
@@ -62,10 +75,11 @@ install_deps() {
         export DEBIAN_FRONTEND=noninteractive
         rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
         apt-get update -y -qq
-        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential
+        # Install WireGuard and OpenVPN explicitly based on requirements
+        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard
     elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
         dnf upgrade -y --refresh
-        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make
+        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools
     fi
 }
 install_deps
@@ -85,7 +99,10 @@ fi
 
 # 5. Cleanup Ports
 systemctl stop nginx || true
+# Kill processes on specific ports requested (80, 443, 110 for OpenVPN, 1414 for WireGuard)
 if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then kill -9 $(lsof -t -i:80) || true; fi
+if lsof -Pi :110 -sTCP:LISTEN -t >/dev/null ; then kill -9 $(lsof -t -i:110) || true; fi
+if lsof -Pi :1414 -sUDP:LISTEN -t >/dev/null ; then kill -9 $(lsof -t -i:1414) || true; fi
 
 # 6. SSL
 if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
@@ -117,6 +134,7 @@ server {
         try_files \$uri \$uri/ /index.html;
     }
 
+    # API Proxy for Tunneling Logic
     location /ws {
         if (\$http_upgrade != "websocket") { return 404; }
         proxy_pass http://127.0.0.1:10000;
@@ -159,11 +177,11 @@ echo -e "${GREEN}[+] Configuring Project...${NC}"
 # 9.1 Clean Slate
 rm -rf node_modules package-lock.json dist
 
-# 9.2 Package.json (Angular 19 + Zone.js)
+# 9.2 Package.json
 cat <<EOF > package.json
 {
   "name": "project-elaheh",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -196,6 +214,7 @@ cat <<EOF > package.json
 }
 EOF
 
+# ... (Standard Angular Configs - kept same) ...
 # 9.3 Angular JSON (With Zone.js)
 cat <<EOF > angular.json
 {
@@ -288,7 +307,7 @@ cat <<EOF > tsconfig.app.json
 }
 EOF
 
-# 9.5 Main.ts (Reverted to Zone.js for stability)
+# 9.5 Main.ts
 cat <<EOF > src/main.ts
 import '@angular/compiler';
 import { bootstrapApplication } from '@angular/platform-browser';
@@ -306,8 +325,7 @@ bootstrapApplication(AppComponent, {
 EOF
 
 # 10. Build
-echo -e "${GREEN}[+] Installing Dependencies (Clean Install)...${NC}"
-# Use wildcard in package.json, then force update to latest just in case
+echo -e "${GREEN}[+] Installing Dependencies...${NC}"
 npm install --legacy-peer-deps --loglevel error
 npm install @google/genai@latest --legacy-peer-deps --save
 
@@ -322,9 +340,10 @@ if [ ! -d "$DIST_PATH" ]; then
 fi
 
 mkdir -p "$DIST_PATH/assets"
+# Save specific role to config
 cat <<EOF > "$DIST_PATH/assets/server-config.json"
 {
-  "role": "${ROLE:-external}",
+  "role": "${ROLE}",
   "key": "${KEY}",
   "domain": "${DOMAIN}",
   "installedAt": "$(date)"
@@ -338,20 +357,31 @@ pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
 pm2 save --force
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 
-# 12. Firewall
+# 12. Firewall - Allow Specific Ports
 if command -v ufw &> /dev/null; then
-    ufw allow 22/tcp; ufw allow 80/tcp; ufw allow 443/tcp; echo "y" | ufw enable
+    ufw allow 22/tcp
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw allow 110/tcp  # OpenVPN
+    ufw allow 1414/udp # WireGuard
+    echo "y" | ufw enable
 elif command -v firewall-cmd &> /dev/null; then
     systemctl start firewalld
     firewall-cmd --permanent --add-port=22/tcp
     firewall-cmd --permanent --add-port=80/tcp
     firewall-cmd --permanent --add-port=443/tcp
+    firewall-cmd --permanent --add-port=110/tcp
+    firewall-cmd --permanent --add-port=1414/udp
     firewall-cmd --reload
 fi
 
 echo ""
 echo -e "${GREEN}=========================================${NC}"
 echo -e "${GREEN}   INSTALLATION SUCCESSFUL!${NC}"
-echo -e "${GREEN}=========================================${NC}"
+echo -e "   Role: ${ROLE^^}"
 echo -e "   Panel URL: https://${DOMAIN}"
+echo -e "${GREEN}=========================================${NC}"
+if [ "$ROLE" == "external" ]; then
+    echo -e "${YELLOW}NOTE: Log in to generate a connection key for your Iran server.${NC}"
+fi
 echo ""

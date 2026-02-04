@@ -2,9 +2,19 @@
 <div class="bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-white">{{ languageService.translate('users.title') }}</h2>
-        <button (click)="toggleAddModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors shadow-lg">
-            <span>+</span> {{ languageService.translate('users.addUser') }}
-        </button>
+        <div class="flex gap-2">
+            <button (click)="exportUsers()" class="bg-blue-900/50 hover:bg-blue-800 text-blue-300 px-3 py-2 rounded text-xs font-bold border border-blue-800 transition-colors">
+                Export JSON
+            </button>
+            <button (click)="triggerImport()" class="bg-blue-900/50 hover:bg-blue-800 text-blue-300 px-3 py-2 rounded text-xs font-bold border border-blue-800 transition-colors">
+                Import JSON
+            </button>
+            <input type="file" id="importFile" (change)="onFileSelected($event)" class="hidden" accept=".json">
+            
+            <button (click)="toggleAddModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors shadow-lg">
+                <span>+</span> {{ languageService.translate('users.addUser') }}
+            </button>
+        </div>
       </div>
 
       <!-- User List -->
@@ -77,17 +87,19 @@
                       <select formControlName="protocol" class="w-full bg-gray-800 text-white text-xs rounded p-2 mb-2">
                           <option value="vless">VLESS</option>
                           <option value="vmess">VMess</option>
-                          <option value="shadowtls">ShadowTLS</option>
+                          <option value="wireguard">WireGuard</option>
+                          <option value="openvpn">OpenVPN</option>
                       </select>
                       <label class="block text-gray-400 text-xs mb-1">Transport</label>
                       <select formControlName="transport" class="w-full bg-gray-800 text-white text-xs rounded p-2">
                           <option value="ws">WebSocket</option>
                           <option value="tcp">TCP</option>
+                          <option value="udp">UDP</option>
                           <option value="grpc">gRPC</option>
                       </select>
                   </div>
               } @else {
-                  <p class="text-xs text-gray-400 mb-4 italic">Automatically creates links for all available protocols (VLESS Reality, VMess, TrustTunnel, OpenVPN) using configured subdomains.</p>
+                  <p class="text-xs text-gray-400 mb-4 italic">Automatically configures OpenVPN (:110), WireGuard (:1414), TrustTunnel, and VLESS/VMess.</p>
               }
 
               <div class="flex gap-2 mb-4">
@@ -148,7 +160,7 @@
                         <!-- Link String -->
                         <div class="text-xs text-gray-500 font-mono truncate bg-black/30 p-2 rounded select-all cursor-text">{{ link.url }}</div>
 
-                        <!-- Recommended Apps (NEW) -->
+                        <!-- Recommended Apps (Specific URLs) -->
                         <div class="bg-black/20 p-2 rounded border border-gray-800">
                             <span class="text-[10px] text-gray-500 uppercase font-bold block mb-1">{{ languageService.translate('common.recommendedApps') }}</span>
                             <div class="flex flex-wrap gap-2">
