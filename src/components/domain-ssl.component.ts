@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, ChangeDetectionStrategy, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -44,9 +45,24 @@ export class DomainSslComponent implements OnInit {
       );
       this.hasChecked.set(false);
     });
+
+    // Auto-update form when core state changes (e.g. from server-config load)
+    effect(() => {
+        const domain = this.core.customDomain();
+        const cert = this.core.sslCertPath();
+        const key = this.core.sslKeyPath();
+        
+        // Use emitEvent: false to prevent circular updates if needed, though signals are efficient
+        this.domainForm.patchValue({
+            domain: domain,
+            certPath: cert,
+            keyPath: key
+        }, { emitEvent: false });
+    });
   }
 
   ngOnInit(): void {
+    // Initial sync
     this.domainForm.setValue({
       domain: this.core.customDomain(),
       subscriptionDomain: this.core.subscriptionDomain(),

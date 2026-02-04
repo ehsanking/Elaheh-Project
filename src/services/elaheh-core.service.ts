@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '2.2.0'; // Updated Version
+export const APP_VERSION = '2.3.0'; // Updated Version
 export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; // Renamed Default
 
 // --- Interfaces ---
@@ -245,6 +245,7 @@ export class ElahehCoreService {
     this.initSimulatedMetrics();
     this.addLog('INFO', `Core Service Initialized v${APP_VERSION}`);
     this.loadPersistedData();
+    this.loadServerConfig(); // Auto-load server-config.json
 
     const apiKey = process.env.API_KEY;
     if (apiKey) { this.ai = new GoogleGenAI({ apiKey }); }
@@ -307,6 +308,29 @@ export class ElahehCoreService {
           }
           this.addLog('SUCCESS', 'Settings loaded.');
       }
+  }
+
+  private loadServerConfig() {
+    fetch('assets/server-config.json')
+      .then(res => res.json())
+      .then(config => {
+        if (config.domain) {
+           this.customDomain.set(config.domain);
+           // Automatically set standard Let's Encrypt paths if not already customized
+           if (!this.sslCertPath() || this.sslCertPath().includes('example')) {
+                this.sslCertPath.set(`/etc/letsencrypt/live/${config.domain}/fullchain.pem`);
+                this.sslKeyPath.set(`/etc/letsencrypt/live/${config.domain}/privkey.pem`);
+                this.addLog('INFO', `Auto-configured SSL paths for ${config.domain}`);
+           }
+        }
+        if (config.role) {
+            this.serverRole.set(config.role);
+            this.isConfigured.set(true);
+        }
+      })
+      .catch(() => {
+        // Silent catch: file might not exist in dev or non-installed env
+      });
   }
 
   // --- Methods ---

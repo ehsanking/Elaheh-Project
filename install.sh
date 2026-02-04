@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.0 (Fix: SSL Bootstrap & CLI)
+# Version 2.3.0 (Smart SSL & Auto-Config)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.0"
+echo "   Version 2.3.0"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -27,12 +27,11 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Input Collection (Domain & Ports)
+# 2. Input Collection
 DOMAIN=""
 EMAIL=""
 EXTRA_PORTS=""
 
-# Parse Args
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --domain) DOMAIN="$2"; shift 2;;
@@ -49,15 +48,12 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 if [ -z "$EMAIL" ]; then
-    echo -e "${YELLOW}Enter Email for SSL (Let's Encrypt):${NC}"
-    read -p "Email: " EMAIL
+    # Default placeholder email if not provided
+    EMAIL="admin@${DOMAIN}"
 fi
 
-echo -e "${YELLOW}Do you want to open extra ports for VLESS/VMess? (Optional, default is 443 only)${NC}"
-read -p "Extra Ports (comma separated, e.g. 8080,2053 or leave empty): " EXTRA_PORTS
-
 # 3. Detect OS & Install Dependencies
-echo -e "${GREEN}[+] Installing System Dependencies (Nginx, Certbot)...${NC}"
+echo -e "${GREEN}[+] Installing System Dependencies...${NC}"
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$NAME
@@ -66,7 +62,6 @@ fi
 install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         export DEBIAN_FRONTEND=noninteractive
-        # Fix apt locks
         rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
         apt-get update -y -qq
         apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof
@@ -76,102 +71,76 @@ install_deps() {
 }
 install_deps
 
-# 4. Node.js Installation
-echo -e "${GREEN}[+] Installing Node.js Environment...${NC}"
-NODE_VERSION="v20.15.1"
-MACHINE_ARCH=$(uname -m)
-if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; elif [ "${MACHINE_ARCH}" == "aarch64" ]; then NODE_ARCH="arm64"; else echo -e "${RED}Error: Arch not supported.${NC}"; exit 1; fi
-
-# Check if node is already installed
-if ! command -v node &> /dev/null; then
-    DOWNLOAD_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
-    curl -L "${DOWNLOAD_URL}" -o "/tmp/node.tar.xz"
-    tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
-    rm "/tmp/node.tar.xz"
-fi
-
-if ! command -v pm2 &> /dev/null; then npm install -g pm2; fi
-
-# 5. Setup Project Files
-INSTALL_DIR="/opt/elaheh-project"
-REPO_URL="https://github.com/ehsanking/Elaheh-Project.git"
-
-if [ -d "$INSTALL_DIR" ]; then
-    echo -e "${GREEN}[+] Updating existing installation...${NC}"
-    cd "$INSTALL_DIR"
-    git reset --hard
-    git pull origin main
-else
-    echo -e "${GREEN}[+] Cloning repository...${NC}"
-    git clone "$REPO_URL" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
-fi
-
-PROJECT_NAME=$(node -p "require('./package.json').name")
-DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
-mkdir -p "$DIST_PATH/assets"
-
-# Save Config
-cat <<EOF > "$DIST_PATH/assets/server-config.json"
-{
-  "role": "${ROLE:-external}",
-  "key": "${KEY}",
-  "domain": "${DOMAIN}",
-  "installedAt": "$(date)"
-}
-EOF
-
-# 6. Obtain SSL (The FIX: Standalone Mode)
-# We must stop Nginx first to free port 80 for Certbot's standalone server
-echo -e "${GREEN}[+] Stopping Nginx to obtain SSL certificate...${NC}"
+# 4. Cleanup Previous Failed Installs (CRITICAL STEP)
+echo -e "${GREEN}[+] Cleaning up potential conflicts...${NC}"
 systemctl stop nginx || true
+# Remove broken configs that prevent Nginx from starting/testing
+rm -f /etc/nginx/sites-enabled/elaheh
+rm -f /etc/nginx/sites-available/elaheh
+rm -f /etc/nginx/sites-enabled/default
 
-echo -e "${GREEN}[+] Requesting Certificate for ${DOMAIN}...${NC}"
-# Use standalone mode. It spins up a temporary webserver on port 80.
-certbot certonly --standalone --preferred-challenges http \
-    --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" --force-renewal
+# Kill any process hogging port 80 (needed for Certbot Standalone)
+if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then
+    echo -e "${YELLOW}[!] Port 80 is busy. Stopping conflicting processes...${NC}"
+    kill -9 $(lsof -t -i:80) || true
+fi
 
-# Check if certs exist
+# 5. Obtain SSL (Smart Standalone Mode)
+echo -e "${GREEN}[+] Requesting SSL Certificate for ${DOMAIN}...${NC}"
+
+if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
+    echo -e "${YELLOW}[i] Certificate already exists. Skipping request.${NC}"
+else
+    # Try to get cert for both DOMAIN and www.DOMAIN
+    echo -e "${YELLOW}[i] Attempting to secure ${DOMAIN} and www.${DOMAIN}...${NC}"
+    if certbot certonly --standalone --preferred-challenges http \
+        --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" -d "www.${DOMAIN}"; then
+        echo -e "${GREEN}[✓] Certificate obtained for domain and subdomains.${NC}"
+    else
+        echo -e "${YELLOW}[!] Failed to get cert for www subdomain. Retrying for root domain only...${NC}"
+        # Fallback to just DOMAIN
+        certbot certonly --standalone --preferred-challenges http \
+            --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}"
+    fi
+fi
+
+# Verify SSL Exists
 if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-    echo -e "${RED}[!] Critical Error: SSL Certificate could not be obtained.${NC}"
-    echo -e "${RED}Please check that your Domain A record points to this server IP and Port 80 is open.${NC}"
+    echo -e "${RED}[!] CRITICAL ERROR: SSL Certificate could not be obtained.${NC}"
+    echo -e "${RED}[!] Please ensure your Domain A record points to $(curl -s ifconfig.me) and Port 80 is open.${NC}"
     exit 1
 fi
 
-# 7. Configure Nginx (With Valid SSL Paths)
-echo -e "${GREEN}[+] Configuring Nginx...${NC}"
+# 6. Configure Nginx (Now safe because certs exist)
+echo -e "${GREEN}[+] Configuring Nginx Reverse Proxy...${NC}"
 
 APP_PORT=3000
-
-# Write configuration now that certs exist
 cat <<EOF > /etc/nginx/sites-available/elaheh
 server {
     listen 80;
-    server_name ${DOMAIN};
-    # Force HTTPS
+    server_name ${DOMAIN} www.${DOMAIN};
     return 301 https://\$host\$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name ${DOMAIN};
+    server_name ${DOMAIN} www.${DOMAIN};
 
     ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     
-    # Modern SSL Config
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
-    root ${DIST_PATH};
+    root /opt/elaheh-project/dist/project-elaheh/browser;
     index index.html;
 
-    # 1. Main Application (Panel / Landing)
+    # 1. Main Application
     location / {
         try_files \$uri \$uri/ /index.html;
     }
 
-    # 2. API Proxy (Internal)
+    # 2. API Proxy
     location /api {
         proxy_pass http://127.0.0.1:${APP_PORT};
         proxy_http_version 1.1;
@@ -181,8 +150,7 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
 
-    # 3. VLESS/VMess WebSocket Path (Stealth Mode)
-    # Forward to Xray/SingBox core (default 10000)
+    # 3. VLESS/VMess WebSocket Path
     location /ws {
         if (\$http_upgrade != "websocket") {
             return 404;
@@ -199,90 +167,101 @@ server {
 }
 EOF
 
-# Enable Site
-rm -f /etc/nginx/sites-enabled/default
 ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
+systemctl restart nginx
 
-# 8. Firewall Configuration
-SSH_PORT="22"
-if [ -f /etc/ssh/sshd_config ]; then
-    DETECTED_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
-    [ ! -z "$DETECTED_PORT" ] && SSH_PORT=$DETECTED_PORT
+# 7. Node.js & Project Setup
+echo -e "${GREEN}[+] Setting up Application Core...${NC}"
+NODE_VERSION="v20.15.1"
+if ! command -v node &> /dev/null; then
+    MACHINE_ARCH=$(uname -m)
+    if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; else NODE_ARCH="arm64"; fi
+    curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
+    tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
+fi
+if ! command -v pm2 &> /dev/null; then npm install -g pm2; fi
+
+INSTALL_DIR="/opt/elaheh-project"
+if [ -d "$INSTALL_DIR" ]; then
+    cd "$INSTALL_DIR"
+    git reset --hard
+    git pull origin main
+else
+    git clone "https://github.com/ehsanking/Elaheh-Project.git" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
 fi
 
-echo -e "${GREEN}[+] Configuring Firewall...${NC}"
+PROJECT_NAME=$(node -p "require('./package.json').name")
+DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
+mkdir -p "$DIST_PATH/assets"
 
-if command -v ufw &> /dev/null; then
-    ufw allow ${SSH_PORT}/tcp
-    ufw allow 80/tcp
-    ufw allow 443/tcp
-    if [ ! -z "$EXTRA_PORTS" ]; then
-        IFS=',' read -ra ADDR <<< "$EXTRA_PORTS"
-        for i in "${ADDR[@]}"; do ufw allow "$i"/tcp; done
-    fi
-    echo "y" | ufw enable
-elif command -v firewall-cmd &> /dev/null; then
-    systemctl start firewalld
-    firewall-cmd --permanent --add-port=${SSH_PORT}/tcp
-    firewall-cmd --permanent --add-port=80/tcp
-    firewall-cmd --permanent --add-port=443/tcp
-    if [ ! -z "$EXTRA_PORTS" ]; then
-        IFS=',' read -ra ADDR <<< "$EXTRA_PORTS"
-        for i in "${ADDR[@]}"; do firewall-cmd --permanent --add-port="$i"/tcp; done
-    fi
-    firewall-cmd --reload
-fi
+cat <<EOF > "$DIST_PATH/assets/server-config.json"
+{
+  "role": "${ROLE:-external}",
+  "key": "${KEY}",
+  "domain": "${DOMAIN}",
+  "installedAt": "$(date)"
+}
+EOF
 
-# Start Nginx
-systemctl start nginx
-
-# 9. Start Application (Local Port)
-echo -e "${GREEN}[+] Starting Application on internal port ${APP_PORT}...${NC}"
-
-# Check for port conflict on internal app port
-if lsof -Pi :${APP_PORT} -sTCP:LISTEN -t >/dev/null ; then
-    echo -e "${YELLOW}[!] Internal port ${APP_PORT} is busy. Cleaning up...${NC}"
-    kill -9 $(lsof -t -i:${APP_PORT}) || true
-fi
-
+# 8. Start PM2
+echo -e "${GREEN}[+] Starting Backend Services...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
 pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
 pm2 save --force
 pm2 startup | tail -n 1 | bash || true
 
-# 10. CLI Tool (Creating it BEFORE final success message)
-echo -e "${GREEN}[+] Installing 'elaheh' CLI tool...${NC}"
+# 9. Firewall
+echo -e "${GREEN}[+] Securing Ports...${NC}"
+SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n 1 || echo "22")
+if command -v ufw &> /dev/null; then
+    ufw allow ${SSH_PORT}/tcp
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    echo "y" | ufw enable
+fi
+
+# 10. CLI Tool (Install early to ensure availability)
+echo -e "${GREEN}[+] Installing 'elaheh' Command Line Tool...${NC}"
 cat <<EOF > /usr/local/bin/elaheh
 #!/bin/bash
 INSTALL_DIR="/opt/elaheh-project"
+RED='\033[0;31m'
+GREEN='\033[1;32m'
+NC='\033[0m'
+
+show_menu() {
+    clear
+    echo -e "${GREEN} Elaheh Management Console${NC}"
+    echo "1. Update Panel & Core"
+    echo "2. Restart Services (Nginx/PM2)"
+    echo "3. Renew SSL Certificates"
+    echo "4. View Logs"
+    echo "5. Exit"
+}
+
 update_app() {
     echo "Updating..."
     cd "\$INSTALL_DIR" && git pull origin main
     pm2 restart elaheh-app
-    echo "Update Complete."
+    echo -e "${GREEN}Update Complete.${NC}"
 }
+
 renew_ssl() {
-    echo "Stopping Nginx for standalone renewal..."
+    echo "Stopping Nginx..."
     systemctl stop nginx
     certbot renew
     systemctl start nginx
-    echo "SSL Renewed."
+    echo -e "${GREEN}SSL Renewed.${NC}"
 }
-echo "--------------------------"
-echo " Elaheh Management Tool"
-echo "--------------------------"
-echo "1. Update Application"
-echo "2. Restart Nginx"
-echo "3. Renew SSL Certificates"
-echo "4. View Application Logs"
-echo "5. Exit"
+
 read -p "Select option: " choice
 case "\$choice" in
   1) update_app ;;
-  2) systemctl restart nginx; echo "Nginx Restarted." ;;
+  2) systemctl restart nginx; pm2 restart elaheh-app; echo "Services Restarted." ;;
   3) renew_ssl ;;
-  4) pm2 logs elaheh-app ;;
+  4) pm2 logs elaheh-app --lines 50 ;;
   5) exit 0 ;;
   *) echo "Invalid option" ;;
 esac
@@ -290,13 +269,12 @@ EOF
 chmod +x /usr/local/bin/elaheh
 
 # 11. Final Output
+PUBLIC_IP=$(curl -s ifconfig.me)
 echo ""
 echo -e "${GREEN}=========================================${NC}"
-echo -e "${GREEN}   INSTALLATION COMPLETED SUCCESSFULLY!${NC}"
+echo -e "${GREEN}   INSTALLATION SUCCESSFUL!${NC}"
 echo -e "${GREEN}=========================================${NC}"
-echo -e "   Website:  https://${DOMAIN}"
-echo -e "   Panel:    Log in via the 'Client Portal' button."
-echo -e "   VLESS:    Port 443 (TLS enabled)"
-echo -e "   CLI:      Type 'elaheh' to manage."
+echo -e "   Panel URL: https://${DOMAIN}"
+echo -e "   Admin Access: Click 'Client Portal' on the site."
+echo -e "   Management: Type 'elaheh' in terminal."
 echo ""
-echo -e "${YELLOW}Note: If 'elaheh' command is not found immediately, type: source ~/.bashrc or re-login.${NC}"
