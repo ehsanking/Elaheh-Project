@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.7 (Aggressive Repo Cleanup & Direct Binary Install)
+# Version 1.3.8 (Fix CLI Path & Final Output)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.7"
+echo "   Version 1.3.8"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -165,6 +165,7 @@ pm2 startup | grep "sudo" | bash || true
 
 # 10. Create 'elaheh' CLI tool
 echo -e "${GREEN}[+] Creating 'elaheh' management tool...${NC}"
+mkdir -p /usr/local/bin
 cat <<'EOF' > /usr/local/bin/elaheh
 #!/bin/bash
 
@@ -320,6 +321,7 @@ echo ""
 echo -e "   ----------------------------------------"
 echo -e "   To manage your installation, simply type:"
 echo -e "   ${YELLOW}elaheh${NC}"
+echo -e "   ${CYAN}(If command not found, please re-login to your server)${NC}"
 echo -e "   ----------------------------------------"
 echo ""
 echo -e "   To check logs run: ${YELLOW}pm2 logs elaheh-app${NC}"
