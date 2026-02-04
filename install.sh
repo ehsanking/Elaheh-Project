@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.2 (Separation Edition)
+# Version 1.0.3 (Secure Architecture Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -16,8 +16,8 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.2"
-echo "   'اینترنت آزاد برای همه یا هیچکس'"
+echo "   Version 1.0.3"
+echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
 
@@ -34,12 +34,16 @@ ROLE=""
 
 echo -e "${YELLOW}Select Server Location/Role:${NC}"
 echo "1) Foreign Server (Upstream - Germany, Finland, etc.)"
-echo "2) Iran Server (Edge - Storefront, User Access, Tunnel Client)"
+echo "   > Functions: Relay Traffic, Generate Connection Keys."
+echo "   > UI: Minimal Dashboard only."
+echo "2) Iran Server (Edge - Storefront, User Access)"
+echo "   > Functions: Store, Users, Database, Tunnel Client."
+echo "   > UI: Full Admin Panel & Shop."
 read -p "Select [1 or 2]: " ROLE_CHOICE
 
 if [ "$ROLE_CHOICE" -eq 2 ]; then
     ROLE="iran"
-    echo -e "${GREEN}>> Configuring as IRAN (Edge) Server...${NC}"
+    echo -e "${GREEN}>> Configuring as IRAN (Edge/Main) Server...${NC}"
 else
     ROLE="external"
     echo -e "${GREEN}>> Configuring as FOREIGN (Upstream) Server...${NC}"
@@ -75,14 +79,17 @@ install_deps() {
         export DEBIAN_FRONTEND=noninteractive
         rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
         apt-get update -y -qq
-        # Install WireGuard and OpenVPN explicitly based on requirements
-        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard
+        # Install Robust DB (SQLite), Caching (Redis), and Tunnel Protocols
+        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server
     elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
         dnf upgrade -y --refresh
-        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools
+        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis
     fi
 }
 install_deps
+
+# Enable Redis for Performance
+systemctl enable --now redis-server || systemctl enable --now redis
 
 # 4. Swap Setup
 TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
@@ -134,7 +141,7 @@ server {
         try_files \$uri \$uri/ /index.html;
     }
 
-    # API Proxy for Tunneling Logic
+    # Tunnel WebSocket Support
     location /ws {
         if (\$http_upgrade != "websocket") { return 404; }
         proxy_pass http://127.0.0.1:10000;
@@ -181,7 +188,7 @@ rm -rf node_modules package-lock.json dist
 cat <<EOF > package.json
 {
   "name": "project-elaheh",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -214,7 +221,6 @@ cat <<EOF > package.json
 }
 EOF
 
-# ... (Standard Angular Configs - kept same) ...
 # 9.3 Angular JSON (With Zone.js)
 cat <<EOF > angular.json
 {
@@ -358,6 +364,7 @@ pm2 save --force
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 
 # 12. Firewall - Allow Specific Ports
+echo -e "${GREEN}[+] Configuring Firewall (Port 110, 1414)...${NC}"
 if command -v ufw &> /dev/null; then
     ufw allow 22/tcp
     ufw allow 80/tcp
@@ -382,6 +389,8 @@ echo -e "   Role: ${ROLE^^}"
 echo -e "   Panel URL: https://${DOMAIN}"
 echo -e "${GREEN}=========================================${NC}"
 if [ "$ROLE" == "external" ]; then
-    echo -e "${YELLOW}NOTE: Log in to generate a connection key for your Iran server.${NC}"
+    echo -e "${YELLOW}>> UPSTREAM MODE: Log in to generate a connection key for your Iran server.${NC}"
+elif [ "$ROLE" == "iran" ]; then
+    echo -e "${YELLOW}>> EDGE MODE: Log in and paste the Upstream Token in Settings.${NC}"
 fi
 echo ""

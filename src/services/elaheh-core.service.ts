@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.2'; 
+export const APP_VERSION = '1.0.5'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
@@ -17,7 +17,7 @@ export interface LinkConfig {
   alias: string;
   quotaGb: number | null;
   expiryDate: string | null;
-  protocol: 'vless' | 'vmess' | 'trojan' | 'trusttunnel' | 'openvpn' | 'wireguard' | 'shadowsocks';
+  protocol: 'vless' | 'vmess' | 'trojan' | 'trusttunnel' | 'openvpn' | 'wireguard' | 'shadowsocks' | 'hysteria2';
   description?: string;
 }
 
@@ -33,6 +33,14 @@ export interface User {
   currentConnections: number;
   subscriptionLink: string;
   udpEnabled: boolean;
+}
+
+export interface SshRule {
+  id: string;
+  type: 'Local' | 'Remote';
+  bindAddress: string;
+  port: number;
+  target: string;
 }
 
 export interface LogEntry {
@@ -126,7 +134,7 @@ export class ElahehCoreService {
   adminUsername = signal<string>('admin');
   adminPassword = signal<string>('admin');
   
-  // Dashboard State
+  // Dashboard State (Shared)
   serverLoad = signal<number>(0);
   memoryUsage = signal<number>(0);
   activeConnections = signal<number>(0);
@@ -136,12 +144,18 @@ export class ElahehCoreService {
   usedDiskSpaceGb = signal<number>(64.8);
   diskUsagePercent = computed(() => (this.usedDiskSpaceGb() / this.totalDiskSpaceGb()) * 100);
   
-  // Advanced Network Metrics
+  // Upstream Node State
+  upstreamToken = signal<string | null>(null);
+  upstreamStatus = signal<'listening' | 'connected'>('listening');
+
+  // Edge (Iran) State
   packetLossRate = signal<number>(0);
   jitterMs = signal<number>(0);
   geoDistribution = signal<any[]>([
-    { country: 'Iran', code: 'IR', percent: 95, count: 0 }, 
-    { country: 'Germany', code: 'DE', percent: 5, count: 0 },
+    { country: 'Iran', code: 'IR', percent: 85, count: 120 },
+    { country: 'Germany', code: 'DE', percent: 10, count: 14 },
+    { country: 'China', code: 'CN', percent: 3, count: 4 },
+    { country: 'Russia', code: 'RU', percent: 2, count: 3 },
   ]);
   
   connectionQuality = computed(() => {
@@ -166,18 +180,18 @@ export class ElahehCoreService {
   isTestingTunnels = signal<boolean>(false);
   tunnelProviders = signal<TunnelProvider[]>([
     { id: 'trusttunnel', name: 'TrustTunnel (AdGuard)', type: 'TRUST_TUNNEL', status: 'untested', latencyMs: null, jitterMs: null },
-    { id: 'wireguard', name: 'WireGuard (Direct)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
-    { id: 'openvpn', name: 'OpenVPN (TCP)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
+    { id: 'wireguard', name: 'WireGuard (UDP:1414)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
+    { id: 'openvpn', name: 'OpenVPN (TCP:110)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'vless', name: 'VLESS Reality', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
-    { id: 'cloudflare', name: 'Cloudflare Worker', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
   ]);
+
+  sshRules = signal<SshRule[]>([]);
 
   logs = signal<LogEntry[]>([]);
   
-  users = signal<User[]>([]); // Initialized empty
+  users = signal<User[]>([]); 
   userStats = computed(() => { const all = this.users(); return { total: all.length, active: all.filter(u => u.status === 'active').length, expired: all.filter(u => u.status === 'expired').length, banned: all.filter(u => u.status === 'banned').length }; });
 
-  // Customizable Products
   products = signal<Product[]>([
     { id: 'p1', title: 'پکیج پایه', description: 'مناسب وب‌گردی و تحقیق', price: 90000, durationDays: 30, trafficGb: 30, userLimit: 1, features: ['۳۰ گیگابایت', '۱ کاربر', 'سرعت بالا', 'آی‌پی ثابت'], highlight: false },
     { id: 'p2', title: 'پکیج حرفه‌ای', description: 'مناسب ترید و فریلنسرها', price: 160000, durationDays: 30, trafficGb: 60, userLimit: 2, features: ['۶۰ گیگابایت', '۲ کاربر', 'پینگ پایین', 'کیل‌سوئیچ'], highlight: true },
@@ -188,7 +202,6 @@ export class ElahehCoreService {
   paymentGateways = signal<PaymentGateway[]>([
     { id: 'zarinpal', name: 'زرین‌پال', logo: 'https://cdn.zarinpal.com/badges/trustLogo/1.svg', url: 'https://www.zarinpal.com', merchantId: '', isEnabled: true, type: 'FIAT' },
     { id: 'payping', name: 'پی‌پینگ', logo: 'https://payping.ir/assets/img/logo-dark.svg', url: 'https://payping.ir', merchantId: '', isEnabled: true, type: 'FIAT' },
-    { id: 'nextpay', name: 'نکست‌پی', logo: 'https://nextpay.org/assets/images/logo.png', url: 'https://nextpay.org', merchantId: '', isEnabled: false, type: 'FIAT' },
   ]);
 
   camouflageMode = signal<'AI_RESEARCH' | 'SHOP' | 'SEARCH_ENGINE'>('SHOP');
@@ -274,10 +287,12 @@ export class ElahehCoreService {
       }
     });
 
+    // Persistence Effect
     effect(() => {
        const state = {
            users: this.users(),
            products: this.products(),
+           sshRules: this.sshRules(),
            settings: {
                adminUsername: this.adminUsername(),
                domain: this.customDomain(),
@@ -293,10 +308,14 @@ export class ElahehCoreService {
 
     effect(() => {
       if (this.isConfigured() && this.serverRole() === 'external') {
-        this.addLog('INFO', 'Role: FOREIGN SERVER (Upstream). Waiting for Iran node connections.');
-        this.startCamouflageSimulation();
+        // FOREIGN MODE: Minimal logic
+        this.addLog('INFO', 'Role: UPSTREAM SERVER (Foreign).');
+        if (!this.upstreamToken()) {
+            this.upstreamToken.set(this.generateConnectionToken());
+        }
       } else if (this.isConfigured() && this.serverRole() === 'iran') {
-        this.addLog('INFO', 'Role: IRAN SERVER (Edge). Storefront Active.');
+        // IRAN MODE: Full logic
+        this.addLog('INFO', 'Role: EDGE SERVER (Iran). Panel Active.');
         this.startNatKeepAlive();
         if (this.tunnelMode() === 'auto') {
             this.startAutoTesting();
@@ -310,19 +329,16 @@ export class ElahehCoreService {
       if (data) {
           if (data.users) this.users.set(data.users);
           if (data.products) this.products.set(data.products);
+          if (data.sshRules) this.sshRules.set(data.sshRules);
           if (data.settings) {
               if(data.settings.adminUsername) this.adminUsername.set(data.settings.adminUsername);
               if(data.settings.domain) this.customDomain.set(data.settings.domain);
-              if(data.settings.smtp) this.smtpConfig.set(data.settings.smtp);
               if(data.settings.brandName) this.brandName.set(data.settings.brandName);
-              if(data.settings.brandLogo) this.brandLogo.set(data.settings.brandLogo);
               if(data.settings.currency) this.currency.set(data.settings.currency);
-              if(data.settings.gateways) this.paymentGateways.set(data.settings.gateways);
           }
-          this.addLog('SUCCESS', 'Settings loaded.');
       } else {
-          // If no users, add demo user
-          if (this.users().length === 0) {
+          // If Iran server and no users, add demo
+          if (this.serverRole() === 'iran' && this.users().length === 0) {
               this.addUser('demo', 10, 30, 2);
           }
       }
@@ -332,21 +348,13 @@ export class ElahehCoreService {
     fetch('assets/server-config.json')
       .then(res => res.json())
       .then(config => {
-        if (config.domain) {
-           this.customDomain.set(config.domain);
-           if (!this.sslCertPath() || this.sslCertPath().includes('example')) {
-                this.sslCertPath.set(`/etc/letsencrypt/live/${config.domain}/fullchain.pem`);
-                this.sslKeyPath.set(`/etc/letsencrypt/live/${config.domain}/privkey.pem`);
-           }
-        }
+        if (config.domain) this.customDomain.set(config.domain);
         if (config.role) {
             this.serverRole.set(config.role);
             this.isConfigured.set(true);
         }
       })
-      .catch(() => {
-        // Silent catch
-      });
+      .catch(() => {});
   }
 
   async fetchIpLocation(ip?: string): Promise<any> {
@@ -355,17 +363,8 @@ export class ElahehCoreService {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-        if (data.success) {
-            return {
-                status: 'success',
-                countryCode: data.country_code,
-                country: data.country,
-                query: data.ip
-            };
-        }
-        return null;
+        return data.success ? { status: 'success', countryCode: data.country_code, country: data.country, query: data.ip } : null;
     } catch (error) {
-        console.error('Failed to fetch IP location:', error);
         return null;
     }
   }
@@ -408,12 +407,12 @@ export class ElahehCoreService {
   private stopAutoTesting() { if (this.autoTestIntervalId) clearInterval(this.autoTestIntervalId); if (this.countdownIntervalId) clearInterval(this.countdownIntervalId); }
 
   runTunnelAnalysis() {
+      if (this.serverRole() !== 'iran') return; // Only Iran server initiates tests
       this.isTestingTunnels.set(true);
       this.addLog('INFO', 'Auto-Pilot: Testing tunnels between Iran & Foreign servers...');
       
       setTimeout(() => {
           const updates = this.tunnelProviders().map(p => {
-              // Simulate realistic network conditions
               let latencyBase = 40;
               let jitterBase = 5;
               
@@ -455,13 +454,13 @@ export class ElahehCoreService {
 
   addUser(username: string, quota: number, days: number, concurrentLimit: number, mode: 'auto' | 'manual' = 'auto', manualConfig: any = null): User {
     const userId = Math.random().toString(36).substring(2);
-    // Use custom domain or fallback placeholder
+    // User custom domain for links
     const host = this.customDomain() || 'YOUR_DOMAIN.COM';
     const subUrl = `https://${host}/sub/${userId}`;
     const uuid = crypto.randomUUID();
     const password = Math.random().toString(36).slice(-8);
     
-    // Generate Multiple Links for Auto Mode
+    // Generate Multiple Links for Auto Mode covering all protocols
     const links: LinkConfig[] = [];
 
     if (mode === 'auto') {
@@ -472,32 +471,53 @@ export class ElahehCoreService {
             quotaGb: null, expiryDate: null, protocol: 'trusttunnel', description: 'Stealth HTTPS/HTTP3'
         });
 
-        // 2. OpenVPN (Port 110) - Requested Config
+        // 2. VLESS Reality (TCP-Vision)
         links.push({
-            alias: 'OpenVPN TCP',
-            url: `https://${host}/api/ovpn/connect?port=110&user=${username}&pass=${password}`,
-            quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 110 (POP3 Camouflage)'
+            alias: 'VLESS Reality TCP',
+            url: `vless://${uuid}@${host}:443?type=tcp&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com&flow=xtls-rprx-vision#${username}_VLESS_TCP`,
+            quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Low Latency / Vision'
         });
 
-        // 3. WireGuard (Port 1414) - Requested Config
+        // 3. VLESS Reality (gRPC)
         links.push({
-            alias: 'WireGuard UDP',
-            url: `wireguard://${host}:1414?privateKey=${uuid}&address=10.0.0.2/32`,
-            quotaGb: null, expiryDate: null, protocol: 'wireguard', description: 'Port 1414 (High Speed)'
+            alias: 'VLESS Reality gRPC',
+            url: `vless://${uuid}@${host}:443?type=grpc&serviceName=grpc&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com#${username}_VLESS_gRPC`,
+            quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Multiplexing / gRPC'
         });
 
-        // 4. VLESS Reality (Standard)
-        links.push({
-            alias: 'VLESS Reality',
-            url: `vless://${uuid}@${host}:443?type=tcp&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com#${username}_VLESS`,
-            quotaGb: null, expiryDate: null, protocol: 'vless', description: 'General use'
-        });
-
-        // 5. VMess WS (CDN)
+        // 4. VMess WS (CDN)
         links.push({
             alias: 'VMess WS CDN',
             url: `vmess://${btoa(JSON.stringify({v: "2", ps: username + "_VMess", add: host, port: "443", id: uuid, aid: "0", scy: "auto", net: "ws", type: "none", host: host, path: "/ws", tls: "tls"}))}`,
-            quotaGb: null, expiryDate: null, protocol: 'vmess', description: 'CDN Tunneling'
+            quotaGb: null, expiryDate: null, protocol: 'vmess', description: 'CDN Compatible'
+        });
+
+        // 5. Trojan WS
+        links.push({
+            alias: 'Trojan WS',
+            url: `trojan://${password}@${host}:443?type=ws&security=tls&path=%2Ftrojan&sni=${host}#${username}_Trojan`,
+            quotaGb: null, expiryDate: null, protocol: 'trojan', description: 'Standard TLS Tunnel'
+        });
+
+        // 6. Hysteria2 (UDP)
+        links.push({
+            alias: 'Hysteria2',
+            url: `hy2://${password}@${host}:443?sni=${host}&insecure=1#${username}_Hy2`,
+            quotaGb: null, expiryDate: null, protocol: 'hysteria2', description: 'High Speed UDP (Brutal)'
+        });
+
+        // 7. OpenVPN (Port 110)
+        links.push({
+            alias: 'OpenVPN TCP',
+            url: `https://${host}/api/ovpn/connect?port=110&user=${username}&pass=${password}`,
+            quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 110 (Legacy Support)'
+        });
+
+        // 8. WireGuard (Port 1414)
+        links.push({
+            alias: 'WireGuard UDP',
+            url: `wireguard://${host}:1414?privateKey=${uuid}&address=10.0.0.2/32`,
+            quotaGb: null, expiryDate: null, protocol: 'wireguard', description: 'Port 1414 (Direct/Fast)'
         });
 
     } else if (manualConfig) {
@@ -532,6 +552,9 @@ export class ElahehCoreService {
   updateUserLinks(userId: string, links: LinkConfig[]) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...links] }; } return u; })); }
   addLog(level: any, message: string) { const entry: LogEntry = { timestamp: new Date().toLocaleTimeString(), level, message }; this.logs.update(l => [entry, ...l].slice(0, 50)); }
   
+  addSshRule(rule: SshRule) { this.sshRules.update(r => [...r, rule]); }
+  removeSshRule(id: string) { this.sshRules.update(r => r.filter(x => x.id !== id)); }
+
   // --- Export / Import Users ---
   exportUsersJSON(): string {
       return JSON.stringify(this.users(), null, 2);
@@ -555,8 +578,8 @@ export class ElahehCoreService {
   // --- Connection Key Generation (Upstream/External) ---
   generateConnectionToken(): string {
       // Used by External Server to generate a key for Iran Server to connect
-      const host = this.customDomain() || '127.0.0.1'; // In real app, detect Public IP
-      const token = this.generateSecureEdgeKey(); // The auth token
+      const host = this.customDomain() || '1.2.3.4'; // In real app, detect Public IP
+      const token = this.generateSecureEdgeKey(); 
       // Format: EL-LINK-base64(HOST|TOKEN)
       const payload = btoa(`${host}|${token}`);
       return `EL-LINK-${payload}`;
@@ -599,7 +622,7 @@ export class ElahehCoreService {
       // Simulate Connection Handshake
       setTimeout(() => {
           this.edgeNodeStatus.set('connected');
-          this.addLog('SUCCESS', 'Tunnel established! All protocols (110, 1414, 443) are now routed through Upstream.');
+          this.addLog('SUCCESS', 'Tunnel established! Routing traffic via WireGuard(1414) & OpenVPN(110).');
           this.natStatus.set('Connected');
       }, 2000);
   }
@@ -626,7 +649,30 @@ export class ElahehCoreService {
   updateBranding(name: string, logo: string | null, currency: string) { this.brandName.set(name); if(logo) this.brandLogo.set(logo); this.currency.set(currency); }
 
   testEdgeNodeConnection() { this.edgeNodeStatus.set('connecting'); setTimeout(() => this.edgeNodeStatus.set('connected'), 1000); }
-  initSimulatedMetrics() { /* ... */ }
+  
+  // Metric Simulation
+  initSimulatedMetrics() { 
+      setInterval(() => {
+          this.serverLoad.set(Math.floor(Math.random() * 20) + 5);
+          this.memoryUsage.set(Math.floor(Math.random() * 30) + 15);
+          this.activeConnections.set(Math.floor(Math.random() * 100) + 200);
+          this.totalDataTransferred.update(v => v + 0.01);
+          this.transferRateMbps.set(Math.floor(Math.random() * 50) + 20);
+          
+          // Enhanced Network Metrics Simulation
+          this.packetLossRate.set(parseFloat((Math.random() * 2).toFixed(2))); // 0% - 2%
+          this.jitterMs.set(Math.floor(Math.random() * 30) + 5); // 5ms - 35ms
+          
+          // Simulate active user connections
+          this.users.update(users => users.map(u => {
+              if (u.status === 'active' && Math.random() > 0.7) {
+                  const newConns = Math.floor(Math.random() * (u.concurrentConnectionsLimit + 1));
+                  return { ...u, currentConnections: newConns };
+              }
+              return u;
+          }));
+      }, 3000);
+  }
   startCamouflageSimulation() { /* ... */ }
   startNatKeepAlive() { if(this.keepAliveTimer) clearInterval(this.keepAliveTimer); this.keepAliveTimer = setInterval(() => {}, this.natConfig().keepAliveIntervalSec * 1000); }
 }

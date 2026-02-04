@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -28,32 +29,30 @@ import { LanguageService } from '../services/language.service';
                         <h4 class="text-teal-400 font-bold text-sm">{{ languageService.translate('settings.sshSettings.localTitle') }}</h4>
                         <p class="text-xs text-gray-500">{{ languageService.translate('settings.sshSettings.localDesc') }}</p>
                     </div>
-                    <div class="bg-gray-800 px-2 py-1 rounded text-xs font-mono text-gray-300">-L [bind_address:]port:host:hostport</div>
+                    <div class="bg-gray-800 px-2 py-1 rounded text-xs font-mono text-gray-300">-L [bind:]port:host:port</div>
                 </div>
                 
                 <form [formGroup]="localForm" (ngSubmit)="addLocalRule()">
                     <div class="space-y-3">
-                        <div>
-                            <label class="block text-gray-400 text-xs mb-1">{{ languageService.translate('settings.sshSettings.bindPort') }}</label>
-                            <input formControlName="localPort" type="number" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-teal-500 outline-none" placeholder="8080">
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="block text-gray-400 text-xs mb-1">Bind IP</label>
+                                <input formControlName="bindAddress" type="text" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-teal-500 outline-none" placeholder="127.0.0.1">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-gray-400 text-xs mb-1">{{ languageService.translate('settings.sshSettings.bindPort') }}</label>
+                                <input formControlName="localPort" type="number" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-teal-500 outline-none" placeholder="8080">
+                            </div>
                         </div>
                         <div>
                             <label class="block text-gray-400 text-xs mb-1">{{ languageService.translate('settings.sshSettings.target') }}</label>
-                            <input formControlName="target" type="text" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-teal-500 outline-none" placeholder="localhost:80">
+                            <input formControlName="target" type="text" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-teal-500 outline-none" placeholder="remote-host:80">
                         </div>
                         <button type="submit" [disabled]="localForm.invalid" class="w-full bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold py-2 rounded transition-colors disabled:opacity-50">
                             {{ languageService.translate('settings.sshSettings.addRule') }}
                         </button>
                     </div>
                 </form>
-
-                <div class="mt-4 pt-4 border-t border-gray-700">
-                    <div class="text-xs font-bold text-gray-500 mb-2 uppercase">{{ languageService.translate('settings.sshSettings.useCase') }}</div>
-                    <ul class="text-xs text-gray-400 list-disc list-inside space-y-1">
-                        <li>Access internal admin panels securely.</li>
-                        <li>Forward database ports (3306, 5432) to localhost.</li>
-                    </ul>
-                </div>
             </div>
 
             <!-- Remote Forwarding Config -->
@@ -63,14 +62,20 @@ import { LanguageService } from '../services/language.service';
                         <h4 class="text-purple-400 font-bold text-sm">{{ languageService.translate('settings.sshSettings.remoteTitle') }}</h4>
                         <p class="text-xs text-gray-500">{{ languageService.translate('settings.sshSettings.remoteDesc') }}</p>
                     </div>
-                    <div class="bg-gray-800 px-2 py-1 rounded text-xs font-mono text-gray-300">-R [bind_address:]port:host:hostport</div>
+                    <div class="bg-gray-800 px-2 py-1 rounded text-xs font-mono text-gray-300">-R [bind:]port:host:port</div>
                 </div>
 
                 <form [formGroup]="remoteForm" (ngSubmit)="addRemoteRule()">
                     <div class="space-y-3">
-                        <div>
-                            <label class="block text-gray-400 text-xs mb-1">{{ languageService.translate('settings.sshSettings.bindPort') }} (Remote)</label>
-                            <input formControlName="remotePort" type="number" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-purple-500 outline-none" placeholder="9000">
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="block text-gray-400 text-xs mb-1">Bind IP (Remote)</label>
+                                <input formControlName="bindAddress" type="text" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-purple-500 outline-none" placeholder="0.0.0.0">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-gray-400 text-xs mb-1">Port (Remote)</label>
+                                <input formControlName="remotePort" type="number" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-purple-500 outline-none" placeholder="9000">
+                            </div>
                         </div>
                         <div>
                             <label class="block text-gray-400 text-xs mb-1">{{ languageService.translate('settings.sshSettings.target') }} (Local)</label>
@@ -81,15 +86,33 @@ import { LanguageService } from '../services/language.service';
                         </button>
                     </div>
                 </form>
-
-                <div class="mt-4 pt-4 border-t border-gray-700">
-                    <div class="text-xs font-bold text-gray-500 mb-2 uppercase">{{ languageService.translate('settings.sshSettings.useCase') }}</div>
-                    <ul class="text-xs text-gray-400 list-disc list-inside space-y-1">
-                        <li>Expose local dev server to the internet via VPS.</li>
-                        <li>Bypass inbound firewalls (Reverse Tunnel).</li>
-                    </ul>
-                </div>
             </div>
+        </div>
+
+        <!-- Active Rules List -->
+        <div class="mt-8">
+            <h4 class="text-gray-300 font-bold text-sm mb-3">Active Forwarding Rules</h4>
+            @if (core.sshRules().length === 0) {
+                <div class="text-gray-500 text-xs italic text-center p-4 bg-gray-800/50 rounded">No active rules.</div>
+            } @else {
+                <div class="space-y-2">
+                    @for (rule of core.sshRules(); track rule.id) {
+                        <div class="flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold px-2 py-1 rounded" 
+                                    [class.bg-teal-900]="rule.type === 'Local'" [class.text-teal-300]="rule.type === 'Local'"
+                                    [class.bg-purple-900]="rule.type === 'Remote'" [class.text-purple-300]="rule.type === 'Remote'">
+                                    {{ rule.type === 'Local' ? '-L' : '-R' }}
+                                </span>
+                                <span class="text-sm font-mono text-gray-300">
+                                    {{ rule.bindAddress }}:{{ rule.port }} <span class="text-gray-500">➜</span> {{ rule.target }}
+                                </span>
+                            </div>
+                            <button (click)="core.removeSshRule(rule.id)" class="text-red-400 hover:text-red-300 text-xs">Delete</button>
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
   `,
@@ -101,28 +124,44 @@ export class SshSettingsComponent {
   fb: FormBuilder = inject(FormBuilder);
 
   localForm = this.fb.group({
+    bindAddress: ['127.0.0.1'],
     localPort: ['', [Validators.required, Validators.min(1)]],
     target: ['', Validators.required]
   });
 
   remoteForm = this.fb.group({
+    bindAddress: ['0.0.0.0'],
     remotePort: ['', [Validators.required, Validators.min(1)]],
     target: ['', Validators.required]
   });
 
   addLocalRule() {
     if (this.localForm.valid) {
-      const { localPort, target } = this.localForm.value;
-      this.core.addLog('SUCCESS', `Added Local Forwarding: -L ${localPort}:${target}`);
-      this.localForm.reset();
+      const { bindAddress, localPort, target } = this.localForm.value;
+      this.core.addSshRule({
+          id: Math.random().toString(36).substring(2),
+          type: 'Local',
+          bindAddress: bindAddress || '127.0.0.1',
+          port: Number(localPort),
+          target: target!
+      });
+      this.core.addLog('SUCCESS', `Added Local Forwarding: -L ${bindAddress}:${localPort}:${target}`);
+      this.localForm.reset({ bindAddress: '127.0.0.1' });
     }
   }
 
   addRemoteRule() {
     if (this.remoteForm.valid) {
-      const { remotePort, target } = this.remoteForm.value;
-      this.core.addLog('SUCCESS', `Added Remote Forwarding: -R ${remotePort}:${target}`);
-      this.remoteForm.reset();
+      const { bindAddress, remotePort, target } = this.remoteForm.value;
+      this.core.addSshRule({
+          id: Math.random().toString(36).substring(2),
+          type: 'Remote',
+          bindAddress: bindAddress || '0.0.0.0',
+          port: Number(remotePort),
+          target: target!
+      });
+      this.core.addLog('SUCCESS', `Added Remote Forwarding: -R ${bindAddress}:${remotePort}:${target}`);
+      this.remoteForm.reset({ bindAddress: '0.0.0.0' });
     }
   }
 }

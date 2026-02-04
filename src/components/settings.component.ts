@@ -40,6 +40,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   // Store Mgmt Signals
   selectedProductIdx = signal<number | null>(null);
   
+  // Upstream Connection
+  upstreamTokenInput = signal('');
+  isConnectingUpstream = signal(false);
+
   // Forms
   adminForm = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
@@ -136,6 +140,20 @@ export class SettingsComponent implements OnInit, OnDestroy {
       if(gw) {
           this.core.updateGateway(id, event.target.value, gw.isEnabled);
       }
+  }
+
+  // Upstream Logic
+  connectUpstream() {
+      if(!this.upstreamTokenInput()) return;
+      this.isConnectingUpstream.set(true);
+      
+      // Simulate validation delay
+      setTimeout(() => {
+          this.core.connectToUpstream(this.upstreamTokenInput());
+          this.isConnectingUpstream.set(false);
+          this.upstreamTokenInput.set('');
+          this.showSuccess('Upstream Connection Established');
+      }, 1500);
   }
 
   showSuccess(msg: string) {

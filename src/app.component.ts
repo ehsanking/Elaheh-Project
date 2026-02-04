@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, effect, ChangeDetectionStrategy } from '@angular/core';
 import { ElahehCoreService } from './services/elaheh-core.service';
 import { LanguageService } from './services/language.service';
@@ -14,11 +15,12 @@ import { LogoComponent } from './components/logo.component';
 import { NotFoundComponent } from './components/not-found.component';
 import { SubscriptionPageComponent } from './components/subscription-page.component';
 import { CorporateLandingComponent } from './components/corporate-landing.component';
+import { UpstreamDashboardComponent } from './components/upstream-dashboard.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [LoginComponent, SetupWizardComponent, DashboardComponent, UserManagementComponent, SettingsComponent, CommonModule, StorefrontComponent, SignupComponent, EdgeStatusComponent, LogoComponent, NotFoundComponent, SubscriptionPageComponent, CorporateLandingComponent],
+  imports: [LoginComponent, SetupWizardComponent, DashboardComponent, UserManagementComponent, SettingsComponent, CommonModule, StorefrontComponent, SignupComponent, EdgeStatusComponent, LogoComponent, NotFoundComponent, SubscriptionPageComponent, CorporateLandingComponent, UpstreamDashboardComponent],
   templateUrl: './app.component.html',
   styleUrls: [],
   changeDetection: ChangeDetectionStrategy.OnPush,

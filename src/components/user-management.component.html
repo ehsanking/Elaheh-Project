@@ -23,6 +23,7 @@
           <thead>
             <tr class="bg-gray-900 text-gray-400 text-sm uppercase">
               <th class="p-4 rounded-tl-lg">{{ languageService.translate('common.username') }}</th>
+              <th class="p-4">Connections</th>
               <th class="p-4">{{ languageService.translate('users.usage') }}</th>
               <th class="p-4">{{ languageService.translate('users.expiry') }}</th>
               <th class="p-4">{{ languageService.translate('common.status') }}</th>
@@ -33,6 +34,19 @@
             @for (user of filteredUsers(); track user.id) {
               <tr class="hover:bg-gray-700/50 transition-colors">
                 <td class="p-4 font-bold text-white">{{ user.username }}</td>
+                <td class="p-4">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-2 w-2 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" *ngIf="user.currentConnections > 0"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2" 
+                                  [class.bg-green-500]="user.currentConnections > 0"
+                                  [class.bg-gray-500]="user.currentConnections === 0"></span>
+                        </span>
+                        <span class="text-xs text-gray-300 font-mono">
+                            {{ user.currentConnections }} / {{ user.concurrentConnectionsLimit }}
+                        </span>
+                    </div>
+                </td>
                 <td class="p-4">
                   <div class="flex items-center gap-2">
                     <div class="w-24 bg-gray-700 rounded-full h-2">
@@ -111,6 +125,11 @@
                     <label class="block text-gray-400 text-sm mb-1 uppercase font-bold">{{ languageService.translate('users.addModal.expiry') }}</label>
                     <input formControlName="days" type="number" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white outline-none">
                   </div>
+              </div>
+              
+              <div class="mb-4">
+                  <label class="block text-gray-400 text-sm mb-1 uppercase font-bold">Concurrent Limits</label>
+                  <input formControlName="concurrentLimit" type="number" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white outline-none">
               </div>
 
               <div class="flex justify-end gap-3 pt-2 border-t border-gray-700">

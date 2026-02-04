@@ -29,7 +29,7 @@ import * as QRCode from 'qrcode';
                 
                 <div class="p-6 space-y-6">
                     @for (link of user()?.links; track link.alias) {
-                        <div class="bg-black/30 rounded-lg border border-gray-700 p-4">
+                        <div class="bg-black/30 rounded-lg border border-gray-700 p-4 transition-colors hover:border-teal-500/50">
                             <div class="flex justify-between items-center mb-3">
                                 <div>
                                     <span class="font-bold text-teal-400 block">{{ link.alias }}</span>
@@ -50,7 +50,7 @@ import * as QRCode from 'qrcode';
                 </div>
                 
                 <div class="bg-gray-900 p-4 text-center text-xs text-gray-500 border-t border-gray-700">
-                    <p class="mb-2">Download Apps</p>
+                    <p class="mb-2 uppercase font-bold tracking-widest">Download Official Apps</p>
                     <div class="flex justify-center gap-4 flex-wrap">
                         <a href="https://play.google.com/store/apps/details?id=com.adguard.trusttunnel" target="_blank" class="text-blue-400 hover:underline">TrustTunnel</a>
                         <a href="https://openvpn.net/client-connect-vpn-for-windows/" target="_blank" class="text-blue-400 hover:underline">OpenVPN</a>
@@ -60,20 +60,21 @@ import * as QRCode from 'qrcode';
                 </div>
             </div>
         } @else {
-            <div class="text-center mt-20 p-8 bg-gray-800 rounded-xl border border-gray-700">
+            <div class="text-center mt-20 p-8 bg-gray-800 rounded-xl border border-gray-700 shadow-2xl">
                 <h1 class="text-3xl font-bold text-white mb-2">Subscription Not Found</h1>
                 <p class="text-gray-400">Please check your link or contact support.</p>
+                <div class="mt-6 text-sm text-gray-600">ID: {{ urlId() }}</div>
             </div>
         }
       </div>
 
       <!-- QR Modal -->
       @if (qrData()) {
-          <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" (click)="qrData.set(null)">
-              <div class="bg-white p-4 rounded-xl" (click)="$event.stopPropagation()">
-                  <img [src]="qrData()" class="w-64 h-64">
-                  <div class="text-center text-black font-bold mt-2">{{ qrTitle() }}</div>
-                  <button (click)="qrData.set(null)" class="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded">Close</button>
+          <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm" (click)="qrData.set(null)">
+              <div class="bg-white p-6 rounded-xl shadow-2xl" (click)="$event.stopPropagation()">
+                  <img [src]="qrData()" class="w-64 h-64 mix-blend-multiply">
+                  <div class="text-center text-black font-bold mt-4">{{ qrTitle() }}</div>
+                  <button (click)="qrData.set(null)" class="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded font-bold">Close</button>
               </div>
           </div>
       }
@@ -86,11 +87,21 @@ export class SubscriptionPageComponent implements OnInit {
     user = signal<User | undefined>(undefined);
     qrData = signal<string | null>(null);
     qrTitle = signal('');
+    urlId = signal('');
 
     ngOnInit() {
-        // In a real scenario, read from ActivatedRoute params.
-        // For demo/simplicity, if users exist, show the first one to avoid "Empty Page" error.
-        if (this.core.users().length > 0) {
+        // Extract ID from URL for simulation
+        const parts = window.location.href.split('/sub/');
+        const id = parts.length > 1 ? parts[1] : '';
+        this.urlId.set(id);
+
+        if (id) {
+            const found = this.core.users().find(u => u.id === id);
+            if (found) this.user.set(found);
+        }
+        
+        // Fallback for Demo: If no ID but users exist, show first user to demonstrate UI
+        if (!this.user() && this.core.users().length > 0) {
             this.user.set(this.core.users()[0]);
         }
     }
