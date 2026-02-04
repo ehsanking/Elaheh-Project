@@ -62,6 +62,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
       trafficGb: [0]
   });
 
+  edgeServerForm = this.fb.group({
+      name: ['', Validators.required],
+      host: ['', Validators.required]
+  });
+
   ngOnInit(): void {
     this.adminForm.setValue({
       username: this.core.adminUsername(),
@@ -140,6 +145,23 @@ export class SettingsComponent implements OnInit, OnDestroy {
       if(gw) {
           this.core.updateGateway(id, event.target.value, gw.isEnabled);
       }
+  }
+
+  // Edge Server Logic
+  createEdgeServer() {
+      if(this.edgeServerForm.valid) {
+          const { name, host } = this.edgeServerForm.value;
+          this.core.addEdgeServer({
+              id: Math.random().toString(36).substring(2),
+              name: name!,
+              host: host!
+          });
+          this.edgeServerForm.reset();
+      }
+  }
+
+  removeEdgeServer(id: string) {
+      this.core.removeEdgeServer(id);
   }
 
   // Upstream Logic

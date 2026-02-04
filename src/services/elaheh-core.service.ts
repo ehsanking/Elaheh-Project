@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.6'; 
+export const APP_VERSION = '1.0.7'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
@@ -19,6 +19,14 @@ export interface LinkConfig {
   expiryDate: string | null;
   protocol: 'vless' | 'vmess' | 'trojan' | 'trusttunnel' | 'openvpn' | 'wireguard' | 'shadowsocks' | 'hysteria2';
   description?: string;
+  serverName?: string;
+}
+
+export interface EdgeServer {
+    id: string;
+    name: string;
+    host: string; // IP or Domain
+    location?: string;
 }
 
 export interface User {
@@ -148,7 +156,16 @@ export class ElahehCoreService {
   upstreamToken = signal<string | null>(null);
   upstreamStatus = signal<'listening' | 'connected'>('listening');
 
-  // Edge (Iran) State
+  // Edge (Iran) State - Multi Server Support
+  edgeServers = signal<EdgeServer[]>([]); // New: Multiple Edge Servers
+  
+  // Logic to get valid hosts for link generation
+  private getActiveHosts(): EdgeServer[] {
+      if (this.edgeServers().length > 0) return this.edgeServers();
+      // Fallback if no servers defined
+      return [{ id: 'default', name: 'Main Server', host: this.customDomain() || 'YOUR_IP_OR_DOMAIN' }];
+  }
+
   packetLossRate = signal<number>(0);
   jitterMs = signal<number>(0);
   geoDistribution = signal<any[]>([
@@ -180,8 +197,8 @@ export class ElahehCoreService {
   isTestingTunnels = signal<boolean>(false);
   tunnelProviders = signal<TunnelProvider[]>([
     { id: 'trusttunnel', name: 'TrustTunnel (AdGuard)', type: 'TRUST_TUNNEL', status: 'untested', latencyMs: null, jitterMs: null },
-    { id: 'wireguard', name: 'WireGuard (UDP:1414)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
-    { id: 'openvpn', name: 'OpenVPN (TCP:110)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
+    { id: 'wireguard', name: 'WireGuard (UDP)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
+    { id: 'openvpn', name: 'OpenVPN (TCP)', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'vless', name: 'VLESS Reality', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
   ]);
 
@@ -267,6 +284,9 @@ export class ElahehCoreService {
   isAutoTestEnabled = computed(() => this.tunnelMode() === 'auto');
   nextAutoTestSeconds = signal<number>(0);
 
+  // Track opened firewall ports
+  private openedPorts = new Set<number>([80, 443, 22]);
+
   constructor() {
     this.initSimulatedMetrics();
     this.addLog('INFO', `Core Service Initialized v${APP_VERSION}`);
@@ -293,6 +313,7 @@ export class ElahehCoreService {
            users: this.users(),
            products: this.products(),
            sshRules: this.sshRules(),
+           edgeServers: this.edgeServers(), // Persist multi-server
            settings: {
                adminUsername: this.adminUsername(),
                domain: this.customDomain(),
@@ -330,6 +351,7 @@ export class ElahehCoreService {
           if (data.users) this.users.set(data.users);
           if (data.products) this.products.set(data.products);
           if (data.sshRules) this.sshRules.set(data.sshRules);
+          if (data.edgeServers) this.edgeServers.set(data.edgeServers);
           if (data.settings) {
               if(data.settings.adminUsername) this.adminUsername.set(data.settings.adminUsername);
               if(data.settings.domain) this.customDomain.set(data.settings.domain);
@@ -383,6 +405,26 @@ export class ElahehCoreService {
   setEndpointStrategy(strategy: EndpointStrategy, manual = false) { 
     this.activeStrategy.set(strategy);
     this.addLog('SUCCESS', `Strategy Applied: ${strategy.providerName} (Syncing with Foreign Server...)`); 
+  }
+
+  // Firewall Automation Simulation
+  private checkAndOpenFirewall(port: number, protocol: 'tcp' | 'udp' | 'both' = 'both') {
+      if (this.openedPorts.has(port)) return;
+      
+      this.openedPorts.add(port);
+      const protoStr = protocol === 'both' ? '' : `/${protocol}`;
+      this.addLog('WARN', `[UFW] Opening new port: ufw allow ${port}${protoStr}`);
+      this.addLog('SUCCESS', `Firewall rule applied for port ${port}.`);
+  }
+
+  // Multi-Server Management
+  addEdgeServer(server: EdgeServer) {
+      this.edgeServers.update(s => [...s, server]);
+      this.addLog('SUCCESS', `Edge Server added: ${server.name} (${server.host})`);
+  }
+
+  removeEdgeServer(id: string) {
+      this.edgeServers.update(s => s.filter(x => x.id !== id));
   }
 
   updateDomainSettings(config: any) {
@@ -460,73 +502,72 @@ export class ElahehCoreService {
     const uuid = crypto.randomUUID();
     const password = Math.random().toString(36).slice(-8);
     
-    // Generate Multiple Links for Auto Mode covering all protocols
+    // Generate Multiple Links for Auto Mode covering all protocols AND all servers
     const links: LinkConfig[] = [];
+    const activeHosts = this.getActiveHosts();
 
-    if (mode === 'auto') {
-        // 1. TrustTunnel (AdGuard) - Best Obfuscation
-        links.push({
-            alias: 'TrustTunnel (AdGuard)',
-            url: `trust://${username}:${uuid}@${host}:443?mode=http3&sni=${host}#${username}_Trust`,
-            quotaGb: null, expiryDate: null, protocol: 'trusttunnel', description: 'Stealth HTTPS/HTTP3'
-        });
+    activeHosts.forEach(server => {
+        const sHost = server.host;
+        const sName = server.name;
 
-        // 2. VLESS Reality (TCP-Vision)
-        links.push({
-            alias: 'VLESS Reality TCP',
-            url: `vless://${uuid}@${host}:443?type=tcp&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com&flow=xtls-rprx-vision#${username}_VLESS_TCP`,
-            quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Low Latency / Vision'
-        });
+        if (mode === 'auto') {
+            // Ensure firewall ports are open for Auto Mode defaults
+            this.checkAndOpenFirewall(443, 'tcp');
+            this.checkAndOpenFirewall(110, 'tcp');
+            this.checkAndOpenFirewall(510, 'tcp');
+            this.checkAndOpenFirewall(1414, 'udp');
+            this.checkAndOpenFirewall(53133, 'udp');
 
-        // 3. VLESS Reality (gRPC)
-        links.push({
-            alias: 'VLESS Reality gRPC',
-            url: `vless://${uuid}@${host}:443?type=grpc&serviceName=grpc&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com#${username}_VLESS_gRPC`,
-            quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Multiplexing / gRPC'
-        });
+            // 1. TrustTunnel (AdGuard) - Best Obfuscation
+            links.push({
+                alias: `${sName} - TrustTunnel`,
+                url: `trust://${username}:${uuid}@${sHost}:443?mode=http3&sni=${sHost}#${username}_Trust_${sName}`,
+                quotaGb: null, expiryDate: null, protocol: 'trusttunnel', description: 'Stealth HTTPS/HTTP3'
+            });
 
-        // 4. VMess WS (CDN)
-        links.push({
-            alias: 'VMess WS CDN',
-            url: `vmess://${btoa(JSON.stringify({v: "2", ps: username + "_VMess", add: host, port: "443", id: uuid, aid: "0", scy: "auto", net: "ws", type: "none", host: host, path: "/ws", tls: "tls"}))}`,
-            quotaGb: null, expiryDate: null, protocol: 'vmess', description: 'CDN Compatible'
-        });
+            // 2. VLESS Reality (TCP-Vision)
+            links.push({
+                alias: `${sName} - VLESS Reality`,
+                url: `vless://${uuid}@${sHost}:443?type=tcp&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com&flow=xtls-rprx-vision#${username}_VLESS_${sName}`,
+                quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Low Latency / Vision'
+            });
 
-        // 5. Trojan WS
-        links.push({
-            alias: 'Trojan WS',
-            url: `trojan://${password}@${host}:443?type=ws&security=tls&path=%2Ftrojan&sni=${host}#${username}_Trojan`,
-            quotaGb: null, expiryDate: null, protocol: 'trojan', description: 'Standard TLS Tunnel'
-        });
+            // 3. OpenVPN (Dual Ports: 110, 510)
+            links.push({
+                alias: `${sName} - OpenVPN (110)`,
+                url: `https://${sHost}/api/ovpn/connect?port=110&user=${username}&pass=${password}`,
+                quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 110 (Legacy)'
+            });
+             links.push({
+                alias: `${sName} - OpenVPN (510)`,
+                url: `https://${sHost}/api/ovpn/connect?port=510&user=${username}&pass=${password}`,
+                quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 510 (Alt)'
+            });
 
-        // 6. Hysteria2 (UDP)
-        links.push({
-            alias: 'Hysteria2',
-            url: `hy2://${password}@${host}:443?sni=${host}&insecure=1#${username}_Hy2`,
-            quotaGb: null, expiryDate: null, protocol: 'hysteria2', description: 'High Speed UDP (Brutal)'
-        });
+            // 4. WireGuard (Dual Ports: 1414, 53133)
+            links.push({
+                alias: `${sName} - WireGuard (1414)`,
+                url: `wireguard://${sHost}:1414?privateKey=${uuid}&address=10.0.0.2/32`,
+                quotaGb: null, expiryDate: null, protocol: 'wireguard', description: 'Port 1414 (Direct)'
+            });
+            links.push({
+                alias: `${sName} - WireGuard (53133)`,
+                url: `wireguard://${sHost}:53133?privateKey=${uuid}&address=10.0.0.2/32`,
+                quotaGb: null, expiryDate: null, protocol: 'wireguard', description: 'Port 53133 (High)'
+            });
 
-        // 7. OpenVPN (Port 110)
-        links.push({
-            alias: 'OpenVPN TCP',
-            url: `https://${host}/api/ovpn/connect?port=110&user=${username}&pass=${password}`,
-            quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 110 (Legacy Support)'
-        });
+        } else if (manualConfig) {
+            // Manual Construction
+            const port = manualConfig.port || 443;
+            const proto = manualConfig.protocol || 'vless';
+            
+            // Check Firewall for manual port
+            this.checkAndOpenFirewall(port, manualConfig.transport === 'udp' ? 'udp' : 'tcp');
 
-        // 8. WireGuard (Port 1414)
-        links.push({
-            alias: 'WireGuard UDP',
-            url: `wireguard://${host}:1414?privateKey=${uuid}&address=10.0.0.2/32`,
-            quotaGb: null, expiryDate: null, protocol: 'wireguard', description: 'Port 1414 (Direct/Fast)'
-        });
-
-    } else if (manualConfig) {
-        // Manual Construction
-        const port = manualConfig.port || 443;
-        const proto = manualConfig.protocol || 'vless';
-        const linkStr = `${proto}://${uuid}@${host}:${port}?type=${manualConfig.transport}&security=${manualConfig.security}&path=%2Fws#${username}_Manual`;
-        links.push({ alias: 'Manual Config', url: linkStr, quotaGb: null, expiryDate: null, protocol: proto as any });
-    }
+            const linkStr = `${proto}://${uuid}@${sHost}:${port}?type=${manualConfig.transport}&security=${manualConfig.security}&path=%2Fws#${username}_Manual_${sName}`;
+            links.push({ alias: `Manual (${sName})`, url: linkStr, quotaGb: null, expiryDate: null, protocol: proto as any });
+        }
+    });
 
     const newUser: User = { 
         id: userId, 
@@ -588,25 +629,46 @@ export class ElahehCoreService {
 
   // --- Connection Key Generation (Upstream/External) ---
   generateConnectionToken(): string {
-      // Used by External Server to generate a key for Iran Server to connect
-      const host = this.customDomain() || '1.2.3.4'; // In real app, detect Public IP
-      const token = this.generateSecureEdgeKey(); 
-      // Format: EL-LINK-base64(HOST|TOKEN)
-      const payload = btoa(`${host}|${token}`);
-      return `EL-LINK-${payload}`;
+      // Enhanced Token for Auto-Configuration
+      const host = this.customDomain() || '1.2.3.4'; // Real public IP
+      const token = this.generateSecureEdgeKey();
+      
+      const config = {
+          host: host,
+          token: token,
+          ports: [80, 443, 110, 510, 1414, 53133], // Default open ports
+          type: 'UPSTREAM',
+          version: APP_VERSION
+      };
+      
+      // Base64 Encode JSON configuration
+      const payload = btoa(JSON.stringify(config));
+      return `EL-LINK-V2-${payload}`;
   }
 
   // --- Connection Key Parsing (Edge/Iran) ---
   parseConnectionToken(tokenString: string): { host: string, token: string } | null {
-      if (!tokenString.startsWith('EL-LINK-')) return null;
-      try {
-          const payload = atob(tokenString.replace('EL-LINK-', ''));
-          const parts = payload.split('|');
-          if (parts.length !== 2) return null;
-          return { host: parts[0], token: parts[1] };
-      } catch (e) {
-          return null;
+      // Support V1 and V2
+      if (tokenString.startsWith('EL-LINK-V2-')) {
+          try {
+              const jsonStr = atob(tokenString.replace('EL-LINK-V2-', ''));
+              const config = JSON.parse(jsonStr);
+              return { host: config.host, token: config.token };
+          } catch(e) { return null; }
       }
+      
+      if (tokenString.startsWith('EL-LINK-')) {
+          // Legacy support
+          try {
+              const payload = atob(tokenString.replace('EL-LINK-', ''));
+              const parts = payload.split('|');
+              if (parts.length !== 2) return null;
+              return { host: parts[0], token: parts[1] };
+          } catch (e) {
+              return null;
+          }
+      }
+      return null;
   }
 
   generateSecureEdgeKey(): string { 
@@ -633,7 +695,7 @@ export class ElahehCoreService {
       // Simulate Connection Handshake
       setTimeout(() => {
           this.edgeNodeStatus.set('connected');
-          this.addLog('SUCCESS', 'Tunnel established! Routing traffic via WireGuard(1414) & OpenVPN(110).');
+          this.addLog('SUCCESS', 'Tunnel established! Routing traffic via WireGuard(1414, 53133) & OpenVPN(110, 510).');
           this.natStatus.set('Connected');
       }, 2000);
   }

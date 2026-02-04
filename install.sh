@@ -1,7 +1,8 @@
+
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.3 (Secure Architecture Edition)
+# Version 1.0.4 (Secure Architecture Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +17,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.3"
+echo "   Version 1.0.4"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -363,14 +364,82 @@ pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
 pm2 save --force
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 
-# 12. Firewall - Allow Specific Ports
-echo -e "${GREEN}[+] Configuring Firewall (Port 110, 1414)...${NC}"
+# 12. Create 'elaheh' CLI tool
+echo -e "${GREEN}[+] Installing CLI Management Tool...${NC}"
+cat <<EOF > /usr/local/bin/elaheh
+#!/bin/bash
+# Elaheh Management CLI
+
+GREEN='\033[1;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo -e "\${GREEN}Elaheh Management Console\${NC}"
+echo "1. Update Application"
+echo "2. Enable Google BBR"
+echo "3. Restart Services"
+echo "4. Uninstall"
+echo "5. Exit"
+read -p "Select option [1-5]: " OPT
+
+case "\$OPT" in
+  1)
+    echo "Updating..."
+    cd /opt/elaheh-project
+    git pull origin main
+    npm install --legacy-peer-deps
+    npm run build
+    pm2 restart elaheh-app
+    echo -e "\${GREEN}Update Complete.\${NC}"
+    ;;
+  2)
+    echo "Enabling BBR..."
+    echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    sysctl -p
+    echo -e "\${GREEN}BBR Enabled.\${NC}"
+    ;;
+  3)
+    systemctl restart nginx
+    pm2 restart elaheh-app
+    echo -e "\${GREEN}Services Restarted.\${NC}"
+    ;;
+  4)
+    read -p "Are you sure? This will remove everything. (y/N) " CONFIRM
+    if [[ "\$CONFIRM" == "y" ]]; then
+        pm2 delete elaheh-app
+        rm -rf /opt/elaheh-project
+        rm /etc/nginx/sites-enabled/elaheh
+        rm /usr/local/bin/elaheh
+        systemctl restart nginx
+        echo -e "\${GREEN}Uninstalled.\${NC}"
+    fi
+    ;;
+  *)
+    echo "Exiting."
+    exit 0
+    ;;
+esac
+EOF
+chmod +x /usr/local/bin/elaheh
+
+# 13. Firewall - Allow Specific Ports
+echo -e "${GREEN}[+] Configuring Firewall (Standard & Reserved Ports)...${NC}"
 if command -v ufw &> /dev/null; then
     ufw allow 22/tcp
     ufw allow 80/tcp
     ufw allow 443/tcp
-    ufw allow 110/tcp  # OpenVPN
-    ufw allow 1414/udp # WireGuard
+    # Tunnel Ports
+    ufw allow 110/tcp
+    ufw allow 1414/udp
+    # Reserved Ports (Cloudflare/CDN)
+    ufw allow 8080/tcp
+    ufw allow 8000/tcp
+    ufw allow 8880/tcp
+    ufw allow 2053/tcp
+    ufw allow 2083/tcp
+    ufw allow 2096/tcp
+    ufw allow 8443/tcp
     echo "y" | ufw enable
 elif command -v firewall-cmd &> /dev/null; then
     systemctl start firewalld
@@ -379,6 +448,11 @@ elif command -v firewall-cmd &> /dev/null; then
     firewall-cmd --permanent --add-port=443/tcp
     firewall-cmd --permanent --add-port=110/tcp
     firewall-cmd --permanent --add-port=1414/udp
+    # Reserved
+    firewall-cmd --permanent --add-port=8080/tcp
+    firewall-cmd --permanent --add-port=2096/tcp
+    firewall-cmd --permanent --add-port=8443/tcp
+    firewall-cmd --permanent --add-port=2053/tcp
     firewall-cmd --reload
 fi
 
@@ -387,6 +461,7 @@ echo -e "${GREEN}=========================================${NC}"
 echo -e "${GREEN}   INSTALLATION SUCCESSFUL!${NC}"
 echo -e "   Role: ${ROLE^^}"
 echo -e "   Panel URL: https://${DOMAIN}"
+echo -e "   Management CLI: Type 'elaheh' in terminal"
 echo -e "${GREEN}=========================================${NC}"
 if [ "$ROLE" == "external" ]; then
     echo -e "${YELLOW}>> UPSTREAM MODE: Log in to generate a connection key for your Iran server.${NC}"
