@@ -35,16 +35,23 @@
               <tr class="hover:bg-gray-700/50 transition-colors">
                 <td class="p-4 font-bold text-white">{{ user.username }}</td>
                 <td class="p-4">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-2 w-2 relative">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" *ngIf="user.currentConnections > 0"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2" 
-                                  [class.bg-green-500]="user.currentConnections > 0"
-                                  [class.bg-gray-500]="user.currentConnections === 0"></span>
-                        </span>
-                        <span class="text-xs text-gray-300 font-mono">
-                            {{ user.currentConnections }} / {{ user.concurrentConnectionsLimit }}
-                        </span>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-2 w-2 relative">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" *ngIf="user.currentConnections > 0"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2" 
+                                      [class.bg-green-500]="user.currentConnections > 0"
+                                      [class.bg-gray-500]="user.currentConnections === 0"></span>
+                            </span>
+                            <span class="text-xs text-gray-300 font-mono">Active: {{ user.currentConnections }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-bold">Limit:</span>
+                            <input type="number" [value]="user.concurrentConnectionsLimit" 
+                                   (change)="updateConcurrency(user.id, $event)"
+                                   class="w-14 bg-gray-900 border border-gray-600 rounded text-xs text-center text-white p-0.5 focus:border-teal-500 outline-none transition-colors"
+                                   min="1">
+                        </div>
                     </div>
                 </td>
                 <td class="p-4">
@@ -59,7 +66,11 @@
                 <td class="p-4">
                   <span class="px-2 py-1 rounded text-xs font-bold" 
                     [class.bg-green-900]="user.status === 'active'" 
-                    [class.text-green-400]="user.status === 'active'">
+                    [class.text-green-400]="user.status === 'active'"
+                    [class.bg-red-900]="user.status === 'banned'"
+                    [class.text-red-400]="user.status === 'banned'"
+                    [class.bg-yellow-900]="user.status === 'expired'"
+                    [class.text-yellow-400]="user.status === 'expired'">
                     {{ languageService.translate('common.' + user.status) }}
                   </span>
                 </td>

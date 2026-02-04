@@ -125,6 +125,13 @@ export class UserManagementComponent implements OnInit, OnDestroy {
           this.core.removeLinkFromUser(this.selectedUser()!.id, index);
       }
   }
+  
+  updateConcurrency(userId: string, event: any) {
+      const val = parseInt(event.target.value, 10);
+      if (!isNaN(val) && val >= 0) {
+          this.core.updateUserConcurrencyLimit(userId, val);
+      }
+  }
 
   // --- Export/Import Logic ---
   exportUsers() {

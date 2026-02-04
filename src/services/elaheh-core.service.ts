@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.5'; 
+export const APP_VERSION = '1.0.6'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
@@ -550,6 +550,17 @@ export class ElahehCoreService {
   addLinkToUser(userId: string, link: LinkConfig) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...u.links, link] }; } return u; })); }
   removeLinkFromUser(userId: string, linkIndex: number) { this.users.update(users => users.map(u => { if (u.id === userId) { const newLinks = [...u.links]; newLinks.splice(linkIndex, 1); return { ...u, links: newLinks }; } return u; })); }
   updateUserLinks(userId: string, links: LinkConfig[]) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...links] }; } return u; })); }
+  
+  updateUserConcurrencyLimit(userId: string, limit: number) {
+      this.users.update(users => users.map(u => {
+          if (u.id === userId) {
+              return { ...u, concurrentConnectionsLimit: limit };
+          }
+          return u;
+      }));
+      this.addLog('INFO', `Updated concurrency limit for User ID ${userId} to ${limit}`);
+  }
+
   addLog(level: any, message: string) { const entry: LogEntry = { timestamp: new Date().toLocaleTimeString(), level, message }; this.logs.update(l => [entry, ...l].slice(0, 50)); }
   
   addSshRule(rule: SshRule) { this.sshRules.update(r => [...r, rule]); }
@@ -663,10 +674,38 @@ export class ElahehCoreService {
           this.packetLossRate.set(parseFloat((Math.random() * 2).toFixed(2))); // 0% - 2%
           this.jitterMs.set(Math.floor(Math.random() * 30) + 5); // 5ms - 35ms
           
-          // Simulate active user connections
+          // Simulate active user connections and enforce limits
           this.users.update(users => users.map(u => {
-              if (u.status === 'active' && Math.random() > 0.7) {
-                  const newConns = Math.floor(Math.random() * (u.concurrentConnectionsLimit + 1));
+              if (u.status === 'active') {
+                  // Fluctuate connections randomly
+                  let newConns = u.currentConnections;
+                  
+                  // Small chance to fluctuate
+                  if (Math.random() > 0.7) {
+                      const change = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+                      newConns = Math.max(0, newConns + change);
+                      
+                      // Occasional spike above limit for testing enforcement
+                      if (Math.random() > 0.95) {
+                          newConns = u.concurrentConnectionsLimit + 1;
+                      }
+                  }
+
+                  // Enforcement Logic
+                  if (newConns > u.concurrentConnectionsLimit) {
+                      // 30% chance to ban, 70% chance to disconnect oldest session (clamp)
+                      if (Math.random() > 0.7) {
+                          this.addLog('WARN', `User ${u.username} banned for excessive concurrent connections (${newConns}/${u.concurrentConnectionsLimit}).`);
+                          return { ...u, currentConnections: newConns, status: 'banned' };
+                      } else {
+                          // Disconnect/Clamp
+                          if (Math.random() > 0.8) { // Don't spam logs
+                             this.addLog('INFO', `User ${u.username} session terminated. Limit exceeded (${newConns}/${u.concurrentConnectionsLimit}).`);
+                          }
+                          newConns = u.concurrentConnectionsLimit;
+                      }
+                  }
+                  
                   return { ...u, currentConnections: newConns };
               }
               return u;
