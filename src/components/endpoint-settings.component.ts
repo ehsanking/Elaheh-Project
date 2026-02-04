@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ElahehCoreService, EndpointType, EndpointStrategy } from '../services/elaheh-core.service';
