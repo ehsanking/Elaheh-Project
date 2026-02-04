@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.3.3 (Node Upgrade & Dep Fix)
+# Version 2.3.5 (NPM Cache Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.3.3"
+echo "   Version 2.3.5"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -208,6 +208,8 @@ fi
 
 # 9. Build Application
 echo -e "${GREEN}[+] Installing Dependencies (This may take a moment)...${NC}"
+# Clear npm cache to avoid ETARGET errors on fresh packages
+npm cache clean --force
 # Use --force to bypass strict peer dependency conflicts if any
 npm install --legacy-peer-deps --force
 
@@ -282,6 +284,7 @@ update_app() {
     echo \"Updating...\"
     cd \"\$INSTALL_DIR\" && git pull origin main
     echo \"Installing dependencies...\"
+    npm cache clean --force
     npm install --legacy-peer-deps --force
     echo \"Rebuilding...\"
     npm run build

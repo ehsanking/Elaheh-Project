@@ -1,6 +1,6 @@
 
 import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { ElahehCoreService } from '../services/elaheh-core.service';
+import { ElahehCoreService, EdgeNodeInfo } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -121,24 +121,64 @@ import { FormsModule } from '@angular/forms';
                         </p>
                     </div>
                 } @else {
-                    <!-- EXTERNAL SERVER: Show Command (Standard flow) -->
-                    <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.finish.title') }}</h3>
-                    <p class="text-gray-400 mb-6">{{ languageService.translate('wizard.finish.description') }}</p>
+                    <!-- EXTERNAL SERVER: Ask for Iran Key & Validation -->
+                    <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.external.enterKeyTitle') }}</h3>
+                    <p class="text-gray-400 mb-6">{{ languageService.translate('wizard.external.enterKeyDesc') }}</p>
                     
-                    <div class="bg-black p-4 rounded-lg border border-gray-600 mb-6 relative group">
-                        <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
-                            <h4 class="text-green-400 font-bold flex items-center gap-2 text-xs uppercase tracking-wider">
-                               <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                               BASH
-                            </h4>
-                        </div>
-                        <div class="relative">
-                            <textarea readonly class="w-full h-24 bg-transparent p-2 rounded-md text-xs font-mono text-gray-300 border-none resize-none outline-none focus:ring-0 whitespace-pre scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent" (click)="$event.target.select()">{{ installCommand() }}</textarea>
-                            <button (click)="copyCommand()" class="absolute top-0 right-0 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 transition-colors flex items-center gap-2">
-                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                {{ languageService.translate('common.copy') }}
+                    <div class="bg-black/20 p-6 rounded-lg border border-teal-900/50 mb-6">
+                        <label class="block text-teal-400 text-xs font-bold uppercase mb-2">
+                            {{ languageService.translate('wizard.external.keyLabel') }}
+                        </label>
+                        <div class="flex gap-3">
+                            <div class="relative flex-1">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                </div>
+                                <input type="text" [(ngModel)]="iranKeyInput" (input)="resetVerification()" class="w-full bg-gray-900 border border-gray-600 rounded p-3 pl-10 text-white font-mono text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-colors" [placeholder]="languageService.translate('wizard.external.placeholder')">
+                            </div>
+                            <button (click)="verifyKey()" [disabled]="!iranKeyInput() || isVerifying()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded border border-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50">
+                                @if(isVerifying()) {
+                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                } @else {
+                                    {{ languageService.translate('wizard.external.verifyBtn') }}
+                                }
                             </button>
                         </div>
+                        
+                        <!-- Validation Status -->
+                        @if (verificationError()) {
+                            <div class="mt-3 p-3 bg-red-900/30 border border-red-800 rounded flex items-center gap-2 text-red-300 text-xs animate-in fade-in slide-in-from-top-2">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {{ verificationError() }}
+                            </div>
+                        }
+
+                        @if (verifiedNode()) {
+                            <div class="mt-4 p-4 bg-green-900/20 border border-green-800 rounded animate-in fade-in slide-in-from-top-2">
+                                <div class="flex items-center gap-2 mb-3 text-green-400 text-sm font-bold border-b border-green-800/50 pb-2">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    {{ languageService.translate('wizard.external.verifiedTitle') }}
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 text-xs">
+                                    <div>
+                                        <span class="text-gray-500 block">{{ languageService.translate('wizard.external.nodeIp') }}</span>
+                                        <span class="text-white font-mono">{{ verifiedNode()!.ip }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 block">{{ languageService.translate('wizard.external.nodeLoc') }}</span>
+                                        <span class="text-white">{{ verifiedNode()!.location }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 block">{{ languageService.translate('wizard.external.provider') }}</span>
+                                        <span class="text-white">{{ verifiedNode()!.provider }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 block">{{ languageService.translate('wizard.external.latency') }}</span>
+                                        <span class="text-green-400 font-mono">{{ verifiedNode()!.latency }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 }
 
@@ -147,7 +187,7 @@ import { FormsModule } from '@angular/forms';
                         <svg class="w-4 h-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         {{ languageService.translate('common.back') }}
                     </button>
-                    <button (click)="finishSetup()" class="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg transform hover:scale-105">
+                    <button (click)="finishSetup()" [disabled]="selectedRole() === 'external' && !verifiedNode()" class="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg transform hover:scale-105">
                         {{ languageService.translate('wizard.finish.doneButton') }}
                     </button>
                 </div>
@@ -165,13 +205,13 @@ export class SetupWizardComponent {
   currentStep = signal(1);
   selectedRole = signal<'iran' | 'external' | null>(null);
   edgeNodeKey = signal('');
+  iranKeyInput = signal('');
   showLangDropdown = signal(false);
 
-  installCommand = computed(() => {
-    // Only used for External role now in display, logic simplified
-    const baseUrl = "bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)";
-    return `${baseUrl} --role external --domain YOUR_DOMAIN`;
-  });
+  // Verification State
+  isVerifying = signal(false);
+  verificationError = signal<string | null>(null);
+  verifiedNode = signal<EdgeNodeInfo | null>(null);
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
 
@@ -182,12 +222,38 @@ export class SetupWizardComponent {
     }
   }
 
+  resetVerification() {
+      this.verifiedNode.set(null);
+      this.verificationError.set(null);
+  }
+
+  verifyKey() {
+      if (!this.iranKeyInput()) return;
+      
+      this.isVerifying.set(true);
+      this.verificationError.set(null);
+      this.verifiedNode.set(null);
+
+      this.core.verifyEdgeIdentity(this.iranKeyInput())
+        .then(node => {
+            this.verifiedNode.set(node);
+        })
+        .catch(err => {
+            this.verificationError.set(err || 'Unknown verification error.');
+        })
+        .finally(() => {
+            this.isVerifying.set(false);
+        });
+  }
+
   finishSetup() {
+    if (this.selectedRole() === 'external') {
+        this.core.registerEdgeNode(this.iranKeyInput());
+    }
     this.core.serverRole.set(this.selectedRole());
     this.core.isConfigured.set(true);
   }
 
-  copyCommand() { navigator.clipboard.writeText(this.installCommand()); }
   copyKey() { navigator.clipboard.writeText(this.edgeNodeKey()); }
 
   setLanguage(lang: 'en' | 'fa' | 'zh' | 'ru') {

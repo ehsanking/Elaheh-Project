@@ -18,9 +18,23 @@ export const translations: any = {
     wizard: {
       title: 'Setup Wizard',
       role: { title: 'Server Role', description: 'Select the role of this server.', germany: 'Upstream (Foreign)', germanyDesc: 'Located outside Iran (e.g., Germany, Netherlands).', iran: 'Edge (Iran)', iranDesc: 'Located inside Iran (Tunnel Entry).', next: 'Next Step' },
+      external: {
+         enterKeyTitle: 'Link Iran Server',
+         enterKeyDesc: 'Enter the Identity Token generated on your Iran server to establish the secure tunnel.',
+         keyLabel: 'Connection Key',
+         placeholder: 'Paste token here...',
+         verifyBtn: 'Verify',
+         verifiedTitle: 'Server Identified',
+         nodeIp: 'IP Address',
+         nodeLoc: 'Location',
+         provider: 'Datacenter',
+         latency: 'Est. Latency'
+      },
       finish: { 
           title: 'Generated Server Command', 
           description: 'Run this command on your foreign server.', 
+          externalTitle: 'Server Configured Successfully',
+          externalDesc: 'This server is now set as the Upstream Core. Please proceed to the dashboard to manage users and add Edge nodes.',
           identityKeyTitle: 'Edge Identity Token',
           identityKeyDesc: 'This secure token identifies this Iran server. Copy it and paste it into your External Server panel to link them.',
           tokenLabel: 'Secure Connection Key',
@@ -242,9 +256,23 @@ export const translations: any = {
     wizard: {
       title: 'نصب و راه‌اندازی',
       role: { title: 'نقش سرور', description: 'نقش این سرور را مشخص کنید.', germany: 'سرور خارج (Upstream)', germanyDesc: 'دیتاسنتر خارجی (واسط).', iran: 'سرور ایران (Edge)', iranDesc: 'دیتاسنتر داخلی (ترافیک نیم‌بها).', next: 'مرحله بعد' },
+      external: {
+         enterKeyTitle: 'اتصال به سرور ایران',
+         enterKeyDesc: 'کلید هویت (Identity Token) تولید شده در سرور ایران را اینجا وارد کنید تا ارتباط امن برقرار شود.',
+         keyLabel: 'کلید اتصال',
+         placeholder: 'کلید را اینجا پیست کنید...',
+         verifyBtn: 'بررسی اتصال',
+         verifiedTitle: 'سرور ایران شناسایی شد',
+         nodeIp: 'آی‌پی سرور',
+         nodeLoc: 'موقعیت',
+         provider: 'دیتاسنتر',
+         latency: 'پینگ تخمینی'
+      },
       finish: { 
           title: 'دستور نصب سرور', 
           description: 'دستور زیر را کپی کرده و در سرور اجرا کنید.', 
+          externalTitle: 'سرور با موفقیت تنظیم شد',
+          externalDesc: 'این سرور اکنون به عنوان هسته مرکزی (Upstream) فعال است. برای مدیریت کاربران و اتصال سرورهای ایران، وارد پنل شوید.',
           identityKeyTitle: 'توکن هویت سرور',
           identityKeyDesc: 'این کلید رمزنگاری شده برای شناسایی این سرور ایران توسط سرور خارج الزامی است. آن را کپی کرده و در پنل سرور خارج وارد نمایید.',
           tokenLabel: 'کلید اتصال امن',

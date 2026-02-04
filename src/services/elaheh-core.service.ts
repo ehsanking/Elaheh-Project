@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '2.3.4'; // Updated Version
+export const APP_VERSION = '2.3.5'; // Updated Version
 export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; 
 
 // --- Interfaces ---
@@ -93,6 +93,14 @@ export interface Order {
   transactionId?: string;
   generatedUserId?: string;
   generatedSubLink?: string;
+}
+
+export interface EdgeNodeInfo {
+  ip: string;
+  location: string;
+  hostname: string;
+  latency: string;
+  provider: string;
 }
 
 @Injectable({
@@ -446,6 +454,42 @@ export class ElahehCoreService {
   
   // Deprecated simplified version, kept for compatibility but redirecting to secure one
   generateEdgeNodeKey(): string { return this.generateSecureEdgeKey(); }
+
+  // New: Method to register the key from the wizard (for External role)
+  registerEdgeNode(key: string) {
+      if(!key) return;
+      this.edgeNodeAuthKey.set(key);
+      this.addLog('SUCCESS', 'Edge Identity Token registered.');
+      // Simulate handshake process
+      this.edgeNodeStatus.set('connecting');
+      setTimeout(() => {
+          this.edgeNodeStatus.set('connected');
+          this.addLog('INFO', 'Edge Node Handshake Successful.');
+      }, 1500);
+  }
+
+  // --- Identity Validation Logic ---
+  verifyEdgeIdentity(key: string): Promise<EdgeNodeInfo> {
+    return new Promise((resolve, reject) => {
+      // Simulate network delay
+      setTimeout(() => {
+        // Basic format check simulation
+        if (key.startsWith('EL-SEC-') && key.length > 20) {
+          // Success Mock
+          resolve({
+            ip: '5.200.14.' + Math.floor(Math.random() * 255),
+            location: 'Tehran, Iran (Asiatech)',
+            hostname: 'ir-edge-node-01',
+            latency: '24ms',
+            provider: 'Asiatech Cloud'
+          });
+        } else {
+          // Failure Mock
+          reject('Invalid Identity Token signature.');
+        }
+      }, 2000); // 2s delay
+    });
+  }
 
   updateEdgeNodeConfig(address: string, key: string) { this.edgeNodeAddress.set(address); this.edgeNodeAuthKey.set(key); this.testEdgeNodeConnection(); }
   updateProxyConfig(config: any) { this.isProxyEnabled.set(config.isEnabled); this.proxyHost.set(config.host); this.proxyPort.set(config.port); this.proxyType.set(config.type); }
