@@ -1,7 +1,8 @@
+
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ElahehCoreService, User, LinkConfig } from '../services/elaheh-core.service';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';

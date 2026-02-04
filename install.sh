@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.5.3 (TypeScript & Angular Version Fix)
+# Version 2.5.4 (Final Fix - Black Hole Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.5.3"
+echo "   Version 2.5.4"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -60,7 +60,6 @@ fi
 install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         export DEBIAN_FRONTEND=noninteractive
-        # Fix lock issues
         rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
         
         echo -e "${GREEN}[+] Updating System Packages (apt-get update & upgrade)...${NC}"
@@ -186,6 +185,10 @@ if [ ! -f "src/styles.css" ]; then
     touch src/styles.css
 fi
 
+# CRITICAL FIX: Ensure clean slate for node_modules to pick up new TypeScript
+echo -e "${YELLOW}[i] Cleaning old dependencies to fix version conflicts...${NC}"
+rm -rf node_modules package-lock.json
+
 # Overwrite package.json with UPDATED versions (TypeScript 5.7+)
 cat <<EOF > package.json
 {
@@ -223,7 +226,7 @@ cat <<EOF > package.json
 }
 EOF
 
-# Generate Angular Config (Switching to stable 'browser' builder)
+# Generate Angular Config
 cat <<EOF > angular.json
 {
   "\$schema": "./node_modules/@angular/cli/lib/config/schema.json",
@@ -270,7 +273,7 @@ cat <<EOF > angular.json
 }
 EOF
 
-# Generate TSConfigs
+# Generate TSConfigs (Added skipLibCheck to ignore third-party type errors)
 cat <<EOF > tsconfig.json
 {
   "compileOnSave": false,
@@ -292,7 +295,8 @@ cat <<EOF > tsconfig.json
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
-    "lib": ["ES2022", "dom"]
+    "lib": ["ES2022", "dom"],
+    "skipLibCheck": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
@@ -308,7 +312,7 @@ cat <<EOF > tsconfig.app.json
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist/out-tsc",
-    "types": []
+    "types": ["node"]
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.d.ts"]
@@ -322,6 +326,9 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { AppComponent } from './app.component';
 
+// Type shim for process.env in browser
+declare var process: any;
+
 bootstrapApplication(AppComponent, {
   providers: [
     provideZonelessChangeDetection()
@@ -331,8 +338,7 @@ EOF
 
 # 10. Install & Build
 echo -e "${GREEN}[+] Installing Dependencies...${NC}"
-npm cache clean --force
-npm install --legacy-peer-deps --force
+npm install --legacy-peer-deps
 
 echo -e "${GREEN}[+] Building Application...${NC}"
 export NODE_OPTIONS="--max-old-space-size=3072"

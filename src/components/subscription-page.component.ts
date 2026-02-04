@@ -1,7 +1,8 @@
+
 import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ElahehCoreService, User } from '../services/elaheh-core.service';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 
 @Component({
   selector: 'app-subscription-page',

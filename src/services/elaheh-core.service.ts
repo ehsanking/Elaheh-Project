@@ -8,6 +8,9 @@ import { SmtpConfig } from './email.service';
 export const APP_VERSION = '2.3.5'; // Updated Version
 export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; 
 
+// Declare process for type checking
+declare var process: any;
+
 // --- Interfaces ---
 export interface LinkConfig {
   url: string;
@@ -238,6 +241,9 @@ export class ElahehCoreService {
   dohSubdomain = signal<string>('dns');
   dohStatus = signal<'inactive' | 'creating' | 'active' | 'failed'>('inactive');
   dohUrl = computed(() => (this.dohStatus() === 'active' && this.customDomain()) ? `https://${this.dohSubdomain()}.${this.customDomain()}/dns-query` : null);
+  
+  // FIX: Added missing signal used in Dashboard
+  optimalDnsResolver = signal<string | null>(null);
 
   private ai: GoogleGenAI | null = null;
   private readonly AUTO_TEST_INTERVAL_SECONDS = 600;
@@ -253,7 +259,7 @@ export class ElahehCoreService {
     this.loadPersistedData();
     this.loadServerConfig(); // Auto-load server-config.json
 
-    const apiKey = process.env.API_KEY;
+    const apiKey = typeof process !== 'undefined' ? process.env?.API_KEY : null;
     if (apiKey) { this.ai = new GoogleGenAI({ apiKey }); }
 
     effect(() => {
