@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.4.0 (VPS Build Fix)
+# Version 2.5.0 (Stable Build Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.4.0"
+echo "   Version 2.5.0"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -30,7 +30,6 @@ fi
 # 2. Input Collection
 DOMAIN=""
 EMAIL=""
-EXTRA_PORTS=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -70,61 +69,41 @@ install_deps() {
 }
 install_deps
 
-# 4. Swap Setup (Prevent OOM during build)
+# 4. Swap Setup
 echo -e "${GREEN}[+] Checking Memory Resources...${NC}"
 TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 if [ "$TOTAL_MEM" -lt 2000000 ]; then
     if [ ! -f /swapfile ]; then
-        echo -e "${YELLOW}[i] Low RAM detected. Creating 2GB Swap file for build stability...${NC}"
+        echo -e "${YELLOW}[i] Low RAM detected. Creating 2GB Swap file...${NC}"
         fallocate -l 2G /swapfile
         chmod 600 /swapfile
         mkswap /swapfile
         swapon /swapfile
         echo '/swapfile none swap sw 0 0' >> /etc/fstab
-    else
-        echo -e "${GREEN}[✓] Swap file exists.${NC}"
     fi
 fi
 
-# 5. Cleanup Previous Failed Installs
+# 5. Cleanup
 echo -e "${GREEN}[+] Cleaning up potential conflicts...${NC}"
 systemctl stop nginx || true
 rm -f /etc/nginx/sites-enabled/elaheh
 rm -f /etc/nginx/sites-available/elaheh
 rm -f /etc/nginx/sites-enabled/default
 
-# Kill any process hogging port 80
 if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then
-    echo -e "${YELLOW}[!] Port 80 is busy. Cleaning up...${NC}"
     kill -9 $(lsof -t -i:80) || true
 fi
 
-# 6. Obtain SSL (Smart Standalone Mode)
+# 6. Obtain SSL
 echo -e "${GREEN}[+] Checking SSL Certificates for ${DOMAIN}...${NC}"
-
 if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     echo -e "${YELLOW}[i] Certificate already exists. Skipping request.${NC}"
 else
-    echo -e "${YELLOW}[i] Attempting to secure ${DOMAIN} and www.${DOMAIN}...${NC}"
-    if certbot certonly --standalone --preferred-challenges http \
-        --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" -d "www.${DOMAIN}"; then
-        echo -e "${GREEN}[✓] Certificate obtained for domain and subdomains.${NC}"
-    else
-        echo -e "${YELLOW}[!] Failed to get cert for www subdomain. Retrying for root domain only...${NC}"
-        certbot certonly --standalone --preferred-challenges http \
-            --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}"
-    fi
-fi
-
-if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-    echo -e "${RED}[!] CRITICAL ERROR: SSL Certificate could not be obtained.${NC}"
-    echo -e "${RED}[!] Please ensure your Domain A record points to $(curl -s ifconfig.me) and Port 80 is open.${NC}"
-    exit 1
+    certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || true
 fi
 
 # 7. Configure Nginx
 echo -e "${GREEN}[+] Configuring Nginx Reverse Proxy...${NC}"
-
 APP_PORT=3000
 cat <<EOF > /etc/nginx/sites-available/elaheh
 server {
@@ -140,33 +119,15 @@ server {
     ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
     root /opt/elaheh-project/dist/project-elaheh/browser;
     index index.html;
 
-    # 1. Main Application
     location / {
         try_files \$uri \$uri/ /index.html;
     }
 
-    # 2. API Proxy
-    location /api {
-        proxy_pass http://127.0.0.1:${APP_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-    }
-
-    # 3. VLESS/VMess WebSocket Path
     location /ws {
-        if (\$http_upgrade != "websocket") {
-            return 404;
-        }
-        proxy_redirect off;
+        if (\$http_upgrade != "websocket") { return 404; }
         proxy_pass http://127.0.0.1:10000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
@@ -177,13 +138,11 @@ server {
     }
 }
 EOF
-
 ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 systemctl restart nginx
 
-# 8. Node.js & Project Setup
+# 8. Node.js Setup
 echo -e "${GREEN}[+] Setting up Application Core...${NC}"
-# Upgrade to Node 22.12.0 LTS to match Angular requirements
 NODE_VERSION="v22.12.0"
 if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     echo -e "${YELLOW}[i] Installing Node.js ${NODE_VERSION}...${NC}"
@@ -192,9 +151,7 @@ if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
     tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
 fi
-if ! command -v pm2 &> /dev/null; then npm install -g pm2; fi
-# Ensure Angular CLI is available for build
-if ! command -v ng &> /dev/null; then npm install -g @angular/cli; fi
+npm install -g pm2 @angular/cli || true
 
 INSTALL_DIR="/opt/elaheh-project"
 if [ -d "$INSTALL_DIR" ]; then
@@ -206,32 +163,103 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# 9. Build Application
-echo -e "${GREEN}[+] Installing Dependencies (This may take a moment)...${NC}"
-# Clear npm cache to avoid ETARGET errors on fresh packages
-npm cache clean --force
-# Use --force to bypass strict peer dependency conflicts if any
-npm install --legacy-peer-deps --force
+# 9. Structure & Config Fixes
+echo -e "${GREEN}[+] Normalizing Project Structure...${NC}"
 
-echo -e "${GREEN}[+] Generating Build Configuration...${NC}"
+# Ensure standard Angular structure (src/index.html)
+mkdir -p src/assets
+if [ -f "index.html" ]; then
+    mv index.html src/index.html
+fi
+if [ ! -f "src/styles.css" ]; then
+    touch src/styles.css
+fi
 
-# --- FIX: Generate Angular Configs required for VPS Build ---
-
-# 1. Generate src/main.ts (Required for Angular Browser Build)
-cat <<EOF > src/main.ts
-import '@angular/compiler';
-import { bootstrapApplication } from '@angular/platform-browser';
-import { provideZonelessChangeDetection } from '@angular/core';
-import { AppComponent } from './app.component';
-
-bootstrapApplication(AppComponent, {
-  providers: [
-    provideZonelessChangeDetection()
-  ]
-}).catch((err) => console.error(err));
+# Overwrite package.json with known working versions
+cat <<EOF > package.json
+{
+  "name": "project-elaheh",
+  "version": "1.0.1",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^19.0.0",
+    "@angular/common": "^19.0.0",
+    "@angular/compiler": "^19.0.0",
+    "@angular/core": "^19.0.0",
+    "@angular/forms": "^19.0.0",
+    "@angular/platform-browser": "^19.0.0",
+    "@angular/router": "^19.0.0",
+    "@google/genai": "0.1.1",
+    "chart.js": "^4.4.1",
+    "qrcode": "^1.5.3",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^19.0.0",
+    "@angular/cli": "^19.0.0",
+    "@angular/compiler-cli": "^19.0.0",
+    "@types/node": "^18.18.0",
+    "@types/qrcode": "^1.5.5",
+    "typescript": "~5.2.2"
+  }
+}
 EOF
 
-# 2. Generate tsconfig.json
+# Generate Angular Config (Switching to stable 'browser' builder)
+cat <<EOF > angular.json
+{
+  "\$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "project-elaheh": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/project-elaheh/browser",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": ["zone.js"],
+            "tsConfig": "tsconfig.app.json",
+            "assets": ["src/favicon.ico", "src/assets"],
+            "styles": ["src/styles.css"],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                { "type": "initial", "maximumWarning": "2mb", "maximumError": "5mb" }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
+    }
+  }
+}
+EOF
+
+# Generate TSConfigs
 cat <<EOF > tsconfig.json
 {
   "compileOnSave": false,
@@ -264,7 +292,6 @@ cat <<EOF > tsconfig.json
 }
 EOF
 
-# 3. Generate tsconfig.app.json
 cat <<EOF > tsconfig.app.json
 {
   "extends": "./tsconfig.json",
@@ -272,112 +299,42 @@ cat <<EOF > tsconfig.app.json
     "outDir": "./dist/out-tsc",
     "types": []
   },
-  "files": [
-    "src/main.ts"
-  ],
-  "include": [
-    "src/**/*.d.ts"
+  "files": ["src/main.ts"],
+  "include": ["src/**/*.d.ts"]
+}
+EOF
+
+# Generate main.ts
+cat <<EOF > src/main.ts
+import '@angular/compiler';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideZonelessChangeDetection } from '@angular/core';
+import { AppComponent } from './app.component';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideZonelessChangeDetection()
   ]
-}
+}).catch((err) => console.error(err));
 EOF
 
-# 4. Generate angular.json (Crucial for ng build)
-cat <<EOF > angular.json
-{
-  "\$schema": "./node_modules/@angular/cli/lib/config/schema.json",
-  "version": 1,
-  "newProjectRoot": "projects",
-  "projects": {
-    "project-elaheh": {
-      "projectType": "application",
-      "schematics": {},
-      "root": "",
-      "sourceRoot": "src",
-      "prefix": "app",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-angular:application",
-          "options": {
-            "outputPath": "dist/project-elaheh",
-            "index": "index.html",
-            "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
-            "tsConfig": "tsconfig.app.json",
-            "assets": [
-              "src/favicon.ico",
-              "src/assets"
-            ],
-            "styles": [
-              "src/styles.css"
-            ],
-            "scripts": []
-          },
-          "configurations": {
-            "production": {
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
-                }
-              ],
-              "outputHashing": "all"
-            },
-            "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
-          "configurations": {
-            "production": {
-              "buildTarget": "project-elaheh:build:production"
-            },
-            "development": {
-              "buildTarget": "project-elaheh:build:development"
-            }
-          },
-          "defaultConfiguration": "development"
-        }
-      }
-    }
-  }
-}
-EOF
+# 10. Install & Build
+echo -e "${GREEN}[+] Installing Dependencies...${NC}"
+npm cache clean --force
+npm install --legacy-peer-deps --force
 
-# Ensure assets dir and styles exist
-mkdir -p src/assets
-touch src/styles.css
-
-echo -e "${GREEN}[+] Building Application (Optimized for Production)...${NC}"
-export NODE_OPTIONS="--max-old-space-size=2048"
+echo -e "${GREEN}[+] Building Application...${NC}"
+export NODE_OPTIONS="--max-old-space-size=3072"
 npm run build
 
-PROJECT_NAME=$(node -p "require('./package.json').name")
-DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME/browser"
-
-# Verify Build
+DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
 if [ ! -d "$DIST_PATH" ]; then
-    echo -e "${RED}[!] Build failed. Dist folder not found at $DIST_PATH.${NC}"
-    # Fallback check for non-browser folder structure
-    if [ -d "$INSTALL_DIR/dist/$PROJECT_NAME" ]; then
-        DIST_PATH="$INSTALL_DIR/dist/$PROJECT_NAME"
-    else
-        exit 1
-    fi
+    echo -e "${RED}[!] Build Failed. Check logs above.${NC}"
+    exit 1
 fi
 
+# Config File for App
 mkdir -p "$DIST_PATH/assets"
-
 cat <<EOF > "$DIST_PATH/assets/server-config.json"
 {
   "role": "${ROLE:-external}",
@@ -387,38 +344,25 @@ cat <<EOF > "$DIST_PATH/assets/server-config.json"
 }
 EOF
 
-# 10. Start PM2
-echo -e "${GREEN}[+] Starting Backend Services...${NC}"
-pm2 stop elaheh-app 2>/dev/null || true
+# 11. Start PM2
+echo -e "${GREEN}[+] Starting Services...${NC}"
 pm2 delete elaheh-app 2>/dev/null || true
 pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
 pm2 save --force
-# Robust PM2 Startup
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
-systemctl enable pm2-root >/dev/null 2>&1 || true
 
-# 11. Firewall
-echo -e "${GREEN}[+] Securing Ports...${NC}"
-SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n 1)
-if [ -z "$SSH_PORT" ]; then
-    SSH_PORT=22
-fi
-
+# 12. Firewall
 if command -v ufw &> /dev/null; then
-    ufw allow ${SSH_PORT}/tcp
-    ufw allow 80/tcp
-    ufw allow 443/tcp
-    echo "y" | ufw enable
+    ufw allow 22/tcp; ufw allow 80/tcp; ufw allow 443/tcp; echo "y" | ufw enable
 elif command -v firewall-cmd &> /dev/null; then
     systemctl start firewalld
-    firewall-cmd --permanent --add-port=${SSH_PORT}/tcp
+    firewall-cmd --permanent --add-port=22/tcp
     firewall-cmd --permanent --add-port=80/tcp
     firewall-cmd --permanent --add-port=443/tcp
     firewall-cmd --reload
 fi
 
-# 12. CLI Tool
-echo -e "${GREEN}[+] Installing 'elaheh' Command Line Tool...${NC}"
+# 13. CLI Tool
 CLI_SCRIPT="#!/bin/bash
 INSTALL_DIR=\"/opt/elaheh-project\"
 RED='\033[0;31m'
@@ -427,54 +371,32 @@ NC='\033[0m'
 
 update_app() {
     echo \"Updating...\"
-    cd \"\$INSTALL_DIR\" && git pull origin main
-    echo \"Installing dependencies...\"
-    npm cache clean --force
-    npm install --legacy-peer-deps --force
-    echo \"Generating Configs...\"
-    # Re-run install script's config generation logic if needed, or rely on manual update
-    # For now, simplistic rebuild:
-    npm run build
-    pm2 restart elaheh-app
-    echo -e \"\${GREEN}Update Complete.\${NC}\"
-}
-
-renew_ssl() {
-    echo \"Stopping Nginx...\"
-    systemctl stop nginx
-    certbot renew
-    systemctl start nginx
-    echo -e \"\${GREEN}SSL Renewed.\${NC}\"
+    cd \"\$INSTALL_DIR\"
+    git reset --hard
+    git pull origin main
+    bash install.sh --domain ${DOMAIN} --email ${EMAIL}
 }
 
 clear
 echo -e \"\${GREEN} Elaheh Management Console\${NC}\"
-echo \"1. Update Panel & Core (Git Pull + Rebuild)\"
+echo \"1. Update System\"
 echo \"2. Restart Services\"
-echo \"3. Renew SSL Certificates\"
-echo \"4. View Logs\"
-echo \"5. Exit\"
-read -p \"Select option: \" choice
+echo \"3. Exit\"
+read -p \"Option: \" choice
 case \"\$choice\" in
   1) update_app ;;
-  2) systemctl restart nginx; pm2 restart elaheh-app; echo \"Services Restarted.\" ;;
-  3) renew_ssl ;;
-  4) pm2 logs elaheh-app --lines 50 ;;
-  5) exit 0 ;;
-  *) echo \"Invalid option\" ;;
+  2) systemctl restart nginx; pm2 restart elaheh-app ;;
+  *) exit 0 ;;
 esac"
 
 echo "$CLI_SCRIPT" > /usr/local/bin/elaheh
 chmod +x /usr/local/bin/elaheh
 cp /usr/local/bin/elaheh /usr/bin/elaheh
 
-# 13. Final Output
-PUBLIC_IP=$(curl -s ifconfig.me)
 echo ""
 echo -e "${GREEN}=========================================${NC}"
 echo -e "${GREEN}   INSTALLATION SUCCESSFUL!${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo -e "   Panel URL: https://${DOMAIN}"
-echo -e "   Admin Access: Click 'Client Portal' on the site."
-echo -e "   Management: Type 'elaheh' in terminal."
+echo -e "   Run 'elaheh' to manage."
 echo ""
