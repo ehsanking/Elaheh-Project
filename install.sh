@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.9 (Skip On-Server Build & Fix Completion)
+# Version 1.4.0 (Improved Service Start & Verification)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.9"
+echo "   Version 1.4.0"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -159,7 +159,7 @@ pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
 pm2 serve "$DIST_PATH" ${PANEL_PORT} --name "elaheh-app" --spa
 pm2 save --force
-pm2 startup | grep "sudo" | bash || true
+pm2 startup | tail -n 1 | bash || true
 
 # 9. Create 'elaheh' CLI tool
 echo -e "${GREEN}[+] Creating 'elaheh' management tool...${NC}"
@@ -304,7 +304,13 @@ else
     echo -e "${RED}[!] WARNING: Failed to create the 'elaheh' management tool. Manual intervention may be required.${NC}"
 fi
 
-# 11. Final Output
+# 11. Final Verification & Output
+if ! pm2 describe elaheh-app &> /dev/null; then
+    echo -e "${RED}[!] FATAL ERROR: The application failed to start with PM2."
+    echo -e "${RED}Please check logs using 'pm2 logs elaheh-app' and report the issue."
+    exit 1
+fi
+
 PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
 
 echo ""

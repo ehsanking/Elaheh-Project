@@ -13,11 +13,12 @@ import { EdgeStatusComponent } from './components/edge-status.component';
 import { LogoComponent } from './components/logo.component';
 import { NotFoundComponent } from './components/not-found.component';
 import { SubscriptionPageComponent } from './components/subscription-page.component';
+import { CorporateLandingComponent } from './components/corporate-landing.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [LoginComponent, SetupWizardComponent, DashboardComponent, UserManagementComponent, SettingsComponent, CommonModule, StorefrontComponent, SignupComponent, EdgeStatusComponent, LogoComponent, NotFoundComponent, SubscriptionPageComponent],
+  imports: [LoginComponent, SetupWizardComponent, DashboardComponent, UserManagementComponent, SettingsComponent, CommonModule, StorefrontComponent, SignupComponent, EdgeStatusComponent, LogoComponent, NotFoundComponent, SubscriptionPageComponent, CorporateLandingComponent],
   templateUrl: './app.component.html',
   styleUrls: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,6 +35,9 @@ export class AppComponent {
   
   // Special State for Subscription Page
   isSubscriptionView = signal(false);
+  
+  // State for Login Modal on external server
+  showLoginModal = signal(false);
 
   constructor() {
     effect(() => {

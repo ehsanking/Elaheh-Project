@@ -1,4 +1,5 @@
 
+
 @if(isSubscriptionView()) {
     <app-subscription-page></app-subscription-page>
 } @else {
@@ -31,7 +32,17 @@
       } @else {
         <!-- Germany Server (Core Panel) UI Flow -->
         @if (!core.isAuthenticated()) {
-          <app-login></app-login>
+          <!-- Show corporate landing page instead of direct login -->
+          <app-corporate-landing (loginRequest)="showLoginModal.set(true)"></app-corporate-landing>
+
+          <!-- Login Modal -->
+          @if(showLoginModal()) {
+            <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center animate-in fade-in duration-300" (click)="showLoginModal.set(false)">
+              <div (click)="$event.stopPropagation()">
+                <app-login (closeLogin)="showLoginModal.set(false)"></app-login>
+              </div>
+            </div>
+          }
         } @else {
            <!-- Main Dashboard Layout -->
           <div class="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans">
