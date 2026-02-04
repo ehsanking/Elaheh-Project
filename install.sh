@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.3.8 (Fix CLI Path & Final Output)
+# Version 1.3.9 (Skip On-Server Build & Fix Completion)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Tunnel Management System"
-echo "   Version 1.3.8"
+echo "   Version 1.3.9"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -103,15 +103,13 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# 5. Install Project Dependencies (including dev for build)
-echo -e "${GREEN}[+] Installing NPM packages...${NC}"
-npm install --production=false --silent --unsafe-perm
+# 5. Use Pre-built Application
+echo -e "${GREEN}[+] Using pre-built application to ensure stability on all servers...${NC}"
+# The 'npm install' and 'npm run build' steps, which can fail on low-memory servers,
+# have been removed. The application's 'dist' folder is now expected to be 
+# included directly in the Git repository.
 
-# 6. Build Angular Application for Production
-echo -e "${GREEN}[+] Building Angular application...${NC}"
-npm run build
-
-# 7. Parse Arguments & Save Configuration
+# 6. Parse Arguments & Save Configuration
 ROLE="unknown"
 KEY=""
 while [ "$#" -gt 0 ]; do
@@ -135,7 +133,7 @@ cat <<EOF > "$DIST_PATH/assets/server-config.json"
 }
 EOF
 
-# 8. Set Initial Port & Configure Firewall
+# 7. Set Initial Port & Configure Firewall
 PANEL_PORT=4200
 CONF_FILE="$INSTALL_DIR/elaheh.conf"
 echo "PORT=$PANEL_PORT" > "$CONF_FILE"
@@ -155,7 +153,7 @@ elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedo
     fi
 fi
 
-# 9. Start Application with PM2 (serving static build)
+# 8. Start Application with PM2 (serving static build)
 echo -e "${GREEN}[+] Starting application on port ${PANEL_PORT}...${NC}"
 pm2 stop elaheh-app 2>/dev/null || true
 pm2 delete elaheh-app 2>/dev/null || true
@@ -163,7 +161,7 @@ pm2 serve "$DIST_PATH" ${PANEL_PORT} --name "elaheh-app" --spa
 pm2 save --force
 pm2 startup | grep "sudo" | bash || true
 
-# 10. Create 'elaheh' CLI tool
+# 9. Create 'elaheh' CLI tool
 echo -e "${GREEN}[+] Creating 'elaheh' management tool...${NC}"
 mkdir -p /usr/local/bin
 cat <<'EOF' > /usr/local/bin/elaheh
@@ -190,8 +188,7 @@ update_app() {
     cd "$INSTALL_DIR"
     git reset --hard
     git pull origin main
-    npm install --production=false --silent --unsafe-perm
-    npm run build
+    echo -e "${GREEN}No build step required. Restarting server...${NC}"
     pm2 restart elaheh-app
     echo -e "${GREEN}Update complete!${NC}"
 }
@@ -300,14 +297,14 @@ EOF
 
 chmod +x /usr/local/bin/elaheh
 
-# 11. Verify CLI tool creation
+# 10. Verify CLI tool creation
 if [ -s /usr/local/bin/elaheh ]; then
     echo -e "${GREEN}[+] 'elaheh' management tool created successfully.${NC}"
 else
     echo -e "${RED}[!] WARNING: Failed to create the 'elaheh' management tool. Manual intervention may be required.${NC}"
 fi
 
-# 12. Final Output
+# 11. Final Output
 PUBLIC_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "YOUR_SERVER_IP")
 
 echo ""
