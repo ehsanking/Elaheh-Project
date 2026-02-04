@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.5.2 (System Upgrade & Build Fix)
+# Version 2.5.3 (TypeScript & Angular Version Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.5.2"
+echo "   Version 2.5.3"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -186,7 +186,7 @@ if [ ! -f "src/styles.css" ]; then
     touch src/styles.css
 fi
 
-# Overwrite package.json with loose versions to prevent ETARGET errors
+# Overwrite package.json with UPDATED versions (TypeScript 5.7+)
 cat <<EOF > package.json
 {
   "name": "project-elaheh",
@@ -198,27 +198,27 @@ cat <<EOF > package.json
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^19.0.0",
-    "@angular/common": "^19.0.0",
-    "@angular/compiler": "^19.0.0",
-    "@angular/core": "^19.0.0",
-    "@angular/forms": "^19.0.0",
-    "@angular/platform-browser": "^19.0.0",
-    "@angular/router": "^19.0.0",
+    "@angular/animations": "^19.1.0",
+    "@angular/common": "^19.1.0",
+    "@angular/compiler": "^19.1.0",
+    "@angular/core": "^19.1.0",
+    "@angular/forms": "^19.1.0",
+    "@angular/platform-browser": "^19.1.0",
+    "@angular/router": "^19.1.0",
     "@google/genai": "*",
-    "chart.js": "^4.4.1",
-    "qrcode": "^1.5.3",
+    "chart.js": "^4.4.7",
+    "qrcode": "^1.5.4",
     "rxjs": "~7.8.0",
-    "tslib": "^2.3.0",
+    "tslib": "^2.8.0",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^19.0.0",
-    "@angular/cli": "^19.0.0",
-    "@angular/compiler-cli": "^19.0.0",
-    "@types/node": "^18.18.0",
+    "@angular-devkit/build-angular": "^19.1.0",
+    "@angular/cli": "^19.1.0",
+    "@angular/compiler-cli": "^19.1.0",
+    "@types/node": "^22.0.0",
     "@types/qrcode": "^1.5.5",
-    "typescript": "~5.2.2"
+    "typescript": "~5.7.0"
   }
 }
 EOF
