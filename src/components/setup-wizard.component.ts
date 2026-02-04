@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { ElahehCoreService, EdgeNodeInfo } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
 import { CommonModule } from '@angular/common';
@@ -47,13 +47,31 @@ import { FormsModule } from '@angular/forms';
         <!-- Step 1: Role Selection -->
         @if (currentStep() === 1) {
             <div class="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-                <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.role.title') }}</h3>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.role.title') }}</h3>
+                    <!-- IP Location Indicator -->
+                    @if (detectedLocation()) {
+                        <div class="text-xs bg-gray-900 border border-gray-600 px-3 py-1 rounded flex items-center gap-2 animate-in fade-in">
+                            <span class="text-gray-400">Detected:</span>
+                            <span class="font-bold text-white">{{ detectedLocation()?.country || 'Unknown' }}</span>
+                            @if(detectedLocation()?.countryCode) {
+                                <img [src]="'https://flagcdn.com/16x12/' + detectedLocation()?.countryCode?.toLowerCase() + '.png'" alt="flag">
+                            }
+                            <span class="text-gray-500 font-mono">({{ detectedLocation()?.query }})</span>
+                        </div>
+                    } @else {
+                        <div class="text-xs text-gray-500 flex items-center gap-2">
+                            <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Detecting Location...
+                        </div>
+                    }
+                </div>
                 <p class="text-gray-400 mb-8">{{ languageService.translate('wizard.role.description') }}</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <button type="button" (click)="selectRole('external')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
                     [class.border-teal-500]="selectedRole() === 'external'" 
-                    [class.bg-teal-900/20]="selectedRole() === 'external'"
+                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'external'}"
                     [class.border-gray-600]="selectedRole() !== 'external'">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
@@ -69,7 +87,7 @@ import { FormsModule } from '@angular/forms';
 
                   <button type="button" (click)="selectRole('iran')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
                     [class.border-teal-500]="selectedRole() === 'iran'" 
-                    [class.bg-teal-900/20]="selectedRole() === 'iran'"
+                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'iran'}"
                     [class.border-gray-600]="selectedRole() !== 'iran'">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
@@ -80,6 +98,9 @@ import { FormsModule } from '@angular/forms';
                     <div>
                         <div class="text-lg font-bold text-white">{{ languageService.translate('wizard.role.iran') }}</div>
                         <p class="text-xs text-gray-400 mt-1">{{ languageService.translate('wizard.role.iranDesc') }}</p>
+                        @if(detectedLocation()?.countryCode === 'IR') {
+                            <div class="mt-2 text-xs text-green-400 font-bold bg-green-900/20 px-2 py-1 rounded inline-block animate-pulse">Recommended (Detected)</div>
+                        }
                     </div>
                   </button>
                 </div>
@@ -198,7 +219,7 @@ import { FormsModule } from '@angular/forms';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SetupWizardComponent {
+export class SetupWizardComponent implements OnInit {
   core = inject(ElahehCoreService);
   languageService = inject(LanguageService);
 
@@ -207,11 +228,26 @@ export class SetupWizardComponent {
   edgeNodeKey = signal('');
   iranKeyInput = signal('');
   showLangDropdown = signal(false);
+  
+  // Location detection
+  detectedLocation = signal<any>(null);
 
   // Verification State
   isVerifying = signal(false);
   verificationError = signal<string | null>(null);
   verifiedNode = signal<EdgeNodeInfo | null>(null);
+
+  async ngOnInit() {
+      // Auto-detect location on initialization
+      const data = await this.core.fetchIpLocation();
+      if (data && data.status === 'success') {
+          this.detectedLocation.set(data);
+          // Auto-suggest role if in Iran
+          if (data.countryCode === 'IR') {
+              this.selectedRole.set('iran');
+          }
+      }
+  }
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
 

@@ -5,7 +5,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.0'; 
+export const APP_VERSION = '1.0.1'; 
 export const APP_DEFAULT_BRAND = 'SanctionPass Pro'; 
 
 // Declare process for type checking
@@ -345,6 +345,33 @@ export class ElahehCoreService {
       .catch(() => {
         // Silent catch
       });
+  }
+
+  // --- IP Detection Method ---
+  async fetchIpLocation(ip?: string): Promise<any> {
+    // Switching to ipwho.is for better browser/CORS/HTTPS compatibility
+    // ip-api.com (free) does not support HTTPS/CORS from browser
+    const url = ip ? `https://ipwho.is/${ip}` : 'https://ipwho.is/';
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        
+        // Normalize response to match existing application structure
+        // ipwho.is returns { success: true, country_code: 'IR', country: 'Iran', ip: '...' }
+        if (data.success) {
+            return {
+                status: 'success',
+                countryCode: data.country_code,
+                country: data.country,
+                query: data.ip
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Failed to fetch IP location:', error);
+        return null;
+    }
   }
 
   // --- Methods ---

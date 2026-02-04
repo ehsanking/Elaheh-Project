@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.0 (Stable Release - Freedom Edition)
+# Version 1.0.1 (Stable Release - Freedom Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.0 (Stable)"
+echo "   Version 1.0.1 (Stable)"
 echo "   'اینترنت آزاد برای همه یا هیچکس'"
 echo "################################################################"
 echo -e "${NC}"
@@ -164,7 +164,7 @@ rm -rf node_modules package-lock.json dist
 cat <<EOF > package.json
 {
   "name": "project-elaheh",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
