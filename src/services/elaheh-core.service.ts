@@ -168,6 +168,9 @@ export class ElahehCoreService {
     { id: 'derak', name: 'Derak Cloud', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'hetzner', name: 'Hetzner Direct', type: 'VPS', status: 'untested', latencyMs: null, jitterMs: null },
     { id: 'cloudflare', name: 'Cloudflare Worker', type: 'CDN', status: 'untested', latencyMs: null, jitterMs: null },
+    // Background Service Targets
+    { id: 'cf-tunnel', name: 'Cloudflare Tunnel', type: 'EDGE', status: 'untested', latencyMs: null, jitterMs: null },
+    { id: 'localxpose', name: 'LocalXpose', type: 'EDGE', status: 'untested', latencyMs: null, jitterMs: null },
   ]);
 
   logs = signal<LogEntry[]>([]);
@@ -383,16 +386,54 @@ export class ElahehCoreService {
 
   runTunnelAnalysis() {
       this.isTestingTunnels.set(true);
+      this.addLog('INFO', 'Background Service: Scanning tunnel providers (Cloudflare, LocalXpose, CDN)...');
+      
       setTimeout(() => {
           const updates = this.tunnelProviders().map(p => {
-              const latency = Math.floor(Math.random() * 150) + 20;
-              const status: 'optimal' | 'suboptimal' | 'failed' = latency < 50 ? 'optimal' : latency > 200 ? 'failed' : 'suboptimal';
-              return { ...p, latencyMs: latency, jitterMs: Math.floor(Math.random() * 20), status };
+              // Simulate realistic network conditions based on provider type
+              let latencyBase = 40;
+              let jitterBase = 5;
+              
+              if (p.type === 'EDGE') {
+                  // Tunnels like CF/LocalXpose often have slightly higher latency due to double-hop but good stability
+                  latencyBase = 65;
+                  jitterBase = 3;
+              } else if (p.type === 'VPS') {
+                  // Direct VPS usually lowest latency
+                  latencyBase = 30;
+                  jitterBase = 10;
+              }
+
+              const latency = Math.floor(Math.random() * 50) + latencyBase; 
+              const jitter = Math.floor(Math.random() * 10) + jitterBase;
+              
+              // Simulate occasional provider outage (5% chance)
+              const status: 'optimal' | 'suboptimal' | 'failed' = 
+                (Math.random() > 0.95) ? 'failed' : 
+                (latency < 60 && jitter < 15) ? 'optimal' : 'suboptimal';
+
+              const finalLatency = status === 'failed' ? null : latency;
+              const finalJitter = status === 'failed' ? null : jitter;
+
+              return { ...p, latencyMs: finalLatency, jitterMs: finalJitter, status };
           });
+          
           this.tunnelProviders.set(updates as any);
+          
           if (this.tunnelMode() === 'auto') {
-              const best = updates.reduce((prev, curr) => (curr.latencyMs! < prev.latencyMs! ? curr : prev));
-              this.activateProvider(best);
+              // Select best provider
+              const candidates = updates.filter(u => u.status !== 'failed' && u.latencyMs !== null);
+              if (candidates.length > 0) {
+                  // Sort by latency + jitter weight
+                  candidates.sort((a, b) => (a.latencyMs! + a.jitterMs!) - (b.latencyMs! + b.jitterMs!));
+                  const best = candidates[0];
+                  
+                  // Only switch if different from current active (simple check by name for now)
+                  if (best.name !== this.activeStrategy().providerName) {
+                      this.addLog('SUCCESS', `Auto-Switch: Switching to ${best.name} (${best.latencyMs}ms)`);
+                      this.activateProvider(best);
+                  }
+              }
           }
           this.isTestingTunnels.set(false);
       }, 2000);
