@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.9.5 (Fix APT Locks & NVM Node v24)
+# Version 1.9.6 (Iran Standard: Direct Node Binary & APT Repair)
 # Author: EHSANKiNG
 
 set -e
@@ -21,20 +21,17 @@ NC='\033[0m'
 apply_google_dns() {
     echo -e "${YELLOW}[!] Backing up current DNS and switching to Google DNS (8.8.8.8)...${NC}"
     
-    # Backup existing resolv.conf (dereferencing symlinks)
+    # Backup existing resolv.conf
     if [ -f /etc/resolv.conf ]; then
         $SUDO cp -L /etc/resolv.conf /tmp/resolv.conf.backup_elaheh
     fi
 
     # Set Google DNS
-    # We use tee to overwrite. This works even if resolv.conf is a symlink managed by systemd
     $SUDO rm -f /etc/resolv.conf
     echo "nameserver 8.8.8.8" | $SUDO tee /etc/resolv.conf > /dev/null
     echo "nameserver 8.8.4.4" | $SUDO tee -a /etc/resolv.conf > /dev/null
 
-    echo -e "   > Restarting Network/DNS Services to apply changes..."
-    
-    # Restart DNS resolver or networking based on availability
+    echo -e "   > Restarting Network/DNS Services..."
     if systemctl list-units --full -all | grep -q "systemd-resolved.service"; then
         $SUDO systemctl restart systemd-resolved
     elif systemctl list-units --full -all | grep -q "networking.service"; then
@@ -42,73 +39,73 @@ apply_google_dns() {
     elif systemctl list-units --full -all | grep -q "NetworkManager.service"; then
         $SUDO systemctl restart NetworkManager
     fi
-    
-    # Brief pause to allow network to stabilize
     sleep 3
-    echo -e "${GREEN}[+] Google DNS applied temporarily.${NC}"
+    echo -e "${GREEN}[+] Google DNS applied.${NC}"
 }
 
 restore_original_dns() {
     echo -e "${YELLOW}[!] Restoring original DNS configuration...${NC}"
-    
     if [ -f /tmp/resolv.conf.backup_elaheh ]; then
         $SUDO cp /tmp/resolv.conf.backup_elaheh /etc/resolv.conf
         $SUDO rm -f /tmp/resolv.conf.backup_elaheh
-        
-        echo -e "   > Restarting Network/DNS Services to revert changes..."
+        # Restart networking to apply
         if systemctl list-units --full -all | grep -q "systemd-resolved.service"; then
             $SUDO systemctl restart systemd-resolved
         elif systemctl list-units --full -all | grep -q "networking.service"; then
             $SUDO systemctl restart networking
-        elif systemctl list-units --full -all | grep -q "NetworkManager.service"; then
-            $SUDO systemctl restart NetworkManager
         fi
-        
         echo -e "${GREEN}[+] Original DNS restored.${NC}"
     else
-        echo -e "${RED}[!] Warning: DNS backup not found. Leaving current DNS.${NC}"
+        echo -e "${RED}[!] Warning: DNS backup not found.${NC}"
     fi
 }
 
 configure_iran_npm_mirrors() {
     echo -e "${YELLOW}[!] Configuring Iranian NPM Mirrors...${NC}"
-    echo -e "   > Sources: Runflare, ArvanCloud, Jamko, NVMNode"
-    
-    # We prioritize Runflare as the registry url for NPM ONLY
+    # We prioritize Runflare as the registry url for NPM ONLY (not APT)
     if command -v npm >/dev/null 2>&1; then
         $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
         echo -e "${GREEN}[+] NPM Registry set to Runflare (Iran Optimized).${NC}"
     fi
 }
 
-kill_package_locks() {
-    echo -e "${YELLOW}[!] Checking for background APT/DPKG processes...${NC}"
-    # Kill apt/dpkg processes that might be holding locks (e.g. unattended-upgrades)
-    $SUDO killall apt apt-get dpkg 2>/dev/null || true
+repair_apt_system() {
+    echo -e "${YELLOW}[!] Analyzing and Repairing APT/DPKG System...${NC}"
     
-    # Wait a moment
+    # 1. Kill stuck processes
+    $SUDO killall apt apt-get dpkg 2>/dev/null || true
     sleep 2
     
-    # Force remove locks if they still exist
-    if [ -f /var/lib/dpkg/lock-frontend ]; then
-        echo -e "   > Removing stale lock: /var/lib/dpkg/lock-frontend"
-        $SUDO rm -f /var/lib/dpkg/lock-frontend
-    fi
-    if [ -f /var/lib/dpkg/lock ]; then
-        echo -e "   > Removing stale lock: /var/lib/dpkg/lock"
-        $SUDO rm -f /var/lib/dpkg/lock
-    fi
-    if [ -f /var/cache/apt/archives/lock ]; then
-        echo -e "   > Removing stale lock: /var/cache/apt/archives/lock"
-        $SUDO rm -f /var/cache/apt/archives/lock
-    fi
-    if [ -f /var/lib/apt/lists/lock ]; then
-        echo -e "   > Removing stale lock: /var/lib/apt/lists/lock"
-        $SUDO rm -f /var/lib/apt/lists/lock
-    fi
+    # 2. Remove Lock Files
+    locks=(
+        "/var/lib/dpkg/lock-frontend"
+        "/var/lib/dpkg/lock"
+        "/var/cache/apt/archives/lock"
+        "/var/lib/apt/lists/lock"
+    )
+    for lock in "${locks[@]}"; do
+        if [ -f "$lock" ]; then
+            echo -e "   > Removing lock: $lock"
+            $SUDO rm -f "$lock"
+        fi
+    done
     
-    # Reconfigure just in case
+    # 3. Fix Corrupted Sources (Remove unreachable mirrors like runflare from APT)
+    if grep -q "mirror.runflare.com" /etc/apt/sources.list; then
+        echo -e "${YELLOW}   > Fixing sources.list: Removing unreachable mirrors...${NC}"
+        $SUDO sed -i 's/mirror.runflare.com/archive.ubuntu.com/g' /etc/apt/sources.list
+        $SUDO sed -i 's/http:\/\/mirror.runflare.com/http:\/\/archive.ubuntu.com/g' /etc/apt/sources.list
+    fi
+
+    # 4. Repair DPKG
+    echo -e "   > Running dpkg --configure -a..."
     $SUDO dpkg --configure -a || true
+    
+    # 5. Fix Broken Installs
+    echo -e "   > Running apt --fix-broken install..."
+    $SUDO apt-get install -f -y || true
+    
+    echo -e "${GREEN}[+] System package manager repaired.${NC}"
 }
 
 # -----------------------------------------------------------------------------
@@ -119,7 +116,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.9.5 (Fix APT Locks & NVM Node v24)"
+echo "   Version 1.9.6 (Iran Standard)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -156,24 +153,16 @@ if [ "$ROLE_CHOICE" -eq 2 ]; then
     ROLE="iran"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
     
-    # STEP 1 & 2: Set Google DNS and Restart Network
+    # Step 1: Set DNS immediately to ensure connectivity
     apply_google_dns
-    
-    # Configure Mirrors
-    configure_iran_npm_mirrors
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
-    # Ensure default NPM registry for foreign server
-    if command -v npm >/dev/null 2>&1; then
-        $SUDO npm config delete registry --global 2>/dev/null || true
-    fi
 fi
 
 echo -e "${YELLOW}Enter your Domain:${NC}"
 read -p "Domain: " DOMAIN
 if [ -z "$DOMAIN" ]; then
     echo -e "${RED}Domain is required.${NC}"
-    # Restore DNS if we exited early
     if [ "$ROLE" == "iran" ]; then restore_original_dns; fi
     exit 1
 fi
@@ -193,45 +182,25 @@ if [ -f /etc/os-release ]; then
 fi
 
 echo -e "   > Detected OS: $OS"
-echo -e "   > Updating and Upgrading System Packages..."
 
 export DEBIAN_FRONTEND=noninteractive
 
 if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
-    # CRITICAL FIX: Kill locks before doing anything
-    kill_package_locks
-    
-    # Fix APT Sources: Remove Runflare from sources.list if present
-    # Runflare should ONLY be used for NPM, not system updates
-    if grep -q "mirror.runflare.com" /etc/apt/sources.list; then
-        echo -e "${YELLOW}   > Detected Runflare in APT sources. Reverting to official mirrors to ensure stability...${NC}"
-        if [[ "$OS_ID" == "ubuntu" ]]; then
-            $SUDO sed -i 's/mirror.runflare.com/archive.ubuntu.com/g' /etc/apt/sources.list
-        elif [[ "$OS_ID" == "debian" ]]; then
-            $SUDO sed -i 's/mirror.runflare.com/deb.debian.org/g' /etc/apt/sources.list
-        fi
-    fi
+    # CRITICAL: Repair APT/DPKG before attempting update
+    repair_apt_system
 
-    # Update lists
-    echo -e "   > Running apt-get update..."
+    echo -e "   > Updating repository lists..."
     $SUDO apt-get update -y -qq
     
-    # Full Upgrade
-    echo -e "   > Applying system upgrades (this may take a while)..."
+    echo -e "   > Applying system upgrades (Safe Upgrade)..."
     $SUDO apt-get upgrade -y -qq
     
-    # Install dependencies
     echo -e "   > Installing dependencies..."
-    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server cron
+    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server cron tar
 
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
     echo -e "   > Applying system upgrades..."
     $SUDO dnf upgrade -y --refresh
-    
-    # Install dependencies
-    if ! rpm -q epel-release >/dev/null 2>&1; then
-         $SUDO dnf install -y epel-release
-    fi
     $SUDO dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis cronie
     $SUDO systemctl enable --now crond
 else
@@ -242,10 +211,10 @@ fi
 # Service Configuration
 # -----------------------------------------------------------------------------
 
-# Enable Services
+# Enable Redis
 $SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
 
-# Swap Setup
+# Swap Setup (if needed)
 TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 if [ "$TOTAL_MEM" -lt 2000000 ]; then
     if [ ! -f /swapfile ]; then
@@ -272,12 +241,7 @@ if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || echo -e "${YELLOW}Warning: SSL request failed. You can retry later via dashboard.${NC}"
 fi
 
-# Configure Auto-Renewal
-echo -e "   > Configuring SSL Auto-Renewal (Daily check)..."
-($SUDO crontab -l 2>/dev/null | grep -v "certbot renew") | $SUDO crontab - || true
-($SUDO crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --deploy-hook 'systemctl reload nginx'") | $SUDO crontab -
-
-# Nginx
+# Configure Nginx
 echo -e "   > Configuring Nginx..."
 cat <<EOF | $SUDO tee /etc/nginx/sites-available/elaheh > /dev/null
 server {
@@ -315,44 +279,47 @@ EOF
 $SUDO ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 $SUDO systemctl restart nginx
 
-# Node.js with NVM (Replaced logic per user request)
-echo -e "   > Installing Node.js v24 via NVM..."
+# -----------------------------------------------------------------------------
+# Node.js Installation (Iran Standard Strategy)
+# -----------------------------------------------------------------------------
+# We bypass NVM/Github entirely and use direct binary download from nodejs.org
+# This works reliably in Iran where Github/Raw might be blocked.
 
-# 1. Download and install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+install_node_iran_standard() {
+    echo -e "${YELLOW}[!] Installing Node.js (Iran Standard Strategy)...${NC}"
+    
+    # Node v22 LTS (Stable & Modern)
+    NODE_VERSION="v22.12.0" 
+    NODE_DIST="node-${NODE_VERSION}-linux-x64"
+    NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz"
+    
+    # Cleanup previous installs
+    $SUDO rm -rf /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx
+    $SUDO rm -rf /usr/local/lib/node_modules/npm
+    
+    echo -e "   > Downloading Node.js binary from official source..."
+    if curl -L --retry 3 --retry-delay 5 -o node.tar.xz "$NODE_URL"; then
+        echo -e "   > Extracting..."
+        tar -xf node.tar.xz
+        
+        echo -e "   > Installing to /usr/local..."
+        $SUDO cp -R ${NODE_DIST}/* /usr/local/
+        
+        # Cleanup
+        rm -rf node.tar.xz ${NODE_DIST}
+        
+        echo -e "${GREEN}   > Node.js installed: $(node -v)${NC}"
+    else
+        echo -e "${RED}   > Failed to download Node.js. Check your internet connection.${NC}"
+        exit 1
+    fi
+}
 
-# 2. Load NVM environment
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+install_node_iran_standard
 
-# 3. Install Node 24
-nvm install 24
-nvm use 24
-nvm alias default 24
-
-# Verify Node
-NODE_VER=$(node -v)
-echo -e "${GREEN}   > Node.js installed: ${NODE_VER}${NC}"
-
-# 4. Enable Yarn
-corepack enable yarn
-YARN_VER=$(yarn -v)
-echo -e "${GREEN}   > Yarn installed: ${YARN_VER}${NC}"
-
-# 5. Create symlinks so standard root shell can find it without sourcing nvm
-$SUDO ln -sf $(which node) /usr/local/bin/node
-$SUDO ln -sf $(which npm) /usr/local/bin/npm
-$SUDO ln -sf $(which yarn) /usr/local/bin/yarn
-
-# Apply NPM Registry settings (Runflare/Iran Check)
+# Configure Mirrors for NPM
 if [[ "$ROLE" == "iran" ]]; then
-    if command -v npm >/dev/null 2>&1; then
-        $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
-    fi
-else
-    if command -v npm >/dev/null 2>&1; then
-        $SUDO npm config delete registry --global 2>/dev/null || true
-    fi
+    configure_iran_npm_mirrors
 fi
 
 $SUDO npm install -g pm2 @angular/cli >/dev/null 2>&1
@@ -377,10 +344,11 @@ $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
 echo -e "   > Downloading Source Code..."
+# Try git, fallback to zip
 if git clone "https://github.com/ehsanking/Elaheh-Project.git" . >/dev/null 2>&1; then
     echo -e "${GREEN}   > Git clone successful.${NC}"
 else
-    echo -e "${YELLOW}   > Git clone failed. Trying direct ZIP download...${NC}"
+    echo -e "${YELLOW}   > Git clone failed/blocked. Trying direct ZIP download...${NC}"
     curl -L "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip" -o repo.zip
     unzip -q repo.zip
     mv Elaheh-Project-main/* .
@@ -392,7 +360,6 @@ fi
 echo -e "   > Installing NPM Packages..."
 export NODE_OPTIONS="--max-old-space-size=4096"
 
-# Run install (Registry is set to Runflare if Role is Iran)
 npm install --legacy-peer-deps --loglevel error
 npm install @google/genai@latest --legacy-peer-deps --save
 
@@ -402,7 +369,6 @@ npm run build
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
 if [ ! -d "$DIST_PATH" ]; then
     echo -e "${RED}[!] Build Failed! Check memory or logs.${NC}"
-    # Clean up DNS before exit
     if [ "$ROLE" == "iran" ]; then restore_original_dns; fi
     exit 1
 fi
@@ -443,7 +409,7 @@ elif command -v firewall-cmd &> /dev/null; then
 fi
 
 # -----------------------------------------------------------------------------
-# RESTORE DNS (Important Step)
+# RESTORE DNS
 # -----------------------------------------------------------------------------
 if [ "$ROLE" == "iran" ]; then
     restore_original_dns
