@@ -1,7 +1,4 @@
 
-
-
-
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { GoogleGenAI } from "@google/genai";
 import { DatabaseService } from './database.service';
@@ -155,6 +152,10 @@ export class ElahehCoreService {
   adminPassword = signal<string>('admin');
   adminEmail = signal<string>('');
   
+  // 2FA State
+  is2faEnabled = signal<boolean>(false);
+  twoFactorSecret = signal<string>('');
+
   // Dashboard State (Shared)
   serverLoad = signal<number>(0);
   memoryUsage = signal<number>(0);
@@ -355,7 +356,9 @@ export class ElahehCoreService {
                brandName: this.brandName(),
                brandLogo: this.brandLogo(),
                currency: this.currency(),
-               gateways: this.paymentGateways()
+               gateways: this.paymentGateways(),
+               is2faEnabled: this.is2faEnabled(),
+               twoFactorSecret: this.twoFactorSecret()
            }
        };
        this.db.saveState(state);
@@ -393,6 +396,10 @@ export class ElahehCoreService {
               if(data.settings.brandName) this.brandName.set(data.settings.brandName);
               if(data.settings.currency) this.currency.set(data.settings.currency);
               if(data.settings.telegram) this.telegramBotConfig.set(data.settings.telegram);
+              
+              // Load 2FA settings
+              if(data.settings.is2faEnabled !== undefined) this.is2faEnabled.set(data.settings.is2faEnabled);
+              if(data.settings.twoFactorSecret) this.twoFactorSecret.set(data.settings.twoFactorSecret);
           }
       } else {
           // If Iran server and no users, add demo
@@ -472,6 +479,17 @@ Health Summary:
   updateAdminCredentials(newUser: string, newPass: string) { this.adminUsername.set(newUser); this.adminPassword.set(newPass); }
   updateAdminEmail(newEmail: string) { this.adminEmail.set(newEmail); }
   
+  // 2FA Methods
+  generateNew2faSecret(): string {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; // Base32 alphabet
+      let secret = '';
+      for (let i = 0; i < 16; i++) {
+          secret += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      this.twoFactorSecret.set(secret);
+      return secret;
+  }
+
   setEndpointStrategy(strategy: EndpointStrategy, manual = false) { 
     this.activeStrategy.set(strategy);
     this.addLog('SUCCESS', `Strategy Applied: ${strategy.providerName} (Syncing with Foreign Server...)`); 
