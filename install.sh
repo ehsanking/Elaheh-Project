@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.7 (Iran Network Resilience Fix)
+# Version 2.1.8 (ArvanCloud Mirror Integration)
 # Author: EHSANKiNG
 
 set -e
@@ -19,10 +19,10 @@ NC='\033[0m'
 # -----------------------------------------------------------------------------
 
 configure_iran_npm_environment() {
-    echo -e "${YELLOW}[!] Configuring Advanced NPM Mirrors (Binary Bypasses)...${NC}"
+    echo -e "${YELLOW}[!] Configuring NPM to use ArvanCloud Mirrors...${NC}"
     
-    # 1. Base Registry (Taobao/NpmMirror is most stable for Iran)
-    $SUDO npm config set registry https://registry.npmmirror.com --global 2>/dev/null || true
+    # 1. Base Registry (ArvanCloud is fastest for Iran)
+    $SUDO npm config set registry https://lib.arvancloud.ir/npm/ --global 2>/dev/null || true
     
     # 2. Disable Strict SSL & Force IPv4 (Fixes random handshake drops & IPv6 timeouts)
     $SUDO npm config set strict-ssl false --global 2>/dev/null || true
@@ -33,27 +33,26 @@ configure_iran_npm_environment() {
     $SUDO npm config set fetch-retry-maxtimeout 120000 --global 2>/dev/null || true
     $SUDO npm config set fetch-retries 5 --global 2>/dev/null || true
     
-    # 4. CRITICAL: Export Environment Variables for Binary Mirrors
-    # This forces npm to download binaries from mirrors instead of blocked Github/S3 links
-    echo -e "   > Setting binary mirrors env vars..."
+    # 4. CRITICAL: Export Environment Variables for Binary Mirrors (ArvanCloud)
+    echo -e "   > Setting binary mirrors env vars for ArvanCloud..."
     
-    export SASS_BINARY_SITE=https://npmmirror.com/mirrors/node-sass
-    export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-    export PUPPETEER_DOWNLOAD_HOST=https://npmmirror.com/mirrors/chrome-for-testing
-    export CHROMEDRIVER_CDNURL=https://npmmirror.com/mirrors/chromedriver
-    export SENTRYCLI_CDNURL=https://npmmirror.com/mirrors/sentry-cli
-    export SHARP_BINARY_HOST=https://npmmirror.com/mirrors/sharp
-    export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
-    export PYTHON_MIRROR=https://npmmirror.com/mirrors/python
-    export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
+    export SASS_BINARY_SITE=https://lib.arvancloud.ir/node-sass
+    export ELECTRON_MIRROR=https://lib.arvancloud.ir/electron/
+    export PUPPETEER_DOWNLOAD_HOST=https://lib.arvancloud.ir/chrome-for-testing
+    export CHROMEDRIVER_CDNURL=https://lib.arvancloud.ir/chromedriver
+    export SENTRYCLI_CDNURL=https://lib.arvancloud.ir/sentry-cli
+    export SHARP_BINARY_HOST=https://lib.arvancloud.ir/sharp
+    export SHARP_LIBVIPS_BINARY_HOST=https://lib.arvancloud.ir/sharp-libvips
+    export PYTHON_MIRROR=https://lib.arvancloud.ir/python
+    export NVM_NODEJS_ORG_MIRROR=https://lib.arvancloud.ir/node
     
     # Persist these for the current session and sudo usage
-    $SUDO npm config set sass_binary_site https://npmmirror.com/mirrors/node-sass --global 2>/dev/null || true
-    $SUDO npm config set electron_mirror https://npmmirror.com/mirrors/electron/ --global 2>/dev/null || true
-    $SUDO npm config set sharp_binary_host https://npmmirror.com/mirrors/sharp --global 2>/dev/null || true
-    $SUDO npm config set sharp_libvips_binary_host https://npmmirror.com/mirrors/sharp-libvips --global 2>/dev/null || true
+    $SUDO npm config set sass_binary_site https://lib.arvancloud.ir/node-sass --global 2>/dev/null || true
+    $SUDO npm config set electron_mirror https://lib.arvancloud.ir/electron/ --global 2>/dev/null || true
+    $SUDO npm config set sharp_binary_host https://lib.arvancloud.ir/sharp --global 2>/dev/null || true
+    $SUDO npm config set sharp_libvips_binary_host https://lib.arvancloud.ir/sharp-libvips --global 2>/dev/null || true
 
-    echo -e "${GREEN}[+] NPM Environment Optimized for Iran (Binary Mirrors Active).${NC}"
+    echo -e "${GREEN}[+] NPM Environment Optimized for Iran (ArvanCloud Mirrors Active).${NC}"
 }
 
 repair_apt_system() {
@@ -81,7 +80,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.7 (Iran Network Resilience Fix)"
+echo "   Version 2.1.8 (ArvanCloud Mirror Integration)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -124,8 +123,8 @@ ROLE="external"
 REGISTRY_FLAG="" # This will be empty for non-Iran servers
 if [ "$ROLE_CHOICE_NORMALIZED" -eq 2 ]; then
     ROLE="iran"
-    # This flag forces all npm/pnpm commands to use the correct mirror, overriding any faulty local config
-    REGISTRY_FLAG="--registry=https://registry.npmmirror.com/"
+    # This flag forces all npm/pnpm commands to use the ArvanCloud mirror
+    REGISTRY_FLAG="--registry=https://lib.arvancloud.ir/npm/"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
@@ -187,13 +186,13 @@ fi
 # -----------------------------------------------------------------------------
 
 install_node_iran_standard() {
-    echo -e "${YELLOW}[!] Installing Node.js (Iran Standard Strategy)...${NC}"
+    echo -e "${YELLOW}[!] Installing Node.js...${NC}"
     NODE_VERSION="v22.12.0" 
     NODE_DIST="node-${NODE_VERSION}-linux-x64"
     
     if [[ "$ROLE" == "iran" ]]; then
-        NODE_URL="https://npmmirror.com/mirrors/node/${NODE_VERSION}/${NODE_DIST}.tar.xz"
-        echo -e "   > Using Iran mirror for Node.js download."
+        NODE_URL="https://lib.arvancloud.ir/node/${NODE_VERSION}/${NODE_DIST}.tar.xz"
+        echo -e "   > Using ArvanCloud mirror for Node.js download."
     else
         NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz"
     fi
@@ -220,18 +219,16 @@ if [[ "$ROLE" == "iran" ]]; then
     configure_iran_npm_environment
 fi
 
-echo -e "   > Installing pnpm package manager for faster installs..."
+echo -e "   > Installing pnpm package manager..."
 $SUDO npm install -g pnpm --loglevel error ${REGISTRY_FLAG}
 echo -e "${GREEN}   > pnpm installed successfully.${NC}"
 
 if [[ "$ROLE" == "iran" ]]; then
-    echo -e "   > Configuring pnpm to use Iran-friendly mirror..."
-    # This is critical because pnpm doesn't always inherit npm's global registry.
-    $SUDO pnpm config set registry https://registry.npmmirror.com --global
+    echo -e "   > Configuring pnpm to use ArvanCloud mirror..."
+    $SUDO pnpm config set registry https://lib.arvancloud.ir/npm/ --global
 fi
 
 echo -e "   > Configuring pnpm global location..."
-# Use --global to set the system-wide config, not just for the root user.
 $SUDO pnpm config set --global global-bin-dir /usr/local/bin
 
 echo -e "   > Installing global tools (pm2, @angular/cli) using pnpm..."
@@ -257,8 +254,6 @@ $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
 echo -e "   > Downloading Source Code (Git with 45s timeout)..."
-# Use timeout for git clone as it can hang indefinitely in restricted networks.
-# --depth 1 makes the clone much faster.
 if timeout 45 git clone --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >/dev/null 2>&1; then
     echo -e "${GREEN}   > Git clone successful.${NC}"
 else
@@ -278,17 +273,19 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 rm -rf node_modules package-lock.json
 
 # CRITICAL: Re-export variables here to ensure they persist in this shell context for pnpm install
-export SASS_BINARY_SITE=https://npmmirror.com/mirrors/node-sass
-export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-export SHARP_BINARY_HOST=https://npmmirror.com/mirrors/sharp
-export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
+if [[ "$ROLE" == "iran" ]]; then
+    export SASS_BINARY_SITE=https://lib.arvancloud.ir/node-sass
+    export ELECTRON_MIRROR=https://lib.arvancloud.ir/electron/
+    export SHARP_BINARY_HOST=https://lib.arvancloud.ir/sharp
+    export SHARP_LIBVIPS_BINARY_HOST=https://lib.arvancloud.ir/sharp-libvips
+fi
 
-# Create .npmrc to handle peer dependency issues in modern pnpm
+# Create .npmrc to handle peer dependency issues
 echo "legacy-peer-deps=true" > .npmrc
 if [[ "$ROLE" == "iran" ]]; then
-    # This is a robust fix: A project-local .npmrc overrides any user/global config.
-    echo "registry=https://registry.npmmirror.com/" >> .npmrc
-    echo -e "   > Enforcing Iran-friendly mirror via local .npmrc file."
+    # This project-local .npmrc overrides any user/global config.
+    echo "registry=https://lib.arvancloud.ir/npm/" >> .npmrc
+    echo -e "   > Enforcing ArvanCloud mirror via local .npmrc file."
 fi
 
 
