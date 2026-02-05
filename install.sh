@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.9.3 (DNS Switch & Mirror Priority)
+# Version 1.9.4 (Fix DPKG & Clean Sources)
 # Author: EHSANKiNG
 
 set -e
@@ -74,13 +74,9 @@ configure_iran_npm_mirrors() {
     echo -e "${YELLOW}[!] Configuring Iranian NPM Mirrors...${NC}"
     echo -e "   > Sources: Runflare, ArvanCloud, Jamko, NVMNode"
     
-    # We prioritize Runflare as the registry url, but acknowledgment of the requested list
+    # We prioritize Runflare as the registry url for NPM ONLY
     if command -v npm >/dev/null 2>&1; then
-        # Using Runflare as the primary robust registry for Iran
         $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
-        
-        # In a real scenario, we can't set multiple registries simultaneously, 
-        # so we set the most reliable one from the user's list.
         echo -e "${GREEN}[+] NPM Registry set to Runflare (Iran Optimized).${NC}"
     fi
 }
@@ -93,7 +89,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.9.3 (DNS Switch & Mirror Priority)"
+echo "   Version 1.9.4 (Fix DPKG & Clean Sources)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -172,6 +168,21 @@ echo -e "   > Updating and Upgrading System Packages..."
 export DEBIAN_FRONTEND=noninteractive
 
 if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
+    # Fix interrupted package installations (Critical Fix)
+    echo -e "   > Fixing potential interrupted package manager states..."
+    $SUDO dpkg --configure -a || echo -e "${YELLOW}   > DPKG configure warning (ignorable if next steps work).${NC}"
+    
+    # Fix APT Sources: Remove Runflare from sources.list if present
+    # Runflare should ONLY be used for NPM, not system updates
+    if grep -q "mirror.runflare.com" /etc/apt/sources.list; then
+        echo -e "${YELLOW}   > Detected Runflare in APT sources. Reverting to official mirrors to ensure stability...${NC}"
+        if [[ "$OS_ID" == "ubuntu" ]]; then
+            $SUDO sed -i 's/mirror.runflare.com/archive.ubuntu.com/g' /etc/apt/sources.list
+        elif [[ "$OS_ID" == "debian" ]]; then
+            $SUDO sed -i 's/mirror.runflare.com/deb.debian.org/g' /etc/apt/sources.list
+        fi
+    fi
+
     # Fix potential lock issues
     $SUDO rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
     
