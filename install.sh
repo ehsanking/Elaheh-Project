@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.5 (Secure Architecture Edition)
+# Version 1.0.6 (Sudo/Non-Root Support Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -17,16 +17,28 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.5"
+echo "   Version 1.0.6"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
 
-# 1. Check root
+# 1. Check root & Sudo Config
+SUDO=""
 if [ "$EUID" -ne 0 ]; then
-  echo -e "${RED}Error: Please run as root (sudo su)${NC}"
-  exit 1
+  if command -v sudo >/dev/null 2>&1; then
+    echo -e "${YELLOW}[!] Not running as root. Running commands with 'sudo'...${NC}"
+    SUDO="sudo"
+  else
+    echo -e "${RED}Error: This script requires root privileges. Please run as root or install sudo.${NC}"
+    exit 1
+  fi
+else
+  echo -e "${GREEN}[+] Running as root.${NC}"
 fi
+
+# Get current user details for file ownership
+CURRENT_USER=$(id -un)
+CURRENT_GROUP=$(id -gn)
 
 # 2. Input Collection & Role Selection
 DOMAIN=""
@@ -78,50 +90,54 @@ fi
 install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         export DEBIAN_FRONTEND=noninteractive
-        rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
-        apt-get update -y -qq
+        $SUDO rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
+        $SUDO apt-get update -y -qq
         # Install Robust DB (SQLite), Caching (Redis), and Tunnel Protocols
-        apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server
+        $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server
     elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        dnf upgrade -y --refresh
-        dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis
+        $SUDO dnf upgrade -y --refresh
+        $SUDO dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis
     fi
 }
 install_deps
 
 # Enable Redis for Performance
-systemctl enable --now redis-server || systemctl enable --now redis
+$SUDO systemctl enable --now redis-server || $SUDO systemctl enable --now redis
 
 # 4. Swap Setup
 TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 if [ "$TOTAL_MEM" -lt 2000000 ]; then
     if [ ! -f /swapfile ]; then
         echo -e "${YELLOW}[i] Low RAM detected. Creating Swap...${NC}"
-        fallocate -l 2G /swapfile
-        chmod 600 /swapfile
-        mkswap /swapfile
-        swapon /swapfile
-        echo '/swapfile none swap sw 0 0' >> /etc/fstab
+        $SUDO fallocate -l 2G /swapfile
+        $SUDO chmod 600 /swapfile
+        $SUDO mkswap /swapfile
+        $SUDO swapon /swapfile
+        echo '/swapfile none swap sw 0 0' | $SUDO tee -a /etc/fstab > /dev/null
     fi
 fi
 
 # 5. Cleanup Ports
-systemctl stop nginx || true
+$SUDO systemctl stop nginx || true
 # Kill processes on specific ports requested (80, 443, 110 for OpenVPN, 1414 for WireGuard)
-if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then kill -9 $(lsof -t -i:80) || true; fi
-if lsof -Pi :110 -sTCP:LISTEN -t >/dev/null ; then kill -9 $(lsof -t -i:110) || true; fi
-if lsof -Pi :1414 -sUDP:LISTEN -t >/dev/null ; then kill -9 $(lsof -t -i:1414) || true; fi
+# Using generic loop to handle killing with sudo
+for PORT in 80 110; do
+    PIDS=$($SUDO lsof -t -i:$PORT -sTCP:LISTEN || true)
+    if [ -n "$PIDS" ]; then $SUDO kill -9 $PIDS || true; fi
+done
+PIDS_UDP=$($SUDO lsof -t -i:1414 -sUDP:LISTEN || true)
+if [ -n "$PIDS_UDP" ]; then $SUDO kill -9 $PIDS_UDP || true; fi
 
 # 6. SSL
 if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     echo -e "${GREEN}[+] Requesting SSL...${NC}"
-    certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || true
+    $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || true
 fi
 
 # 7. Nginx Config
 echo -e "${GREEN}[+] Configuring Nginx...${NC}"
 APP_PORT=3000
-cat <<EOF > /etc/nginx/sites-available/elaheh
+cat <<EOF | $SUDO tee /etc/nginx/sites-available/elaheh > /dev/null
 server {
     listen 80;
     server_name ${DOMAIN} www.${DOMAIN};
@@ -155,8 +171,8 @@ server {
     }
 }
 EOF
-ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
-systemctl restart nginx
+$SUDO ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
+$SUDO systemctl restart nginx
 
 # 8. Node.js
 NODE_VERSION="v22.12.0"
@@ -165,18 +181,23 @@ if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     MACHINE_ARCH=$(uname -m)
     if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; else NODE_ARCH="arm64"; fi
     curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
-    tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
+    $SUDO tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
 fi
-npm install -g pm2 @angular/cli || true
+$SUDO npm install -g pm2 @angular/cli || true
 
 INSTALL_DIR="/opt/elaheh-project"
-if [ -d "$INSTALL_DIR" ]; then
+
+# Ensure directory exists and is owned by current user for building
+if [ ! -d "$INSTALL_DIR" ]; then
+    $SUDO mkdir -p "$INSTALL_DIR"
+    $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
+    git clone "https://github.com/ehsanking/Elaheh-Project.git" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+else
+    $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     git reset --hard
     git pull origin main
-else
-    git clone "https://github.com/ehsanking/Elaheh-Project.git" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
 fi
 
 # 9. Project Configuration
@@ -359,14 +380,15 @@ EOF
 
 # 11. Finalize
 echo -e "${GREEN}[+] Starting Services...${NC}"
-pm2 delete elaheh-app 2>/dev/null || true
-pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
-pm2 save --force
-pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
+# Use sudo for PM2 system-wide management
+$SUDO pm2 delete elaheh-app 2>/dev/null || true
+$SUDO pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
+$SUDO pm2 save --force
+$SUDO pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 
 # 12. Create 'elaheh' CLI tool
 echo -e "${GREEN}[+] Installing CLI Management Tool...${NC}"
-cat <<EOF > /usr/local/bin/elaheh
+cat <<EOF | $SUDO tee /usr/local/bin/elaheh > /dev/null
 #!/bin/bash
 # Elaheh Management CLI
 
@@ -376,9 +398,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# NOTE: User management commands are simulated.
-# In a real-world scenario, this script would interact with a backend service
-# or a file-based database instead of the browser's localStorage.
+# Check sudo for internal commands
+SUDO=""
+if [ "\$EUID" -ne 0 ]; then
+  SUDO="sudo"
+fi
 
 echo -e "\${GREEN}Elaheh Management Console\${NC}"
 echo "--- System ---"
@@ -399,27 +423,29 @@ case "\$OPT" in
   1) # UPDATE
     echo "Updating..."
     cd /opt/elaheh-project
+    # Ownership fix if needed
+    \$SUDO chown -R \$USER /opt/elaheh-project
     git pull origin main
     npm install --legacy-peer-deps
     npm run build
-    pm2 restart elaheh-app
+    \$SUDO pm2 restart elaheh-app
     echo -e "\${GREEN}Update Complete.\${NC}"
     ;;
   2) # BBR
     echo "Enabling BBR..."
-    echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-    sysctl -p
+    echo "net.core.default_qdisc=fq" | \$SUDO tee -a /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" | \$SUDO tee -a /etc/sysctl.conf
+    \$SUDO sysctl -p
     echo -e "\${GREEN}BBR Enabled.\${NC}"
     ;;
   3) # RESTART
-    systemctl restart nginx
-    pm2 restart elaheh-app
+    \$SUDO systemctl restart nginx
+    \$SUDO pm2 restart elaheh-app
     echo -e "\${GREEN}Services Restarted.\${NC}"
     ;;
   4) # LOGS
     echo "Showing last 20 lines of logs for 'elaheh-app'..."
-    pm2 logs elaheh-app --lines 20 --nostream
+    \$SUDO pm2 logs elaheh-app --lines 20 --nostream
     ;;
   5) # LIST USERS (SIMULATED)
     echo -e "\${CYAN}Listing users (simulation)...${NC}"
@@ -449,11 +475,11 @@ case "\$OPT" in
   8) # UNINSTALL
     read -p "Are you sure? This will remove everything. (y/N) " CONFIRM
     if [[ "\$CONFIRM" == "y" ]]; then
-        pm2 delete elaheh-app
-        rm -rf /opt/elaheh-project
-        rm /etc/nginx/sites-enabled/elaheh
-        rm /usr/local/bin/elaheh
-        systemctl restart nginx
+        \$SUDO pm2 delete elaheh-app
+        \$SUDO rm -rf /opt/elaheh-project
+        \$SUDO rm /etc/nginx/sites-enabled/elaheh
+        \$SUDO rm /usr/local/bin/elaheh
+        \$SUDO systemctl restart nginx
         echo -e "\${GREEN}Uninstalled.\${NC}"
     fi
     ;;
@@ -463,41 +489,41 @@ case "\$OPT" in
     ;;
 esac
 EOF
-chmod +x /usr/local/bin/elaheh
+$SUDO chmod +x /usr/local/bin/elaheh
 # Add to global path for convenience if not already there
-ln -sf /usr/local/bin/elaheh /usr/bin/elaheh
+$SUDO ln -sf /usr/local/bin/elaheh /usr/bin/elaheh
 
 # 13. Firewall - Allow Specific Ports
 echo -e "${GREEN}[+] Configuring Firewall (Standard & Reserved Ports)...${NC}"
 if command -v ufw &> /dev/null; then
-    ufw allow 22/tcp
-    ufw allow 80/tcp
-    ufw allow 443/tcp
+    $SUDO ufw allow 22/tcp
+    $SUDO ufw allow 80/tcp
+    $SUDO ufw allow 443/tcp
     # Tunnel Ports
-    ufw allow 110/tcp
-    ufw allow 1414/udp
+    $SUDO ufw allow 110/tcp
+    $SUDO ufw allow 1414/udp
     # Reserved Ports (Cloudflare/CDN)
-    ufw allow 8080/tcp
-    ufw allow 8000/tcp
-    ufw allow 8880/tcp
-    ufw allow 2053/tcp
-    ufw allow 2083/tcp
-    ufw allow 2096/tcp
-    ufw allow 8443/tcp
-    echo "y" | ufw enable
+    $SUDO ufw allow 8080/tcp
+    $SUDO ufw allow 8000/tcp
+    $SUDO ufw allow 8880/tcp
+    $SUDO ufw allow 2053/tcp
+    $SUDO ufw allow 2083/tcp
+    $SUDO ufw allow 2096/tcp
+    $SUDO ufw allow 8443/tcp
+    echo "y" | $SUDO ufw enable
 elif command -v firewall-cmd &> /dev/null; then
-    systemctl start firewalld
-    firewall-cmd --permanent --add-port=22/tcp
-    firewall-cmd --permanent --add-port=80/tcp
-    firewall-cmd --permanent --add-port=443/tcp
-    firewall-cmd --permanent --add-port=110/tcp
-    firewall-cmd --permanent --add-port=1414/udp
+    $SUDO systemctl start firewalld
+    $SUDO firewall-cmd --permanent --add-port=22/tcp
+    $SUDO firewall-cmd --permanent --add-port=80/tcp
+    $SUDO firewall-cmd --permanent --add-port=443/tcp
+    $SUDO firewall-cmd --permanent --add-port=110/tcp
+    $SUDO firewall-cmd --permanent --add-port=1414/udp
     # Reserved
-    firewall-cmd --permanent --add-port=8080/tcp
-    firewall-cmd --permanent --add-port=2096/tcp
-    firewall-cmd --permanent --add-port=8443/tcp
-    firewall-cmd --permanent --add-port=2053/tcp
-    firewall-cmd --reload
+    $SUDO firewall-cmd --permanent --add-port=8080/tcp
+    $SUDO firewall-cmd --permanent --add-port=2096/tcp
+    $SUDO firewall-cmd --permanent --add-port=8443/tcp
+    $SUDO firewall-cmd --permanent --add-port=2053/tcp
+    $SUDO firewall-cmd --reload
 fi
 
 echo ""
