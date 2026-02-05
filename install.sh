@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.9.9 (Iran Optimized: Binary Mirrors & No DNS Change)
+# Version 2.0.0 (Robust Installer: Git Timeout & Input Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -17,8 +17,6 @@ NC='\033[0m'
 # -----------------------------------------------------------------------------
 # Helper Functions
 # -----------------------------------------------------------------------------
-
-# DNS Function REMOVED based on user feedback
 
 configure_iran_npm_environment() {
     echo -e "${YELLOW}[!] Configuring Advanced NPM Mirrors (Binary Bypasses)...${NC}"
@@ -83,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.9.9 (Iran Optimized)"
+echo "   Version 2.0.0 (Robust Installer)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -115,11 +113,17 @@ echo "1) Foreign Server (Upstream)"
 echo "2) Iran Server (Edge - User Access)"
 read -p "Select [1 or 2]: " ROLE_CHOICE
 
+# Normalize input to handle Persian/Arabic numerals and ensure robustness
+if [[ "$ROLE_CHOICE" == *"2"* || "$ROLE_CHOICE" == *"۲"* ]]; then
+    ROLE_CHOICE_NORMALIZED=2
+else
+    ROLE_CHOICE_NORMALIZED=1
+fi
+
 ROLE="external"
-if [ "$ROLE_CHOICE" -eq 2 ]; then
+if [ "$ROLE_CHOICE_NORMALIZED" -eq 2 ]; then
     ROLE="iran"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
-    # DNS is NOT changed here anymore.
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
 fi
@@ -147,12 +151,11 @@ if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
     echo -e "   > Applying system upgrades..."
     $SUDO apt-get upgrade -y -qq
     echo -e "   > Installing dependencies..."
-    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server cron tar
+    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server cron tar timeout
 
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
     $SUDO dnf upgrade -y --refresh
-    $SUDO dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis cronie
-    $SUDO systemctl enable --now crond
+    $SUDO dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis cronie coreutils
 else
     echo -e "${RED}Unsupported OS. Proceeding with caution.${NC}"
 fi
@@ -228,11 +231,13 @@ $SUDO mkdir -p "$INSTALL_DIR"
 $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-echo -e "   > Downloading Source Code..."
-if git clone "https://github.com/ehsanking/Elaheh-Project.git" . >/dev/null 2>&1; then
+echo -e "   > Downloading Source Code (Git with 45s timeout)..."
+# Use timeout for git clone as it can hang indefinitely in restricted networks.
+# --depth 1 makes the clone much faster.
+if timeout 45 git clone --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >/dev/null 2>&1; then
     echo -e "${GREEN}   > Git clone successful.${NC}"
 else
-    echo -e "${YELLOW}   > Git clone failed. Trying direct ZIP download...${NC}"
+    echo -e "${YELLOW}   > Git clone failed or timed out. Trying direct ZIP download...${NC}"
     curl -L "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip" -o repo.zip
     unzip -q repo.zip
     mv Elaheh-Project-main/* .
