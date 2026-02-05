@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.9.6 (Iran Standard: Direct Node Binary & APT Repair)
+# Version 1.9.7 (Iran Standard: Direct Node Binary & Stable Mirrors)
 # Author: EHSANKiNG
 
 set -e
@@ -60,12 +60,19 @@ restore_original_dns() {
     fi
 }
 
-configure_iran_npm_mirrors() {
-    echo -e "${YELLOW}[!] Configuring Iranian NPM Mirrors...${NC}"
-    # We prioritize Runflare as the registry url for NPM ONLY (not APT)
+configure_stable_npm_mirrors() {
+    echo -e "${YELLOW}[!] Configuring Stable NPM Mirrors...${NC}"
+    # Runflare is unstable. We switch to Taobao (npmmirror.com) which is enterprise-grade and accessible.
     if command -v npm >/dev/null 2>&1; then
-        $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
-        echo -e "${GREEN}[+] NPM Registry set to Runflare (Iran Optimized).${NC}"
+        # Set Registry
+        $SUDO npm config set registry https://registry.npmmirror.com --global 2>/dev/null || true
+        
+        # Increase Timeouts for slow connections
+        $SUDO npm config set fetch-retry-mintimeout 20000 --global 2>/dev/null || true
+        $SUDO npm config set fetch-retry-maxtimeout 120000 --global 2>/dev/null || true
+        $SUDO npm config set fetch-retries 5 --global 2>/dev/null || true
+        
+        echo -e "${GREEN}[+] NPM Registry set to npmmirror.com (High Availability).${NC}"
     fi
 }
 
@@ -116,7 +123,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.9.6 (Iran Standard)"
+echo "   Version 1.9.7 (Iran Standard & Stable Mirrors)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -319,7 +326,7 @@ install_node_iran_standard
 
 # Configure Mirrors for NPM
 if [[ "$ROLE" == "iran" ]]; then
-    configure_iran_npm_mirrors
+    configure_stable_npm_mirrors
 fi
 
 $SUDO npm install -g pm2 @angular/cli >/dev/null 2>&1
