@@ -565,7 +565,7 @@ export const translations: any = {
           detectionBtn: 'تشخیص نوع NAT',
           modes: { 
               stun: 'STUN (P2P)', stunDesc: 'اتصال مستقیم با UDP Hole Punching.',
-              turn: 'TURN (Relay)', stunDesc: 'استفاده از سرور واسط (Relay).',
+              turn: 'TURN (Relay)', turnDesc: 'استفاده از سرور واسط (Relay).',
               reverse: 'تونل معکوس', reverseDesc: 'اتصال خروجی به سرور واسط.'
           },
           stunServer: 'سرور STUN',
@@ -714,6 +714,628 @@ export const translations: any = {
             {
                 title: 'موتور استتار پویا',
                 description: 'موتور استتار با یادگیری از ترافیک شبکه به صورت زنده، الگوهای ترافیکی متقاعدکننده‌تری ایجاد کرده و خود را با تغییرات شبکه تطبیق می‌دهد.',
+                status: 'researching'
+            }
+        ]
+    }
+  },
+  zh: {
+    common: { cancel: '取消', active: '有效', expired: '已过期', banned: '已封禁', saveChanges: '保存更改', username: '用户名', status: '状态', actions: '操作', create: '创建', delete: '删除', price: '价格', currency: '货币', duration: '时长', traffic: '流量', buy: '购买', email: '电子邮件', pay: '立即支付', gateway: '支付网关', subLink: '订阅链接', copy: '复制', copied: '已复制!', telegram: 'Telegram ID', trackId: '追踪ID', back: '返回', close: '关闭', next: '下一步', download: '下载', recommendedApps: '推荐应用', deleteConfirm: '您确定要删除用户' },
+    nav: { signOut: '登出', dashboard: '仪表盘', users: '用户', settings: '设置', system: '系统状态', store: '商店管理', disk: '磁盘使用情况' },
+    wizard: {
+        title: '安装向导',
+        branding: { title: '品牌标识', description: '配置面板的外观和感觉。', siteTitle: '网站标题', logoUrl: '上传徽标 (可选)' },
+        role: { title: '服务器角色', description: '选择此服务器的角色。', germany: '上游 (国外)', germanyDesc: '位于伊朗境外。生成连接密钥。', iran: '边缘 (伊朗)', iranDesc: '位于伊朗境内。连接到上游。', next: '下一步' },
+        external: { genKeyTitle: '生成连接密钥', genKeyDesc: '复制此令牌。您需要将其粘贴到您的伊朗服务器设置向导中以链接它们。', tokenLabel: '连接令牌', genKeyNote: '此令牌包含您的服务器IP和认证密钥。' },
+        iran: { enterKeyTitle: '连接到上游', enterKeyDesc: '在此处粘贴您的外部 (国外) 服务器生成的连接令牌。', keyLabel: '连接令牌', placeholder: 'EL-LINK-...', verifyBtn: '验证连接', verified: '上游已验证', invalidToken: '无效或过期的连接令牌。', lockoutTitle: '尝试失败次数过多', lockoutMessage: '为安全起见，您已被锁定。请在 {{minutes}} 分钟后重试。' },
+        finish: { doneButton: '完成安装' }
+    },
+    upstream: { donateButton: '捐赠服务器 (分享密钥)', donateDesc: '这将打开您设备的分享对话框，将密钥发送给受限区域的人。' },
+    store: {
+        title: '服务计划',
+        heroTitle: '安全访问国际服务',
+        heroDesc: '为开发者、交易者和自由职业者提供合法稳定的解决方案，以绕过不公平的制裁。',
+        bestValue: '最具价值',
+        checkoutTitle: '结账',
+        contactInfo: '联系信息',
+        paymentMethod: '选择支付网关',
+        processing: '正在连接到网关...',
+        successTitle: '支付成功',
+        successDesc: '服务已成功激活。您的连接详细信息如下。',
+        failTitle: '支付失败',
+        failDesc: '交易被拒绝。请重试。',
+        retry: '重试',
+        sanctionedApps: '优化对象',
+        compliance: '根据伊朗伊斯兰共和国的规定运营。',
+        noIllegal: '严格禁止访问不道德内容、赌博和反动媒体。',
+        buy: '购买计划'
+    },
+    settings: {
+        title: '系统设置',
+        tabs: { general: '通用', store: '商店与套餐', branding: '品牌', network: '网络', security: '安全', installer: '安装程序', integrations: '集成', roadmap: '路线图' },
+        credentials: { title: '管理员凭据', newUser: '新用户名', newPass: '新密码', success: '凭据更新成功。' },
+        branding: { title: '品牌', name: '品牌名称', logo: '徽标URL/上传', preview: '预览', saveSuccess: '品牌更新成功。' },
+        storeMgmt: { title: '商店配置', currency: '货币单位', gateways: '支付网关', merchant: '商户ID/令牌', packages: '服务套餐', edit: '编辑', save: '保存' },
+        security: {
+            tfa: {
+                title: '双因素认证 (2FA)',
+                description: '使用基于时间的一次性密码 (TOTP) 应用程序为您的管理员帐户添加额外的安全层。',
+                enable: '启用 2FA',
+                disable: '禁用 2FA',
+                step1: '1. 扫描此二维码',
+                step1Desc: '使用Google Authenticator、Authy或1Password等身份验证器应用扫描此图像。',
+                step2: '2. 或手动输入密钥',
+                step2Desc: '如果您无法扫描二维码，可以手动将此密钥输入您的身份验证器应用中。',
+                step3: '3. 验证代码',
+                step3Desc: '输入您应用中的6位代码以确认设置。',
+                verifyButton: '验证并激活',
+                verifying: '验证中...',
+                success: '2FA 启用成功！',
+                fail: '代码无效。请重试。',
+                enterCode: '输入6位代码'
+            }
+        },
+        telegram: {
+            title: 'Telegram 机器人',
+            description: '通过 Telegram 管理用户并发送通知。',
+            token: '机器人令牌',
+            adminId: '管理员聊天ID',
+            enableBot: '启用机器人',
+            enableProxy: '通过国外服务器路由API',
+            test: '测试连接',
+            testing: '测试中...',
+            testSuccess: '连接成功！',
+            testFail: '连接失败。请检查日志。',
+            instructionsTitle: '如何获取您的凭据：',
+            instructions1: '1. 在 Telegram 上与 <a href="https://t.me/BotFather" target="_blank" class="text-blue-400 underline">@BotFather</a> 对话并创建一个新机器人以获取您的 <strong class="text-white">令牌</strong>。',
+            instructions2: '2. 与 <a href="https://t.me/userinfobot" target="_blank" class="text-blue-400 underline">@userinfobot</a> 对话以获取您的数字 <strong class="text-white">聊天ID</strong>。',
+            proxyNoteTitle: '重要提示',
+            proxyNote: '由于您所在地区 Telegram 被屏蔽，您必须保持代理选项启用，以通过您的国外服务器与API通信。'
+        },
+        domain: { 
+            title: '域名和SSL', 
+            description: '为订阅链接配置您的自定义域名。', 
+            saveSuccess: '域名已保存。',
+            domainName: '域名',
+            domainPlaceholder: 'example.com',
+            subscriptionDomain: '订阅子域名',
+            subscriptionDomainDesc: '可选。例如 "sub"。',
+            subscriptionDomainPlaceholder: 'sub',
+            invalidDomainError: '域名格式无效',
+            instructionsTitle: '说明',
+            instructions: '1. 将您的域名A记录指向此服务器IP。\n2. 点击“获取证书”以生成SSL。',
+            healthCheckTitle: '域名健康状况',
+            pruneBtn: '修剪列表',
+            checkHealthBtn: '检查健康状况',
+            checkingHealthBtn: '检查中...',
+            status: { untested: '未测试', testing: '测试中', healthy: '健康', filtered: '被过滤' },
+            certPath: '证书路径',
+            keyPath: '私钥路径',
+            getCertButton: '获取免费SSL证书',
+            gettingCertButton: '正在从 Let\'s Encrypt 请求...',
+            getCertSuccess: 'SSL证书安装成功。',
+            getCertError: '获取证书失败。请检查DNS。'
+        },
+        endpoint: {
+            title: '隧道策略',
+            description: '根据网络状况选择最佳路由策略。',
+            blockchain: '区块链中继',
+            blockchainDesc: '去中心化路由。',
+            applyButton: '应用策略',
+            success: '策略应用成功。'
+        },
+        camouflage: {
+            title: '流量伪装',
+            description: '模仿合法流量模式以逃避检测。',
+            profile: '流量配置文件',
+            profileDesc: { ai: 'AI模型训练', data: '数据库同步', media: '视频流' },
+            frequency: '轮换频率',
+            lessFrequent: '稳定',
+            moreFrequent: '动态',
+            status: '引擎状态'
+        },
+        appCamouflage: {
+            title: '应用层伪装',
+            description: '将流量伪装成流行的游戏协议。',
+            enable: '启用游戏协议仿真',
+            profile: '游戏配置文件',
+            codm: '使命召唤手游',
+            codmDesc: 'UDP/443 仿真',
+            pubg: '绝地求生手游',
+            pubgDesc: 'UDP/10000+ 仿真',
+            clash: '皇室战争',
+            clashDesc: 'TCP/9339 仿真',
+            mmorpg: '通用大型多人在线角色扮演游戏',
+            mmorpgDesc: '混合 TCP/UDP',
+            liveStatus: '实时状态'
+        },
+        doh: {
+            title: '安全DNS (DoH)',
+            description: '启用 DNS over HTTPS 以防止DNS中毒。',
+            enable: '启用 DoH 服务器',
+            activeUrl: '活动解析器URL',
+            subdomain: 'DNS 子域名',
+            createButton: '部署解析器',
+            creatingButton: '部署中...',
+            deactivate: '停用',
+            copy: '复制URL',
+            copied: '已复制!',
+            status: { creating: '部署中', failed: '失败', inactive: '非活动' }
+        },
+        iap: {
+            title: '身份感知代理 (IAP)',
+            description: '使用 Google Cloud IAP 进行隧道传输，无需公共IP。',
+            form: { projectId: '项目ID', zone: '区域', instance: '实例名称' },
+            info: { secure: '零信任', noPublicIp: '无公共IP', tcpFwd: 'TCP转发' },
+            command: { title: '客户端命令', description: '在客户端机器上运行：', copy: '复制', copied: '已复制' }
+        },
+        nat: {
+            title: 'NAT 穿透',
+            description: '绕过限制性NAT和防火墙的技术。',
+            status: '穿透状态',
+            detectionBtn: '检测NAT类型',
+            modes: { 
+                stun: 'STUN (P2P)', stunDesc: '使用UDP打洞的直接连接。',
+                turn: 'TURN (中继)', turnDesc: 'P2P失败时的中继连接。',
+                reverse: '反向隧道', reverseDesc: '到中继服务器的出站连接。'
+            },
+            stunServer: 'STUN 服务器',
+            turnServer: 'TURN 服务器',
+            turnUser: 'TURN 用户',
+            turnPass: 'TURN 密码',
+            keepAlive: '保持活动 (秒)',
+            warning: 'TURN 需要外部中继服务器。',
+            holePunching: '启用UDP打洞',
+            save: '保存配置'
+        },
+        sshSettings: {
+            title: 'SSH 隧道',
+            description: '管理本地 (-L) 和远程 (-R) 端口转发规则。',
+            localTitle: '本地转发 (-L)',
+            localDesc: '本地访问远程服务。',
+            remoteTitle: '远程转发 (-R)',
+            remoteDesc: '远程暴露本地服务。',
+            bindPort: '绑定端口',
+            target: '目标 (主机:端口)',
+            addRule: '添加规则',
+            useCase: '常见用例'
+        }
+    },
+    login: {
+      title: '制裁绕过管理',
+      adminUser: '管理员用户名',
+      placeholderUser: '输入用户名',
+      passphrase: '密码',
+      placeholderPass: '输入密码',
+      error: '凭据无效。',
+      authenticate: '登录',
+      statusLabel: '系统状态',
+      tfaTitle: '双因素认证',
+      tfaDescription: '从您的身份验证器应用中输入6位代码。',
+      tfaPlaceholder: '123456',
+      verify: '验证',
+      forgotPassword: { title: '密码恢复', description: '输入您的管理员电子邮件以接收重置链接。', forgotLink: '忘记密码？', sendButton: '发送重置链接', backToLogin: '返回登录', successTitle: '链接已发送', successMessage: '密码重置链接已发送到您的电子邮件。' }
+    },
+    notFound: { title: '404', desc: '页面未找到。', home: '返回首页' },
+    terms: {
+        title: '服务条款',
+        intro: '使用此服务即表示您同意以下条款：',
+        law1: '1. 此服务严格用于绕过对伊朗专业人士（开发者、交易者）的不公平制裁。',
+        law2: '2. 禁止并监控访问色情内容、赌博网站和反伊朗媒体。',
+        law3: '3. 任何试图使用此服务进行网络攻击或非法活动的行为将导致立即终止服务。',
+        law4: '4. 用户对其流量负全部责任。',
+        accept: '我接受'
+    },
+    dashboard: {
+      userBase: '用户', totalUsers: '总计', liveConnections: '活动连接', tunnelEstablished: '隧道', totalData: '数据使用量', encryptedPayload: '加密流量', simulatedTraffic: '吞吐量', networkHealth: '健康状况', connectionQuality: '质量', packetLoss: '丢包率', jitter: '抖动', stabilityChart: '稳定性', systemLogs: '系统日志', geoDist: { title: '地理分布', users: '用户' }, active: '活动', expired: '过期', banned: '封禁', used: '已用', remaining: '剩余', optimalDns: '最佳DNS', avgRTT: '平均RTT', tlsActive: 'TLS 1.3', tlsInactive: '无TLS', camouflage: { title: '伪装', jobStatus: '状态', running: '运行中', idle: '空闲', lastRun: '上次运行', never: '从不' }, quality: { Excellent: '优秀', Good: '良好', Fair: '一般', Poor: '差' },
+      ai: {
+          analyze: '使用AI分析',
+          analyzing: '分析中...',
+          analysisTitle: 'AI日志分析',
+          analysisError: '无法从AI获取分析。'
+      },
+      protocols: {
+          title: '协议使用情况'
+      }
+    },
+    users: { 
+        title: '用户管理', addUser: '添加用户', usage: '使用量', expiry: '到期', manageLinks: '链接', addModal: { title: '创建用户', quota: '配额 (GB)', expiry: '到期 (天)' },
+        bulk: {
+            actions: '批量操作',
+            delete: '删除所选',
+            extend: '延长到期时间',
+            addQuota: '增加配额',
+            selected: '已选择'
+        }
+    },
+    tunnel: {
+      title: '隧道优化',
+      description: '自动或手动选择您的伊朗和国外服务器之间的最佳连接路径。',
+      autoPilot: '自动驾驶',
+      manual: '手动',
+      nextTest: '下次测试倒计时',
+      disabled: '自动测试已禁用',
+      analyzing: '分析中...',
+      testNow: '测试路径',
+      failed: '失败',
+      pinging: 'Ping中...',
+      awaiting: '等待测试',
+      activate: '激活'
+    },
+    edgeStatus: { title: '边缘节点状态', connectionTitle: '隧道状态', statusLabel: '状态', statusConnected: '已连接', activeTunnel: '活动协议' },
+    camouflageSite: { title: 'AI研究实验室', navHome: '首页', navApi: 'API', navContact: '联系', login: '门户', signup: '请求访问', status: '系统状态', statusIdle: '运行中', statusRunningAI: '训练模型', statusRunningData: '同步数据', statusRunningMedia: '获取资产', getStarted: '开始研究', footer: '© 2024 AI研究所。版权所有。' },
+    signup: { title: '请求访问', description: '提交您的详细信息以供审核。', successTitle: '已收到', successMessage: '您的请求正在审核中。', backButton: '返回', form: { name: '全名', email: '电子邮件地址', reason: '使用原因', submit: '提交请求' } },
+    header: { systemSecure: '已保护', edgeNode: { connected: '已连接', connecting: '连接中', failed: '失败', notConfigured: '未配置' } },
+    view: { dashboard: '仪表盘', users: '用户', settings: '设置' },
+    tooltips: {
+        dashboard: {
+            userCard: '按当前状态分类的用户群概览。',
+            connectionsCard: '当前已连接并通过隧道传输流量的用户数。',
+            dataCard: '自上次服务器重启以来传输的总数据量和当前实时传输速率。',
+            trafficChart: '此图表模拟真实用户流量（蓝色）和伪装流量（绿色）以可视化网络活动。'
+        },
+        settings: {
+            domainName: '您的主域名。用于生成SSL证书和客户端连接。请确保您的A记录指向此服务器的IP。',
+            subscriptionDomain: '一个可选的、独立的用户订阅链接域名。用于将面向用户的页面与主域名隔离。',
+            healthCheck: '根据DNS黑名单测试生成的子域名列表，以找到干净的IP。对网络受限严重的客户端很有用。',
+            getCert: '使用 Let\'s Encrypt 自动为您的域名请求并安装免费、受信任的SSL证书。',
+            endpointStrategy: '定义用于隧道传输的底层技术。CDN最适合混淆，而VPS提供最低延迟。',
+            tunnelOptimization: '管理系统如何测试和选择您的伊朗和国外服务器之间的最佳连接路径。',
+            autoPilot: '系统将定期自动测试所有隧道，并切换到性能最佳的隧道（最低延迟和抖动）。',
+            manualMode: '您来控制。手动测试隧道并选择要激活的隧道。',
+            camouflageProfile: '更改伪装引擎生成的虚假流量模式，以更好地融入正常网络流量。',
+            camouflageFrequency: '伪装引擎更改其流量模式的频率。更频繁的更改更难被检测到，但可能会略微增加服务器负载。',
+            appCamoEnable: '启用后，系统将尝试将您的流量伪装成流行的在线游戏，以绕过基于协议的过滤。',
+            appCamoProfile: '选择要模拟的游戏协议。每个配置文件模仿该游戏的特定UDP/TCP数据包行为。',
+            dohEnable: '在您的服务器上激活一个DNS-over-HTTPS解析器。客户端可以使用它来加密其DNS查询，防止DNS中毒和阻止。',
+            dohSubdomain: 'DoH解析器将可用的子域名（例如dns.yourdomain.com）。',
+            iap: 'Google Cloud的身份感知代理允许您创建到实例的安全隧道，而无需公共IP地址，从而增强安全性。'
+        }
+    },
+    roadmap: {
+        title: '未来发展',
+        description: '我们的团队正在不断开发新功能，以增强安全性、性能和可用性。以下是我们即将推出的一些令人兴奋的改进。',
+        status: {
+            researching: '研究中',
+            planned: '计划中',
+            in_progress: '进行中',
+            beta: '测试版'
+        },
+        items: [
+            {
+                title: 'AI驱动的推荐',
+                description: 'Gemini将分析用户流量模式，为新用户推荐最佳服务器位置和协议。',
+                status: 'in_progress'
+            },
+            {
+                title: '自动异常检测',
+                description: '系统将自动检测并标记异常用户活动，例如突然的高带宽使用，以防止滥用。',
+                status: 'planned'
+            },
+            {
+                title: '专用客户端应用程序',
+                description: '一个专用的跨平台客户端应用程序（Windows、macOS、Android、iOS），用于一键连接和无缝配置文件同步。',
+                status: 'planned'
+            },
+            {
+                title: '去中心化认证',
+                description: '与基于区块链的身份系统集成，以增强隐私和抗审查能力。',
+                status: 'researching'
+            },
+            {
+                title: '动态混淆引擎',
+                description: '伪装引擎将从实时网络流量中学习，以创建更具说服力的流量模式，自动适应网络变化。',
+                status: 'researching'
+            }
+        ]
+    }
+  },
+  ru: {
+    common: { cancel: 'Отмена', active: 'Активен', expired: 'Истёк', banned: 'Забанен', saveChanges: 'Сохранить изменения', username: 'Имя пользователя', status: 'Статус', actions: 'Действия', create: 'Создать', delete: 'Удалить', price: 'Цена', currency: 'Валюта', duration: 'Длительность', traffic: 'Трафик', buy: 'Купить', email: 'Эл. почта', pay: 'Оплатить сейчас', gateway: 'Платёжный шлюз', subLink: 'Ссылка на подписку', copy: 'Копировать', copied: 'Скопировано!', telegram: 'Telegram ID', trackId: 'ID отслеживания', back: 'Назад', close: 'Закрыть', next: 'Далее', download: 'Скачать', recommendedApps: 'Рекомендуемые приложения', deleteConfirm: 'Вы уверены, что хотите удалить пользователя' },
+    nav: { signOut: 'Выйти', dashboard: 'Панель управления', users: 'Пользователи', settings: 'Настройки', system: 'Состояние системы', store: 'Управление магазином', disk: 'Использование диска' },
+    wizard: {
+        title: 'Мастер установки',
+        branding: { title: 'Фирменный стиль', description: 'Настройте внешний вид вашей панели.', siteTitle: 'Название сайта', logoUrl: 'Загрузить логотип (необязательно)' },
+        role: { title: 'Роль сервера', description: 'Выберите роль этого сервера.', germany: 'Upstream (Зарубежный)', germanyDesc: 'Расположен за пределами Ирана. Генерирует ключи подключения.', iran: 'Edge (Иран)', iranDesc: 'Расположен в Иране. Подключается к Upstream.', next: 'Следующий шаг' },
+        external: { genKeyTitle: 'Сгенерировать ключ подключения', genKeyDesc: 'Скопируйте этот токен. Вам нужно будет вставить его в мастер установки вашего иранского сервера, чтобы связать их.', tokenLabel: 'Токен подключения', genKeyNote: 'Этот токен содержит IP-адрес вашего сервера и ключ аутентификации.' },
+        iran: { enterKeyTitle: 'Подключиться к Upstream', enterKeyDesc: 'Вставьте сюда токен подключения, сгенерированный вашим внешним (зарубежным) сервером.', keyLabel: 'Токен подключения', placeholder: 'EL-LINK-...', verifyBtn: 'Проверить подключение', verified: 'Upstream проверен', invalidToken: 'Неверный или просроченный токен подключения.', lockoutTitle: 'Слишком много неудачных попыток', lockoutMessage: 'В целях безопасности вы были заблокированы. Пожалуйста, повторите попытку через {{minutes}} минут.' },
+        finish: { doneButton: 'Завершить установку' }
+    },
+    upstream: { donateButton: 'Пожертвовать сервер (поделиться ключом)', donateDesc: 'Это откроет диалоговое окно "Поделиться" на вашем устройстве, чтобы отправить ключ кому-либо в ограниченном регионе.' },
+    store: {
+        title: 'Тарифные планы',
+        heroTitle: 'Безопасный доступ к международным сервисам',
+        heroDesc: 'Законное и стабильное решение для разработчиков, трейдеров и фрилансеров для обхода несправедливых санкций.',
+        bestValue: 'Лучшее предложение',
+        checkoutTitle: 'Оформление заказа',
+        contactInfo: 'Контактная информация',
+        paymentMethod: 'Выберите платежный шлюз',
+        processing: 'Подключение к шлюзу...',
+        successTitle: 'Оплата прошла успешно',
+        successDesc: 'Услуга успешно активирована. Ваши данные для подключения ниже.',
+        failTitle: 'Ошибка оплаты',
+        failDesc: 'Транзакция была отклонена. Пожалуйста, попробуйте еще раз.',
+        retry: 'Попробовать снова',
+        sanctionedApps: 'Оптимизировано для',
+        compliance: 'Работает в соответствии с законодательством Исламской Республики Иран.',
+        noIllegal: 'Доступ к аморальному контенту, азартным играм и антигосударственным СМИ строго заблокирован.',
+        buy: 'Купить план'
+    },
+    settings: {
+        title: 'Системные настройки',
+        tabs: { general: 'Общие', store: 'Магазин и тарифы', branding: 'Брендинг', network: 'Сеть', security: 'Безопасность', installer: 'Установщик', integrations: 'Интеграции', roadmap: 'План развития' },
+        credentials: { title: 'Учетные данные администратора', newUser: 'Новое имя пользователя', newPass: 'Новый пароль', success: 'Учетные данные успешно обновлены.' },
+        branding: { title: 'Брендинг', name: 'Название бренда', logo: 'URL/загрузка логотипа', preview: 'Предпросмотр', saveSuccess: 'Брендинг обновлен.' },
+        storeMgmt: { title: 'Настройка магазина', currency: 'Валюта', gateways: 'Платежные шлюзы', merchant: 'ID продавца/токен', packages: 'Пакеты услуг', edit: 'Редактировать', save: 'Сохранить' },
+        security: {
+            tfa: {
+                title: 'Двухфакторная аутентификация (2FA)',
+                description: 'Добавьте дополнительный уровень безопасности к вашей учетной записи администратора, используя приложение для генерации одноразовых паролей на основе времени (TOTP).',
+                enable: 'Включить 2FA',
+                disable: 'Отключить 2FA',
+                step1: '1. Отсканируйте этот QR-код',
+                step1Desc: 'Отсканируйте это изображение с помощью приложения-аутентификатора, такого как Google Authenticator, Authy или 1Password.',
+                step2: '2. Или введите ключ вручную',
+                step2Desc: 'Если вы не можете отсканировать QR-код, вы можете вручную ввести этот секретный ключ в свое приложение-аутентификатор.',
+                step3: '3. Подтвердите код',
+                step3Desc: 'Введите 6-значный код из вашего приложения для подтверждения настройки.',
+                verifyButton: 'Проверить и активировать',
+                verifying: 'Проверка...',
+                success: '2FA успешно включена!',
+                fail: 'Неверный код. Пожалуйста, попробуйте еще раз.',
+                enterCode: 'Введите 6-значный код'
+            }
+        },
+        telegram: {
+            title: 'Telegram Бот',
+            description: 'Управляйте пользователями и отправляйте уведомления через Telegram.',
+            token: 'Токен бота',
+            adminId: 'ID чата администратора',
+            enableBot: 'Включить бота',
+            enableProxy: 'Маршрутизировать API через зарубежный сервер',
+            test: 'Проверить соединение',
+            testing: 'Проверка...',
+            testSuccess: 'Соединение успешно!',
+            testFail: 'Соединение не удалось. Проверьте логи.',
+            instructionsTitle: 'Как получить ваши учетные данные:',
+            instructions1: '1. Обратитесь к <a href="https://t.me/BotFather" target="_blank" class="text-blue-400 underline">@BotFather</a> в Telegram и создайте нового бота, чтобы получить ваш <strong class="text-white">токен</strong>.',
+            instructions2: '2. Обратитесь к <a href="https://t.me/userinfobot" target="_blank" class="text-blue-400 underline">@userinfobot</a>, чтобы получить ваш числовой <strong class="text-white">ID чата</strong>.',
+            proxyNoteTitle: 'Важное замечание',
+            proxyNote: 'Поскольку Telegram заблокирован в вашем регионе, вы ДОЛЖНЫ оставить опцию прокси включенной, чтобы общаться с API через ваш зарубежный сервер.'
+        },
+        domain: { 
+            title: 'Домен и SSL', 
+            description: 'Настройте ваш собственный домен для ссылок подписки.', 
+            saveSuccess: 'Домен сохранен.',
+            domainName: 'Доменное имя',
+            domainPlaceholder: 'example.com',
+            subscriptionDomain: 'Поддомен для подписок',
+            subscriptionDomainDesc: 'Необязательно. Например, "sub".',
+            subscriptionDomainPlaceholder: 'sub',
+            invalidDomainError: 'Неверный формат домена',
+            instructionsTitle: 'Инструкции',
+            instructions: '1. Укажите A-запись вашего домена на IP-адрес этого сервера.\n2. Нажмите "Получить сертификат" для генерации SSL.',
+            healthCheckTitle: 'Состояние домена',
+            pruneBtn: 'Очистить список',
+            checkHealthBtn: 'Проверить состояние',
+            checkingHealthBtn: 'Проверка...',
+            status: { untested: 'Не проверено', testing: 'Проверяется', healthy: 'Исправен', filtered: 'Отфильтрован' },
+            certPath: 'Путь к сертификату',
+            keyPath: 'Путь к приватному ключу',
+            getCertButton: 'Получить бесплатный SSL-сертификат',
+            gettingCertButton: 'Запрос от Let\'s Encrypt...',
+            getCertSuccess: 'SSL-сертификат успешно установлен.',
+            getCertError: 'Не удалось получить сертификат. Проверьте DNS.'
+        },
+        endpoint: {
+            title: 'Стратегия туннеля',
+            description: 'Выберите оптимальную стратегию маршрутизации в зависимости от условий сети.',
+            blockchain: 'Блокчейн-реле',
+            blockchainDesc: 'Децентрализованная маршрутизация.',
+            applyButton: 'Применить стратегию',
+            success: 'Стратегия успешно применена.'
+        },
+        camouflage: {
+            title: 'Маскировка трафика',
+            description: 'Имитируйте легитимные шаблоны трафика, чтобы избежать обнаружения.',
+            profile: 'Профиль трафика',
+            profileDesc: { ai: 'Обучение ИИ-модели', data: 'Синхронизация базы данных', media: 'Потоковое видео' },
+            frequency: 'Частота ротации',
+            lessFrequent: 'Стабильная',
+            moreFrequent: 'Динамическая',
+            status: 'Состояние движка'
+        },
+        appCamouflage: {
+            title: 'Маскировка на уровне приложений',
+            description: 'Маскируйте трафик под популярные игровые протоколы.',
+            enable: 'Включить эмуляцию игрового протокола',
+            profile: 'Игровой профиль',
+            codm: 'Call of Duty Mobile',
+            codmDesc: 'Эмуляция UDP/443',
+            pubg: 'PUBG Mobile',
+            pubgDesc: 'Эмуляция UDP/10000+',
+            clash: 'Clash Royale',
+            clashDesc: 'Эмуляция TCP/9339',
+            mmorpg: 'Обычная MMORPG',
+            mmorpgDesc: 'Смешанный TCP/UDP',
+            liveStatus: 'Текущий статус'
+        },
+        doh: {
+            title: 'Безопасный DNS (DoH)',
+            description: 'Включите DNS через HTTPS, чтобы предотвратить отравление DNS.',
+            enable: 'Включить DoH-сервер',
+            activeUrl: 'Активный URL-адрес резолвера',
+            subdomain: 'Поддомен DNS',
+            createButton: 'Развернуть резолвер',
+            creatingButton: 'Развертывание...',
+            deactivate: 'Отключить',
+            copy: 'Копировать URL',
+            copied: 'Скопировано!',
+            status: { creating: 'Развертывание', failed: 'Ошибка', inactive: 'Неактивен' }
+        },
+        iap: {
+            title: 'Прокси с учетом идентификации (IAP)',
+            description: 'Используйте Google Cloud IAP для туннелирования без публичного IP-адреса.',
+            form: { projectId: 'ID проекта', zone: 'Зона', instance: 'Имя экземпляра' },
+            info: { secure: 'Нулевое доверие', noPublicIp: 'Без публичного IP', tcpFwd: 'Переадресация TCP' },
+            command: { title: 'Команда клиента', description: 'Выполните на клиентской машине:', copy: 'Копировать', copied: 'Скопировано' }
+        },
+        nat: {
+            title: 'Обход NAT',
+            description: 'Техники для обхода ограничительных NAT и брандмауэров.',
+            status: 'Статус обхода',
+            detectionBtn: 'Определить тип NAT',
+            modes: { 
+                stun: 'STUN (P2P)', stunDesc: 'Прямое соединение с использованием UDP hole punching.',
+                turn: 'TURN (Реле)', turnDesc: 'Релейное соединение при сбое P2P.',
+                reverse: 'Обратный туннель', reverseDesc: 'Исходящее соединение с релейным сервером.'
+            },
+            stunServer: 'STUN-сервер',
+            turnServer: 'TURN-сервер',
+            turnUser: 'Пользователь TURN',
+            turnPass: 'Пароль TURN',
+            keepAlive: 'Keep-Alive (сек)',
+            warning: 'Для TURN требуется внешний релейный сервер.',
+            holePunching: 'Включить UDP Hole Punching',
+            save: 'Сохранить конфигурацию'
+        },
+        sshSettings: {
+            title: 'SSH-туннели',
+            description: 'Управление правилами переадресации портов Local (-L) и Remote (-R).',
+            localTitle: 'Локальная переадресация (-L)',
+            localDesc: 'Доступ к удаленным сервисам локально.',
+            remoteTitle: 'Удаленная переадресация (-R)',
+            remoteDesc: 'Предоставление удаленного доступа к локальным сервисам.',
+            bindPort: 'Порт привязки',
+            target: 'Цель (хост:порт)',
+            addRule: 'Добавить правило',
+            useCase: 'Типовые случаи использования'
+        }
+    },
+    login: {
+      title: 'Управление обходом санкций',
+      adminUser: 'Имя пользователя администратора',
+      placeholderUser: 'Введите имя пользователя',
+      passphrase: 'Пароль',
+      placeholderPass: 'Введите пароль',
+      error: 'Неверные учетные данные.',
+      authenticate: 'Войти',
+      statusLabel: 'Состояние системы',
+      tfaTitle: 'Двухфакторная аутентификация',
+      tfaDescription: 'Введите 6-значный код из вашего приложения-аутентификатора.',
+      tfaPlaceholder: '123456',
+      verify: 'Проверить',
+      forgotPassword: { title: 'Восстановление пароля', description: 'Введите электронную почту администратора, чтобы получить ссылку для сброса.', forgotLink: 'Забыли пароль?', sendButton: 'Отправить ссылку для сброса', backToLogin: 'Вернуться к входу', successTitle: 'Ссылка отправлена', successMessage: 'Ссылка для сброса пароля была отправлена на вашу электронную почту.' }
+    },
+    notFound: { title: '404', desc: 'Страница не найдена.', home: 'Вернуться на главную' },
+    terms: {
+        title: 'Условия предоставления услуг',
+        intro: 'Используя эту услугу, вы соглашаетесь со следующими условиями:',
+        law1: '1. Эта услуга предназначена исключительно для обхода несправедливых санкций против иранских профессионалов (разработчиков, трейдеров).',
+        law2: '2. Доступ к порнографическому контенту, сайтам азартных игр и антииранским СМИ заблокирован и отслеживается.',
+        law3: '3. Любая попытка использовать эту услугу для кибератак или незаконной деятельности приведет к немедленному прекращению предоставления услуг.',
+        law4: '4. Пользователь несет полную ответственность за свой трафик.',
+        accept: 'Я принимаю'
+    },
+    dashboard: {
+      userBase: 'Пользователи', totalUsers: 'Всего', liveConnections: 'Активные подключения', tunnelEstablished: 'Туннели', totalData: 'Использование данных', encryptedPayload: 'Зашифрованный трафик', simulatedTraffic: 'Пропускная способность', networkHealth: 'Состояние сети', connectionQuality: 'Качество', packetLoss: 'Потеря пакетов', jitter: 'Джиттер', stabilityChart: 'Стабильность', systemLogs: 'Системные журналы', geoDist: { title: 'Геораспределение', users: 'пользователей' }, active: 'Активные', expired: 'Истекшие', banned: 'Забаненные', used: 'Использовано', remaining: 'Свободно', optimalDns: 'Оптимальный DNS', avgRTT: 'Средний RTT', tlsActive: 'TLS 1.3', tlsInactive: 'Нет TLS', camouflage: { title: 'Маскировка', jobStatus: 'Статус', running: 'Выполняется', idle: 'Ожидание', lastRun: 'Последний запуск', never: 'Никогда' }, quality: { Excellent: 'Отличное', Good: 'Хорошее', Fair: 'Среднее', Poor: 'Плохое' },
+      ai: {
+          analyze: 'Анализ с помощью ИИ',
+          analyzing: 'Анализ...',
+          analysisTitle: 'Анализ журналов с помощью ИИ',
+          analysisError: 'Не удалось получить анализ от ИИ.'
+      },
+      protocols: {
+          title: 'Использование протоколов'
+      }
+    },
+    users: { 
+        title: 'Управление пользователями', addUser: 'Добавить пользователя', usage: 'Использование', expiry: 'Срок действия', manageLinks: 'Ссылки', addModal: { title: 'Создать пользователя', quota: 'Квота (ГБ)', expiry: 'Срок действия (дни)' },
+        bulk: {
+            actions: 'Массовые действия',
+            delete: 'Удалить выбранные',
+            extend: 'Продлить срок',
+            addQuota: 'Добавить квоту',
+            selected: 'выбрано'
+        }
+    },
+    tunnel: {
+      title: 'Оптимизация туннеля',
+      description: 'Автоматически или вручную выберите лучший путь подключения между вашими серверами в Иране и за рубежом.',
+      autoPilot: 'Автопилот',
+      manual: 'Вручную',
+      nextTest: 'Следующая проверка через',
+      disabled: 'Автопроверка отключена',
+      analyzing: 'Анализ...',
+      testNow: 'Проверить пути',
+      failed: 'Сбой',
+      pinging: 'Пингуется...',
+      awaiting: 'Ожидание теста',
+      activate: 'Активировать'
+    },
+    edgeStatus: { title: 'Статус Edge-узла', connectionTitle: 'Статус туннеля', statusLabel: 'Статус', statusConnected: 'Подключено', activeTunnel: 'Активный протокол' },
+    camouflageSite: { title: 'Исследовательская лаборатория ИИ', navHome: 'Главная', navApi: 'API', navContact: 'Контакты', login: 'Портал', signup: 'Запросить доступ', status: 'Состояние системы', statusIdle: 'Работоспособна', statusRunningAI: 'Обучение моделей', statusRunningData: 'Синхронизация данных', statusRunningMedia: 'Получение активов', getStarted: 'Начать исследование', footer: '© 2024 Исследовательский институт ИИ. Все права защищены.' },
+    signup: { title: 'Запросить доступ', description: 'Отправьте ваши данные на рассмотрение.', successTitle: 'Получено', successMessage: 'Ваш запрос находится на рассмотрении.', backButton: 'Назад', form: { name: 'Полное имя', email: 'Адрес электронной почты', reason: 'Причина использования', submit: 'Отправить запрос' } },
+    header: { systemSecure: 'Защищено', edgeNode: { connected: 'Подключено', connecting: 'Подключение', failed: 'Сбой', notConfigured: 'Не настроено' } },
+    view: { dashboard: 'Панель управления', users: 'Пользователи', settings: 'Настройки' },
+    tooltips: {
+        dashboard: {
+            userCard: 'Обзор вашей пользовательской базы, сгруппированной по текущему статусу.',
+            connectionsCard: 'Количество пользователей, которые в данный момент подключены и активно передают трафик через туннель.',
+            dataCard: 'Общий объем данных, переданных с момента последней перезагрузки сервера, и текущая скорость передачи в реальном времени.',
+            trafficChart: 'Этот график имитирует реальный пользовательский трафик (синий) и маскировочный трафик (зеленый) для визуализации сетевой активности.'
+        },
+        settings: {
+            domainName: 'Ваш основной домен. Используется для генерации SSL-сертификатов и для подключений клиентов. Убедитесь, что ваша A-запись указывает на IP-адрес этого сервера.',
+            subscriptionDomain: 'Необязательный, отдельный домен для ссылок подписки пользователей. Полезен для изоляции страниц, обращенных к пользователю, от основного домена.',
+            healthCheck: 'Проверяет список сгенерированных поддоменов по черным спискам DNS, чтобы найти "чистые" IP. Полезно для клиентов в сетях с жесткими ограничениями.',
+            getCert: 'Использует Let\'s Encrypt для автоматического запроса и установки бесплатного, доверенного SSL-сертификата для вашего домена.',
+            endpointStrategy: 'Определяет базовую технологию, используемую для туннелирования. CDN лучше всего подходит для обфускации, в то время как VPS предлагает наименьшую задержку.',
+            tunnelOptimization: 'Управляйте тем, как система тестирует и выбирает лучший путь подключения между вашими серверами в Иране и за рубежом.',
+            autoPilot: 'Система будет автоматически периодически тестировать все туннели и переключаться на тот, который имеет наилучшую производительность (наименьшую задержку и джиттер).',
+            manualMode: 'Вы контролируете ситуацию. Вручную тестируйте туннели и выбирайте, какой из них активировать.',
+            camouflageProfile: 'Изменяет шаблон поддельного трафика, генерируемого движком маскировки, чтобы лучше смешиваться с обычным сетевым трафиком.',
+            camouflageFrequency: 'Как часто движок маскировки меняет свои шаблоны трафика. Более частые изменения сложнее обнаружить, но они могут незначительно увеличить нагрузку на сервер.',
+            appCamoEnable: 'Когда включено, система попытается замаскировать ваш трафик под популярную онлайн-игру, чтобы обойти фильтрацию на основе протоколов.',
+            appCamoProfile: 'Выберите, какой игровой протокол эмулировать. Каждый профиль имитирует специфическое поведение UDP/TCP-пакетов этой игры.',
+            dohEnable: 'Активирует резолвер DNS-over-HTTPS на вашем сервере. Клиенты могут использовать его для шифрования своих DNS-запросов, предотвращая отравление DNS и блокировку.',
+            dohSubdomain: 'Поддомен, на котором будет доступен резолвер DoH (например, dns.yourdomain.com).',
+            iap: 'Прокси с учетом идентификации Google Cloud позволяет создавать безопасные туннели к вашим экземплярам без необходимости иметь публичный IP-адрес, повышая безопасность.'
+        }
+    },
+    roadmap: {
+        title: 'Будущее развитие',
+        description: 'Наша команда постоянно работает над новыми функциями для повышения безопасности, производительности и удобства использования. Вот некоторые из захватывающих улучшений, которые ждут нас впереди.',
+        status: {
+            researching: 'Исследование',
+            planned: 'Запланировано',
+            in_progress: 'В разработке',
+            beta: 'Бета-версия'
+        },
+        items: [
+            {
+                title: 'Рекомендации на основе ИИ',
+                description: 'Gemini будет анализировать шаблоны трафика пользователей, чтобы предлагать новым пользователям оптимальные местоположения серверов и протоколы.',
+                status: 'in_progress'
+            },
+            {
+                title: 'Автоматическое обнаружение аномалий',
+                description: 'Система будет автоматически обнаруживать и помечать необычную активность пользователей, такую как внезапное высокое использование пропускной способности, для предотвращения злоупотреблений.',
+                status: 'planned'
+            },
+            {
+                title: 'Выделенные клиентские приложения',
+                description: 'Выделенное кроссплатформенное клиентское приложение (Windows, macOS, Android, iOS) для подключения в один клик и плавной синхронизации профилей.',
+                status: 'planned'
+            },
+            {
+                title: 'Децентрализованная аутентификация',
+                description: 'Интеграция с системами идентификации на основе блокчейна для повышения конфиденциальности и устойчивости к цензуре.',
+                status: 'researching'
+            },
+            {
+                title: 'Динамический движок обфускации',
+                description: 'Движок маскировки будет учиться на сетевом трафике в реальном времени, чтобы создавать более убедительные шаблоны трафика, автоматически адаптируясь к изменениям в сети.',
                 status: 'researching'
             }
         ]
