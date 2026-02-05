@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.8.1 (Permission Fix)
+# Version 1.9.2 (Strict Mirror & Auto-SSL)
 # Author: EHSANKiNG
 
 set -e
@@ -19,49 +19,18 @@ NC='\033[0m'
 # -----------------------------------------------------------------------------
 
 configure_runflare_mirrors() {
-    echo -e "${YELLOW}[!] Configuring Runflare Mirrors (Iran)...${NC}"
+    echo -e "${YELLOW}[!] Configuring Runflare Mirror for NPM (Iran)...${NC}"
     
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        OS_ID=$ID
-        CODENAME=$VERSION_CODENAME
-    else
-        OS_ID="ubuntu"
-        CODENAME="noble"
-    fi
+    # Runflare is ONLY used for NPM as per requirements.
+    # System updates (APT) remain on default mirrors.
 
-    # 1. APT Configuration for Ubuntu/Debian
-    if [[ "$OS_ID" == "ubuntu" ]]; then
-        echo -e "   > Setting up Ubuntu mirrors..."
-        # Fixed: Added $SUDO to cp command
-        $SUDO cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
-        
-        cat <<EOF | $SUDO tee /etc/apt/sources.list > /dev/null
-deb http://mirror.runflare.com/ubuntu/ ${CODENAME} main restricted universe multiverse
-deb http://mirror.runflare.com/ubuntu/ ${CODENAME}-updates main restricted universe multiverse
-deb http://mirror.runflare.com/ubuntu/ ${CODENAME}-backports main restricted universe multiverse
-deb http://mirror.runflare.com/ubuntu/ ${CODENAME}-security main restricted universe multiverse
-EOF
-    elif [[ "$OS_ID" == "debian" ]]; then
-        echo -e "   > Setting up Debian mirrors..."
-        # Fixed: Added $SUDO to cp command
-        $SUDO cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
-        
-        cat <<EOF | $SUDO tee /etc/apt/sources.list > /dev/null
-deb http://mirror.runflare.com/debian/ ${CODENAME} main contrib non-free
-deb http://mirror.runflare.com/debian/ ${CODENAME}-updates main contrib non-free
-deb http://mirror.runflare.com/debian-security ${CODENAME}-security main
-EOF
-    fi
-
-    # 2. NPM Configuration
+    # NPM Configuration
     echo -e "   > Setting up NPM mirror..."
-    # Set global registry to Runflare
     if command -v npm >/dev/null 2>&1; then
         $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
     fi
     
-    echo -e "${GREEN}[+] Mirrors configured successfully.${NC}"
+    echo -e "${GREEN}[+] NPM Mirror configured.${NC}"
 }
 
 # -----------------------------------------------------------------------------
@@ -72,7 +41,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.8.1 (Runflare Edition)"
+echo "   Version 1.9.2 (Strict Mirror & Auto-SSL)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -96,7 +65,7 @@ if ! grep -q "127.0.0.1.*$HOSTNAME" /etc/hosts; then
 fi
 
 # -----------------------------------------------------------------------------
-# Configuration
+# Configuration & Role Selection
 # -----------------------------------------------------------------------------
 
 echo -e "${YELLOW}Select Server Location/Role:${NC}"
@@ -108,8 +77,7 @@ ROLE="external"
 if [ "$ROLE_CHOICE" -eq 2 ]; then
     ROLE="iran"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
-    
-    # Apply Runflare Mirrors specifically for Iran server
+    # Configure NPM mirror only for Iran
     configure_runflare_mirrors
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
@@ -124,42 +92,55 @@ fi
 EMAIL="admin@${DOMAIN}"
 
 # -----------------------------------------------------------------------------
-# System Preparation
+# System Update & Upgrade
 # -----------------------------------------------------------------------------
 
 echo ""
-echo -e "${CYAN}Starting Installation...${NC}"
+echo -e "${CYAN}Starting System Update...${NC}"
 
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$NAME
+    OS_ID=$ID
 fi
 
-echo -e "   > Detecting OS: $OS"
+echo -e "   > Detected OS: $OS"
+echo -e "   > Updating and Upgrading System Packages..."
 
-# Install System Dependencies
-echo -e "   > Installing System Packages..."
 export DEBIAN_FRONTEND=noninteractive
 
-if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
+    # Fix potential lock issues
     $SUDO rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
     
-    # Update using the new Runflare mirrors
-    echo -e "   > Updating repository lists..."
+    # Update lists
     $SUDO apt-get update -y -qq
     
-    echo -e "   > Installing base packages..."
-    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server
+    # Full Upgrade
+    echo -e "   > Applying system upgrades (this may take a while)..."
+    $SUDO apt-get upgrade -y -qq
     
+    # Install dependencies
+    echo -e "   > Installing dependencies..."
+    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server cron
+
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+    echo -e "   > Applying system upgrades..."
     $SUDO dnf upgrade -y --refresh
+    
+    # Install dependencies
     if ! rpm -q epel-release >/dev/null 2>&1; then
          $SUDO dnf install -y epel-release
     fi
-    $SUDO dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis
+    $SUDO dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis cronie
+    $SUDO systemctl enable --now crond
 else
     echo -e "${RED}Unsupported OS. Proceeding with caution.${NC}"
 fi
+
+# -----------------------------------------------------------------------------
+# Service Configuration
+# -----------------------------------------------------------------------------
 
 # Enable Services
 $SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
@@ -185,12 +166,18 @@ for P in 80 110; do
     if [ -n "$PIDS" ]; then $SUDO kill -9 $PIDS || true; fi
 done
 
-# SSL
+# SSL & Auto-Renewal
 if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     echo -e "   > Requesting SSL Certificate..."
-    # Attempt certbot. If DNS is totally broken, this might fail, but we proceed anyway.
-    $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || echo -e "${YELLOW}Warning: SSL request failed (likely DNS/Network issue). You can retry later via dashboard.${NC}"
+    $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || echo -e "${YELLOW}Warning: SSL request failed. You can retry later via dashboard.${NC}"
 fi
+
+# Configure Auto-Renewal (Every ~80 days logic handled by certbot smart renewal)
+echo -e "   > Configuring SSL Auto-Renewal (Daily check)..."
+# Remove any existing certbot cron to prevent duplicates
+($SUDO crontab -l 2>/dev/null | grep -v "certbot renew") | $SUDO crontab - || true
+# Add job: Checks daily, renews if expiry < 30 days (ensuring coverage for 80+ day targets), reloads nginx
+($SUDO crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --deploy-hook 'systemctl reload nginx'") | $SUDO crontab -
 
 # Nginx
 echo -e "   > Configuring Nginx..."
@@ -240,8 +227,19 @@ if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     $SUDO tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
 fi
 
-# Ensure NPM uses Runflare again (just in case Node reinstall reset it)
-npm config set registry https://npm.runflare.com
+# Ensure NPM uses Runflare ONLY if Role is Iran
+if [[ "$ROLE" == "iran" ]]; then
+    if command -v npm >/dev/null 2>&1; then
+        $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
+        echo -e "   > NPM Registry set to Runflare (Iran Mode)."
+    fi
+else
+    # Ensure default registry for External server
+    if command -v npm >/dev/null 2>&1; then
+        $SUDO npm config delete registry --global 2>/dev/null || true
+        echo -e "   > NPM Registry set to Default (Foreign Mode)."
+    fi
+fi
 
 $SUDO npm install -g pm2 @angular/cli >/dev/null 2>&1
 
@@ -255,9 +253,8 @@ CURRENT_GROUP=$(id -gn)
 
 echo -e "   > Setting up Project..."
 
-# Force remove directory to ensure fresh clone
 if [ -d "$INSTALL_DIR" ]; then
-    echo -e "${YELLOW}   > Cleaning existing directory to prevent conflicts...${NC}"
+    echo -e "${YELLOW}   > Cleaning existing directory...${NC}"
     $SUDO rm -rf "$INSTALL_DIR"
 fi
 
@@ -266,7 +263,6 @@ $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
 echo -e "   > Downloading Source Code..."
-# Try Git first, Fallback to ZIP download
 if git clone "https://github.com/ehsanking/Elaheh-Project.git" . >/dev/null 2>&1; then
     echo -e "${GREEN}   > Git clone successful.${NC}"
 else
@@ -281,8 +277,8 @@ fi
 
 echo -e "   > Installing NPM Packages..."
 export NODE_OPTIONS="--max-old-space-size=4096"
-# Ensure registry is set for project install as well
-npm config set registry https://npm.runflare.com
+
+# Run install (Registry already set above based on Role)
 npm install --legacy-peer-deps --loglevel error
 npm install @google/genai@latest --legacy-peer-deps --save
 
@@ -335,4 +331,5 @@ echo -e "${GREEN}=========================================${NC}"
 echo -e "${GREEN}   INSTALLATION SUCCESSFUL!${NC}"
 echo -e "   Role: ${ROLE^^}"
 echo -e "   Panel URL: https://${DOMAIN}"
+echo -e "   SSL: Auto-Renew Enabled"
 echo -e "${GREEN}=========================================${NC}"
