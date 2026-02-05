@@ -105,10 +105,12 @@
                     <path class="text-gray-200 dark:text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
                     <path [attr.stroke-dasharray]="qualityScore() + ', 100'"
                           class="transition-all duration-1000 ease-out"
-                          [class.text-green-500]="core.connectionQuality() === 'Excellent'"
-                          [class.text-blue-500]="core.connectionQuality() === 'Good'"
-                          [class.text-yellow-500]="core.connectionQuality() === 'Fair'"
-                          [class.text-red-500]="core.connectionQuality() === 'Poor'"
+                          [ngClass]="{
+                            'text-green-500': core.connectionQuality() === 'Excellent',
+                            'text-blue-500': core.connectionQuality() === 'Good',
+                            'text-yellow-500': core.connectionQuality() === 'Fair',
+                            'text-red-500': core.connectionQuality() === 'Poor'
+                          }"
                           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
                 </svg>
                 <div class="absolute flex flex-col items-center">
@@ -121,14 +123,12 @@
                 </div>
             </div>
             <div class="text-lg font-bold"
-                 [class.text-green-600]="core.connectionQuality() === 'Excellent'"
-                 [class.dark:text-green-400]="core.connectionQuality() === 'Excellent'"
-                 [class.text-blue-600]="core.connectionQuality() === 'Good'"
-                 [class.dark:text-blue-400]="core.connectionQuality() === 'Good'"
-                 [class.text-yellow-600]="core.connectionQuality() === 'Fair'"
-                 [class.dark:text-yellow-400]="core.connectionQuality() === 'Fair'"
-                 [class.text-red-600]="core.connectionQuality() === 'Poor'"
-                 [class.dark:text-red-400]="core.connectionQuality() === 'Poor'">
+                 [ngClass]="{
+                    'text-green-600 dark:text-green-400': core.connectionQuality() === 'Excellent',
+                    'text-blue-600 dark:text-blue-400': core.connectionQuality() === 'Good',
+                    'text-yellow-600 dark:text-yellow-400': core.connectionQuality() === 'Fair',
+                    'text-red-600 dark:text-red-400': core.connectionQuality() === 'Poor'
+                 }">
                 {{ languageService.translate('dashboard.quality.' + core.connectionQuality()) }}
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-1">{{ languageService.translate('dashboard.connectionQuality') }}</div>
