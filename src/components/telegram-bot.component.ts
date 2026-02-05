@@ -93,7 +93,7 @@ export class TelegramBotComponent implements OnInit {
   isTesting = signal(false);
   testStatus = signal<'idle' | 'success' | 'failed'>('idle');
 
-  botForm = this.fb.group({
+  botForm = this.fb.nonNullable.group({
     token: ['', Validators.required],
     adminChatId: ['', Validators.required],
     isEnabled: [false],
@@ -109,22 +109,8 @@ export class TelegramBotComponent implements OnInit {
     this.isTesting.set(true);
     this.testStatus.set('idle');
     
-    const raw = this.botForm.getRawValue();
+    const config = this.botForm.getRawValue();
     
-    const config: TelegramBotConfig = {
-        token: raw.token ?? '',
-        adminChatId: raw.adminChatId ?? '',
-        isEnabled: raw.isEnabled ?? false,
-        proxyEnabled: raw.proxyEnabled ?? true
-    };
-    
-    // Explicit check for TS safety even though validators are present
-    if (!config.token || !config.adminChatId) {
-        this.testStatus.set('failed');
-        this.isTesting.set(false);
-        return;
-    }
-
     const success = await this.core.testTelegramBot(config);
 
     this.testStatus.set(success ? 'success' : 'failed');
@@ -134,19 +120,9 @@ export class TelegramBotComponent implements OnInit {
 
   saveSettings() {
     if (this.botForm.valid) {
-        const raw = this.botForm.getRawValue();
-        
-        const config: TelegramBotConfig = {
-            token: raw.token ?? '',
-            adminChatId: raw.adminChatId ?? '',
-            isEnabled: raw.isEnabled ?? false,
-            proxyEnabled: raw.proxyEnabled ?? true
-        };
-
-        if (config.token && config.adminChatId) {
-            this.core.updateTelegramBotConfig(config);
-            this.core.addLog('SUCCESS', '[Telegram] Bot settings saved.');
-        }
+        const config = this.botForm.getRawValue();
+        this.core.updateTelegramBotConfig(config);
+        this.core.addLog('SUCCESS', '[Telegram] Bot settings saved.');
     }
   }
 }

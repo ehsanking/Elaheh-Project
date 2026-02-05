@@ -27,7 +27,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // AI Analysis State
   isAnalyzingLogs = signal(false);
   showAiAnalysisModal = signal(false);
-  aiAnalysisResult = signal('');
+  aiAnalysisResult = signal<{ analysis: string; citations: any[] } | null>(null);
   aiAnalysisError = signal('');
 
   lastRun = computed(() => {
@@ -174,7 +174,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   async analyzeLogs() {
       this.isAnalyzingLogs.set(true);
       this.showAiAnalysisModal.set(true);
-      this.aiAnalysisResult.set('');
+      this.aiAnalysisResult.set(null);
       this.aiAnalysisError.set('');
 
       try {

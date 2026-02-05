@@ -33,10 +33,9 @@ import { LanguageService } from '../services/language.service';
           <div class="space-y-2">
             
             <button type="button" (click)="setProfile('COD_MOBILE')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [ngClass]="{
-                'border-teal-500 bg-teal-900/20': core.applicationCamouflageProfile() === 'COD_MOBILE',
-                'border-gray-700': core.applicationCamouflageProfile() !== 'COD_MOBILE'
-              }">
+              [class.border-teal-500]="core.applicationCamouflageProfile() === 'COD_MOBILE'"
+              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'COD_MOBILE'"
+              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'COD_MOBILE'">
               <span class="text-2xl mr-3">🔫</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.codm') }}</div>
@@ -45,10 +44,9 @@ import { LanguageService } from '../services/language.service';
             </button>
 
             <button type="button" (click)="setProfile('PUBG')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [ngClass]="{
-                'border-teal-500 bg-teal-900/20': core.applicationCamouflageProfile() === 'PUBG',
-                'border-gray-700': core.applicationCamouflageProfile() !== 'PUBG'
-              }">
+              [class.border-teal-500]="core.applicationCamouflageProfile() === 'PUBG'"
+              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'PUBG'"
+              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'PUBG'">
               <span class="text-2xl mr-3">🍳</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.pubg') }}</div>
@@ -57,10 +55,9 @@ import { LanguageService } from '../services/language.service';
             </button>
 
              <button type="button" (click)="setProfile('CLASH_ROYALE')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [ngClass]="{
-                'border-teal-500 bg-teal-900/20': core.applicationCamouflageProfile() === 'CLASH_ROYALE',
-                'border-gray-700': core.applicationCamouflageProfile() !== 'CLASH_ROYALE'
-              }">
+              [class.border-teal-500]="core.applicationCamouflageProfile() === 'CLASH_ROYALE'"
+              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'CLASH_ROYALE'"
+              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'CLASH_ROYALE'">
               <span class="text-2xl mr-3">👑</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.clash') }}</div>
@@ -69,10 +66,9 @@ import { LanguageService } from '../services/language.service';
             </button>
 
              <button type="button" (click)="setProfile('MMORPG')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [ngClass]="{
-                'border-teal-500 bg-teal-900/20': core.applicationCamouflageProfile() === 'MMORPG',
-                'border-gray-700': core.applicationCamouflageProfile() !== 'MMORPG'
-              }">
+              [class.border-teal-500]="core.applicationCamouflageProfile() === 'MMORPG'"
+              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'MMORPG'"
+              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'MMORPG'">
               <span class="text-2xl mr-3">🐲</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.mmorpg') }}</div>
