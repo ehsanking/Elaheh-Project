@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.8 (Enhanced UX Edition)
+# Version 1.0.9 (Anti-Sanction DNS Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -47,6 +47,27 @@ show_progress() {
     printf "] %3d%% - %s" "$percent" "$info"
 }
 
+# DNS Restoration Logic
+restore_dns() {
+    if [ -f /etc/resolv.conf.bak ]; then
+        echo ""
+        echo -e "${YELLOW}[!] Restoring original DNS settings...${NC}"
+        
+        # Use SUDO if defined
+        if [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+             sudo rm -f /etc/resolv.conf
+             sudo mv /etc/resolv.conf.bak /etc/resolv.conf
+        else
+             rm -f /etc/resolv.conf
+             mv /etc/resolv.conf.bak /etc/resolv.conf
+        fi
+        echo -e "${GREEN}[+] Original DNS restored.${NC}"
+    fi
+}
+
+# Ensure DNS is restored on exit (success or failure)
+trap restore_dns EXIT
+
 # -----------------------------------------------------------------------------
 # Initialization
 # -----------------------------------------------------------------------------
@@ -55,7 +76,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.8"
+echo "   Version 1.0.9"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -96,6 +117,28 @@ read -p "Select [1 or 2]: " ROLE_CHOICE
 if [ "$ROLE_CHOICE" -eq 2 ]; then
     ROLE="iran"
     echo -e "${GREEN}>> Configuring as IRAN (Edge/Main) Server...${NC}"
+    
+    # -------------------------------------------------------------------------
+    # Anti-Sanction DNS Setup (Iran Only)
+    # -------------------------------------------------------------------------
+    echo -e "${YELLOW}[!] Configuring Anti-Sanction DNS (Shecan/403) for installation...${NC}"
+    
+    # Backup existing
+    if [ -f /etc/resolv.conf ]; then
+        $SUDO cp /etc/resolv.conf /etc/resolv.conf.bak
+    fi
+    
+    # Overwrite
+    $SUDO rm -f /etc/resolv.conf
+    cat <<EOF | $SUDO tee /etc/resolv.conf > /dev/null
+nameserver 178.22.122.100
+nameserver 185.51.200.2
+nameserver 172.29.2.100
+nameserver 172.29.0.100
+options timeout:2 attempts:1
+EOF
+    echo -e "${GREEN}[+] Temporary DNS applied successfully.${NC}"
+
 else
     ROLE="external"
     echo -e "${GREEN}>> Configuring as FOREIGN (Upstream) Server...${NC}"

@@ -110,20 +110,21 @@ export class TelegramBotComponent implements OnInit {
     this.testStatus.set('idle');
     
     const raw = this.botForm.getRawValue();
-    // Validate required fields explicitly for TS safety
-    if (!raw.token || !raw.adminChatId) {
+    
+    const config: TelegramBotConfig = {
+        token: raw.token ?? '',
+        adminChatId: raw.adminChatId ?? '',
+        isEnabled: raw.isEnabled ?? false,
+        proxyEnabled: raw.proxyEnabled ?? true
+    };
+    
+    // Explicit check for TS safety even though validators are present
+    if (!config.token || !config.adminChatId) {
         this.testStatus.set('failed');
         this.isTesting.set(false);
         return;
     }
 
-    const config: TelegramBotConfig = {
-        token: raw.token,
-        adminChatId: raw.adminChatId,
-        isEnabled: raw.isEnabled ?? false,
-        proxyEnabled: raw.proxyEnabled ?? true
-    };
-    
     const success = await this.core.testTelegramBot(config);
 
     this.testStatus.set(success ? 'success' : 'failed');
@@ -134,13 +135,15 @@ export class TelegramBotComponent implements OnInit {
   saveSettings() {
     if (this.botForm.valid) {
         const raw = this.botForm.getRawValue();
-        if (raw.token && raw.adminChatId) {
-            const config: TelegramBotConfig = {
-                token: raw.token,
-                adminChatId: raw.adminChatId,
-                isEnabled: raw.isEnabled ?? false,
-                proxyEnabled: raw.proxyEnabled ?? true
-            };
+        
+        const config: TelegramBotConfig = {
+            token: raw.token ?? '',
+            adminChatId: raw.adminChatId ?? '',
+            isEnabled: raw.isEnabled ?? false,
+            proxyEnabled: raw.proxyEnabled ?? true
+        };
+
+        if (config.token && config.adminChatId) {
             this.core.updateTelegramBotConfig(config);
             this.core.addLog('SUCCESS', '[Telegram] Bot settings saved.');
         }
