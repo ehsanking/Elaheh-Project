@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.3 (pnpm global config fix)
+# Version 2.1.4 (pnpm legacy-peer-deps fix)
 # Author: EHSANKiNG
 
 set -e
@@ -81,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.3 (pnpm global config fix)"
+echo "   Version 2.1.4 (pnpm legacy-peer-deps fix)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -267,7 +267,10 @@ export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 export SHARP_BINARY_HOST=https://npmmirror.com/mirrors/sharp
 export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
 
-if pnpm install --legacy-peer-deps; then
+# Create .npmrc to handle peer dependency issues in modern pnpm
+echo "legacy-peer-deps=true" > .npmrc
+
+if pnpm install; then
     echo -e "${GREEN}   > pnpm install successful.${NC}"
 else
     echo -e "${RED}   > pnpm install failed. Please check network connection and logs.${NC}"
@@ -275,7 +278,7 @@ else
 fi
 
 echo -e "   > Verifying @google/genai installation..."
-pnpm add @google/genai@latest --legacy-peer-deps
+pnpm add @google/genai@latest
 
 echo -e "   > Building Application..."
 pnpm run build
