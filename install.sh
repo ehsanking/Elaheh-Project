@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.6 (pnpm local .npmrc registry fix)
+# Version 2.1.7 (Iran Network Resilience Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -81,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.6 (pnpm local .npmrc registry fix)"
+echo "   Version 2.1.7 (Iran Network Resilience Fix)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -121,8 +121,11 @@ else
 fi
 
 ROLE="external"
+REGISTRY_FLAG="" # This will be empty for non-Iran servers
 if [ "$ROLE_CHOICE_NORMALIZED" -eq 2 ]; then
     ROLE="iran"
+    # This flag forces all npm/pnpm commands to use the correct mirror, overriding any faulty local config
+    REGISTRY_FLAG="--registry=https://registry.npmmirror.com/"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
@@ -187,7 +190,14 @@ install_node_iran_standard() {
     echo -e "${YELLOW}[!] Installing Node.js (Iran Standard Strategy)...${NC}"
     NODE_VERSION="v22.12.0" 
     NODE_DIST="node-${NODE_VERSION}-linux-x64"
-    NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz"
+    
+    if [[ "$ROLE" == "iran" ]]; then
+        NODE_URL="https://npmmirror.com/mirrors/node/${NODE_VERSION}/${NODE_DIST}.tar.xz"
+        echo -e "   > Using Iran mirror for Node.js download."
+    else
+        NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz"
+    fi
+
     $SUDO rm -rf /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx
     $SUDO rm -rf /usr/local/lib/node_modules/npm
     
@@ -211,7 +221,7 @@ if [[ "$ROLE" == "iran" ]]; then
 fi
 
 echo -e "   > Installing pnpm package manager for faster installs..."
-$SUDO npm install -g pnpm --loglevel error # Use npm once to get pnpm
+$SUDO npm install -g pnpm --loglevel error ${REGISTRY_FLAG}
 echo -e "${GREEN}   > pnpm installed successfully.${NC}"
 
 if [[ "$ROLE" == "iran" ]]; then
@@ -225,7 +235,7 @@ echo -e "   > Configuring pnpm global location..."
 $SUDO pnpm config set --global global-bin-dir /usr/local/bin
 
 echo -e "   > Installing global tools (pm2, @angular/cli) using pnpm..."
-$SUDO pnpm add -g pm2 @angular/cli
+$SUDO pnpm add -g pm2 @angular/cli ${REGISTRY_FLAG}
 
 # -----------------------------------------------------------------------------
 # Project Setup & Dependency Install (The Critical Part)
@@ -276,13 +286,13 @@ export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
 # Create .npmrc to handle peer dependency issues in modern pnpm
 echo "legacy-peer-deps=true" > .npmrc
 if [[ "$ROLE" == "iran" ]]; then
-    # This is the most robust fix: A project-local .npmrc overrides any user/global config.
+    # This is a robust fix: A project-local .npmrc overrides any user/global config.
     echo "registry=https://registry.npmmirror.com/" >> .npmrc
     echo -e "   > Enforcing Iran-friendly mirror via local .npmrc file."
 fi
 
 
-if pnpm install; then
+if pnpm install ${REGISTRY_FLAG}; then
     echo -e "${GREEN}   > pnpm install successful.${NC}"
 else
     echo -e "${RED}   > pnpm install failed. Please check network connection and logs.${NC}"
@@ -290,7 +300,7 @@ else
 fi
 
 echo -e "   > Verifying @google/genai installation..."
-pnpm add @google/genai@latest
+pnpm add @google/genai@latest ${REGISTRY_FLAG}
 
 echo -e "   > Building Application..."
 pnpm run build
