@@ -447,7 +447,7 @@ Health Summary:
             contents: prompt,
         });
 
-        return response.text;
+        return response.text || "No response generated.";
     } catch (error) {
         console.error("Error during AI log analysis:", error);
         this.addLog('ERROR', 'AI analysis failed. See browser console for details.');

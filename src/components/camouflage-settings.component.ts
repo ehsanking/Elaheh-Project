@@ -23,9 +23,10 @@ import { LanguageService } from '../services/language.service';
           <div class="space-y-2">
             <div>
               <label class="flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-                [class.border-teal-500]="core.camouflageProfile() === 'AI_TRAINING'"
-                [class.bg-teal-900/20]="core.camouflageProfile() === 'AI_TRAINING'"
-                [class.border-gray-700]="core.camouflageProfile() !== 'AI_TRAINING'">
+                [ngClass]="{
+                  'border-teal-500 bg-teal-900/20': core.camouflageProfile() === 'AI_TRAINING',
+                  'border-gray-700': core.camouflageProfile() !== 'AI_TRAINING'
+                }">
                 <input type="radio" name="camouflageProfile" value="AI_TRAINING" 
                        [ngModel]="core.camouflageProfile()"
                        (ngModelChange)="setProfile($event)"
@@ -36,9 +37,10 @@ import { LanguageService } from '../services/language.service';
             </div>
              <div>
               <label class="flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-                [class.border-teal-500]="core.camouflageProfile() === 'DATA_SYNC'"
-                [class.bg-teal-900/20]="core.camouflageProfile() === 'DATA_SYNC'"
-                [class.border-gray-700]="core.camouflageProfile() !== 'DATA_SYNC'">
+                [ngClass]="{
+                  'border-teal-500 bg-teal-900/20': core.camouflageProfile() === 'DATA_SYNC',
+                  'border-gray-700': core.camouflageProfile() !== 'DATA_SYNC'
+                }">
                 <input type="radio" name="camouflageProfile" value="DATA_SYNC" 
                        [ngModel]="core.camouflageProfile()"
                        (ngModelChange)="setProfile($event)"
@@ -49,9 +51,10 @@ import { LanguageService } from '../services/language.service';
             </div>
              <div>
               <label class="flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-                [class.border-teal-500]="core.camouflageProfile() === 'MEDIA_FETCH'"
-                [class.bg-teal-900/20]="core.camouflageProfile() === 'MEDIA_FETCH'"
-                [class.border-gray-700]="core.camouflageProfile() !== 'MEDIA_FETCH'">
+                [ngClass]="{
+                  'border-teal-500 bg-teal-900/20': core.camouflageProfile() === 'MEDIA_FETCH',
+                  'border-gray-700': core.camouflageProfile() !== 'MEDIA_FETCH'
+                }">
                 <input type="radio" name="camouflageProfile" value="MEDIA_FETCH"
                        [ngModel]="core.camouflageProfile()"
                        (ngModelChange)="setProfile($event)"

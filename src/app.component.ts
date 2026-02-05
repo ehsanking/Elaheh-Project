@@ -10,17 +10,15 @@ import { SettingsComponent } from './components/settings.component';
 import { CommonModule } from '@angular/common';
 import { StorefrontComponent } from './components/storefront.component';
 import { SignupComponent } from './components/signup.component';
-import { EdgeStatusComponent } from './components/edge-status.component';
 import { LogoComponent } from './components/logo.component';
 import { NotFoundComponent } from './components/not-found.component';
 import { SubscriptionPageComponent } from './components/subscription-page.component';
-import { CorporateLandingComponent } from './components/corporate-landing.component';
 import { UpstreamDashboardComponent } from './components/upstream-dashboard.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [LoginComponent, SetupWizardComponent, DashboardComponent, UserManagementComponent, SettingsComponent, CommonModule, StorefrontComponent, SignupComponent, EdgeStatusComponent, LogoComponent, NotFoundComponent, SubscriptionPageComponent, CorporateLandingComponent, UpstreamDashboardComponent],
+  imports: [LoginComponent, SetupWizardComponent, DashboardComponent, UserManagementComponent, SettingsComponent, CommonModule, StorefrontComponent, SignupComponent, LogoComponent, NotFoundComponent, SubscriptionPageComponent, UpstreamDashboardComponent],
   templateUrl: './app.component.html',
   styleUrls: [],
   changeDetection: ChangeDetectionStrategy.OnPush,

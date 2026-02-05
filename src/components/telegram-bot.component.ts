@@ -2,7 +2,7 @@
 import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ElahehCoreService } from '../services/elaheh-core.service';
+import { ElahehCoreService, TelegramBotConfig } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
 
 @Component({
@@ -109,7 +109,22 @@ export class TelegramBotComponent implements OnInit {
     this.isTesting.set(true);
     this.testStatus.set('idle');
     
-    const success = await this.core.testTelegramBot(this.botForm.getRawValue());
+    const raw = this.botForm.getRawValue();
+    // Validate required fields explicitly for TS safety
+    if (!raw.token || !raw.adminChatId) {
+        this.testStatus.set('failed');
+        this.isTesting.set(false);
+        return;
+    }
+
+    const config: TelegramBotConfig = {
+        token: raw.token,
+        adminChatId: raw.adminChatId,
+        isEnabled: raw.isEnabled ?? false,
+        proxyEnabled: raw.proxyEnabled ?? true
+    };
+    
+    const success = await this.core.testTelegramBot(config);
 
     this.testStatus.set(success ? 'success' : 'failed');
     this.isTesting.set(false);
@@ -118,8 +133,17 @@ export class TelegramBotComponent implements OnInit {
 
   saveSettings() {
     if (this.botForm.valid) {
-        this.core.updateTelegramBotConfig(this.botForm.getRawValue());
-        this.core.addLog('SUCCESS', '[Telegram] Bot settings saved.');
+        const raw = this.botForm.getRawValue();
+        if (raw.token && raw.adminChatId) {
+            const config: TelegramBotConfig = {
+                token: raw.token,
+                adminChatId: raw.adminChatId,
+                isEnabled: raw.isEnabled ?? false,
+                proxyEnabled: raw.proxyEnabled ?? true
+            };
+            this.core.updateTelegramBotConfig(config);
+            this.core.addLog('SUCCESS', '[Telegram] Bot settings saved.');
+        }
     }
   }
 }
