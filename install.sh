@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.0.0 (Robust Installer: Git Timeout & Input Fix)
+# Version 2.0.1 (Installer Dependency Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -81,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.0.0 (Robust Installer)"
+echo "   Version 2.0.1 (Installer Dependency Fix)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -151,7 +151,7 @@ if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
     echo -e "   > Applying system upgrades..."
     $SUDO apt-get upgrade -y -qq
     echo -e "   > Installing dependencies..."
-    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server cron tar timeout
+    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server cron tar coreutils
 
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
     $SUDO dnf upgrade -y --refresh
