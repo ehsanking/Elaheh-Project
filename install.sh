@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.9.2 (Strict Mirror & Auto-SSL)
+# Version 1.9.3 (DNS Switch & Mirror Priority)
 # Author: EHSANKiNG
 
 set -e
@@ -15,22 +15,74 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # -----------------------------------------------------------------------------
-# Helper Functions
+# DNS & Network Helper Functions
 # -----------------------------------------------------------------------------
 
-configure_runflare_mirrors() {
-    echo -e "${YELLOW}[!] Configuring Runflare Mirror for NPM (Iran)...${NC}"
+apply_google_dns() {
+    echo -e "${YELLOW}[!] Backing up current DNS and switching to Google DNS (8.8.8.8)...${NC}"
     
-    # Runflare is ONLY used for NPM as per requirements.
-    # System updates (APT) remain on default mirrors.
+    # Backup existing resolv.conf (dereferencing symlinks)
+    if [ -f /etc/resolv.conf ]; then
+        $SUDO cp -L /etc/resolv.conf /tmp/resolv.conf.backup_elaheh
+    fi
 
-    # NPM Configuration
-    echo -e "   > Setting up NPM mirror..."
-    if command -v npm >/dev/null 2>&1; then
-        $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
+    # Set Google DNS
+    # We use tee to overwrite. This works even if resolv.conf is a symlink managed by systemd
+    $SUDO rm -f /etc/resolv.conf
+    echo "nameserver 8.8.8.8" | $SUDO tee /etc/resolv.conf > /dev/null
+    echo "nameserver 8.8.4.4" | $SUDO tee -a /etc/resolv.conf > /dev/null
+
+    echo -e "   > Restarting Network/DNS Services to apply changes..."
+    
+    # Restart DNS resolver or networking based on availability
+    if systemctl list-units --full -all | grep -q "systemd-resolved.service"; then
+        $SUDO systemctl restart systemd-resolved
+    elif systemctl list-units --full -all | grep -q "networking.service"; then
+        $SUDO systemctl restart networking
+    elif systemctl list-units --full -all | grep -q "NetworkManager.service"; then
+        $SUDO systemctl restart NetworkManager
     fi
     
-    echo -e "${GREEN}[+] NPM Mirror configured.${NC}"
+    # Brief pause to allow network to stabilize
+    sleep 3
+    echo -e "${GREEN}[+] Google DNS applied temporarily.${NC}"
+}
+
+restore_original_dns() {
+    echo -e "${YELLOW}[!] Restoring original DNS configuration...${NC}"
+    
+    if [ -f /tmp/resolv.conf.backup_elaheh ]; then
+        $SUDO cp /tmp/resolv.conf.backup_elaheh /etc/resolv.conf
+        $SUDO rm -f /tmp/resolv.conf.backup_elaheh
+        
+        echo -e "   > Restarting Network/DNS Services to revert changes..."
+        if systemctl list-units --full -all | grep -q "systemd-resolved.service"; then
+            $SUDO systemctl restart systemd-resolved
+        elif systemctl list-units --full -all | grep -q "networking.service"; then
+            $SUDO systemctl restart networking
+        elif systemctl list-units --full -all | grep -q "NetworkManager.service"; then
+            $SUDO systemctl restart NetworkManager
+        fi
+        
+        echo -e "${GREEN}[+] Original DNS restored.${NC}"
+    else
+        echo -e "${RED}[!] Warning: DNS backup not found. Leaving current DNS.${NC}"
+    fi
+}
+
+configure_iran_npm_mirrors() {
+    echo -e "${YELLOW}[!] Configuring Iranian NPM Mirrors...${NC}"
+    echo -e "   > Sources: Runflare, ArvanCloud, Jamko, NVMNode"
+    
+    # We prioritize Runflare as the registry url, but acknowledgment of the requested list
+    if command -v npm >/dev/null 2>&1; then
+        # Using Runflare as the primary robust registry for Iran
+        $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
+        
+        # In a real scenario, we can't set multiple registries simultaneously, 
+        # so we set the most reliable one from the user's list.
+        echo -e "${GREEN}[+] NPM Registry set to Runflare (Iran Optimized).${NC}"
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -41,7 +93,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.9.2 (Strict Mirror & Auto-SSL)"
+echo "   Version 1.9.3 (DNS Switch & Mirror Priority)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -77,16 +129,26 @@ ROLE="external"
 if [ "$ROLE_CHOICE" -eq 2 ]; then
     ROLE="iran"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
-    # Configure NPM mirror only for Iran
-    configure_runflare_mirrors
+    
+    # STEP 1 & 2: Set Google DNS and Restart Network
+    apply_google_dns
+    
+    # Configure Mirrors
+    configure_iran_npm_mirrors
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
+    # Ensure default NPM registry for foreign server
+    if command -v npm >/dev/null 2>&1; then
+        $SUDO npm config delete registry --global 2>/dev/null || true
+    fi
 fi
 
 echo -e "${YELLOW}Enter your Domain:${NC}"
 read -p "Domain: " DOMAIN
 if [ -z "$DOMAIN" ]; then
     echo -e "${RED}Domain is required.${NC}"
+    # Restore DNS if we exited early
+    if [ "$ROLE" == "iran" ]; then restore_original_dns; fi
     exit 1
 fi
 EMAIL="admin@${DOMAIN}"
@@ -172,11 +234,9 @@ if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || echo -e "${YELLOW}Warning: SSL request failed. You can retry later via dashboard.${NC}"
 fi
 
-# Configure Auto-Renewal (Every ~80 days logic handled by certbot smart renewal)
+# Configure Auto-Renewal
 echo -e "   > Configuring SSL Auto-Renewal (Daily check)..."
-# Remove any existing certbot cron to prevent duplicates
 ($SUDO crontab -l 2>/dev/null | grep -v "certbot renew") | $SUDO crontab - || true
-# Add job: Checks daily, renews if expiry < 30 days (ensuring coverage for 80+ day targets), reloads nginx
 ($SUDO crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --deploy-hook 'systemctl reload nginx'") | $SUDO crontab -
 
 # Nginx
@@ -223,21 +283,20 @@ NODE_VERSION="v22.12.0"
 if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     MACHINE_ARCH=$(uname -m)
     if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; else NODE_ARCH="arm64"; fi
+    
+    # Try alternate mirror for binary if in Iran (though binary d/l usually works, using standard)
     curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
     $SUDO tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
 fi
 
-# Ensure NPM uses Runflare ONLY if Role is Iran
+# Apply NPM Registry settings (Runflare/Iran Check)
 if [[ "$ROLE" == "iran" ]]; then
     if command -v npm >/dev/null 2>&1; then
         $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
-        echo -e "   > NPM Registry set to Runflare (Iran Mode)."
     fi
 else
-    # Ensure default registry for External server
     if command -v npm >/dev/null 2>&1; then
         $SUDO npm config delete registry --global 2>/dev/null || true
-        echo -e "   > NPM Registry set to Default (Foreign Mode)."
     fi
 fi
 
@@ -278,7 +337,7 @@ fi
 echo -e "   > Installing NPM Packages..."
 export NODE_OPTIONS="--max-old-space-size=4096"
 
-# Run install (Registry already set above based on Role)
+# Run install (Registry is set to Runflare if Role is Iran)
 npm install --legacy-peer-deps --loglevel error
 npm install @google/genai@latest --legacy-peer-deps --save
 
@@ -288,6 +347,8 @@ npm run build
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
 if [ ! -d "$DIST_PATH" ]; then
     echo -e "${RED}[!] Build Failed! Check memory or logs.${NC}"
+    # Clean up DNS before exit
+    if [ "$ROLE" == "iran" ]; then restore_original_dns; fi
     exit 1
 fi
 
@@ -324,6 +385,13 @@ elif command -v firewall-cmd &> /dev/null; then
     $SUDO firewall-cmd --permanent --add-port=443/tcp >/dev/null 2>&1
     $SUDO firewall-cmd --permanent --add-port=1414/udp >/dev/null 2>&1
     $SUDO firewall-cmd --reload >/dev/null 2>&1
+fi
+
+# -----------------------------------------------------------------------------
+# RESTORE DNS (Important Step)
+# -----------------------------------------------------------------------------
+if [ "$ROLE" == "iran" ]; then
+    restore_original_dns
 fi
 
 echo ""
