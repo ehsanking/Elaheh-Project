@@ -37,7 +37,10 @@ export const translations: any = {
          keyLabel: 'Connection Token',
          placeholder: 'EL-LINK-...',
          verifyBtn: 'Verify Connection',
-         verified: 'Upstream Verified'
+         verified: 'Upstream Verified',
+         invalidToken: 'Invalid or expired connection token.',
+         lockoutTitle: 'Too Many Failed Attempts',
+         lockoutMessage: 'For security, you have been locked out. Please try again in {{minutes}} minutes.'
       },
       finish: { doneButton: 'Finish Installation' }
     },
@@ -66,7 +69,7 @@ export const translations: any = {
     },
     settings: {
         title: 'System Settings',
-        tabs: { general: 'General', store: 'Store & Plans', branding: 'Branding', network: 'Network', security: 'Security', installer: 'Installer', integrations: 'Integrations' },
+        tabs: { general: 'General', store: 'Store & Plans', branding: 'Branding', network: 'Network', security: 'Security', installer: 'Installer', integrations: 'Integrations', roadmap: 'Roadmap' },
         credentials: { title: 'Admin Credentials', newUser: 'New Username', newPass: 'New Password', success: 'Credentials updated successfully.' },
         branding: { title: 'Branding', name: 'Brand Name', logo: 'Logo URL / Upload', preview: 'Preview', saveSuccess: 'Branding updated.' },
         storeMgmt: { title: 'Store Configuration', currency: 'Currency Unit', gateways: 'Payment Gateways', merchant: 'Merchant ID / Token', packages: 'Service Packages', edit: 'Edit', save: 'Save' },
@@ -262,6 +265,20 @@ export const translations: any = {
             selected: 'selected'
         }
     },
+    tunnel: {
+      title: 'Tunnel Optimization',
+      description: 'Automatically or manually select the best connection path between your Iran and Foreign servers.',
+      autoPilot: 'Auto-Pilot',
+      manual: 'Manual',
+      nextTest: 'Next test in',
+      disabled: 'Auto-test is disabled',
+      analyzing: 'Analyzing...',
+      testNow: 'Test Paths',
+      failed: 'Failed',
+      pinging: 'Pinging...',
+      awaiting: 'Awaiting Test',
+      activate: 'Activate'
+    },
     edgeStatus: { title: 'Edge Node Status', connectionTitle: 'Tunnel Status', statusLabel: 'Status', statusConnected: 'Connected', activeTunnel: 'Active Protocol' },
     camouflageSite: { title: 'AI Research Lab', navHome: 'Home', navApi: 'API', navContact: 'Contact', login: 'Portal', signup: 'Request Access', status: 'System Status', statusIdle: 'Operational', statusRunningAI: 'Training Models', statusRunningData: 'Syncing Data', statusRunningMedia: 'Fetching Assets', getStarted: 'Start Research', footer: '© 2024 AI Research Institute. All rights reserved.' },
     signup: { title: 'Request Access', description: 'Submit your details for review.', successTitle: 'Received', successMessage: 'Your request is under review.', backButton: 'Back', form: { name: 'Full Name', email: 'Email Address', reason: 'Usage Reason', submit: 'Submit Request' } },
@@ -291,6 +308,43 @@ export const translations: any = {
             dohSubdomain: 'The subdomain where the DoH resolver will be available (e.g., dns.yourdomain.com).',
             iap: 'Google Cloud\'s Identity-Aware Proxy allows you to create secure tunnels to your instances without needing a public IP address, enhancing security.',
         }
+    },
+    roadmap: {
+        title: 'Future Development',
+        description: 'Our team is constantly working on new features to enhance security, performance, and usability. Here are some of the exciting improvements on our horizon.',
+        status: {
+            researching: 'Researching',
+            planned: 'Planned',
+            in_progress: 'In Progress',
+            beta: 'Beta'
+        },
+        items: [
+            {
+                title: 'AI-Powered Recommendations',
+                description: 'Gemini will analyze user traffic patterns to suggest optimal server locations and protocols for new users.',
+                status: 'in_progress'
+            },
+            {
+                title: 'Automated Anomaly Detection',
+                description: 'The system will automatically detect and flag unusual user activity, such as sudden high bandwidth usage, to prevent abuse.',
+                status: 'planned'
+            },
+            {
+                title: 'Dedicated Client Applications',
+                description: 'A dedicated, cross-platform client application (Windows, macOS, Android, iOS) for one-click connections and seamless profile syncing.',
+                status: 'planned'
+            },
+            {
+                title: 'Decentralized Authentication',
+                description: 'Integration with blockchain-based identity systems for enhanced privacy and censorship resistance.',
+                status: 'researching'
+            },
+            {
+                title: 'Dynamic Obfuscation Engine',
+                description: 'The camouflage engine will learn from network traffic in real-time to create more convincing traffic patterns, adapting to network changes automatically.',
+                status: 'researching'
+            }
+        ]
     }
   },
   fa: {
@@ -355,7 +409,10 @@ export const translations: any = {
          keyLabel: 'توکن اتصال',
          placeholder: 'EL-LINK-...',
          verifyBtn: 'بررسی اتصال',
-         verified: 'ارتباط با سرور خارج برقرار شد'
+         verified: 'ارتباط با سرور خارج برقرار شد',
+         invalidToken: 'توکن اتصال نامعتبر یا منقضی شده است.',
+         lockoutTitle: 'تعداد تلاش‌های ناموفق بیش از حد مجاز',
+         lockoutMessage: 'به دلایل امنیتی، دسترسی شما موقتا مسدود شد. لطفا تا {{minutes}} دقیقه دیگر دوباره تلاش کنید.'
       },
       finish: { doneButton: 'اتمام نصب' }
     },
@@ -384,9 +441,10 @@ export const translations: any = {
     },
     settings: {
       title: 'تنظیمات سیستم',
-      tabs: { general: 'عمومی', store: 'فروشگاه', branding: 'برندینگ', network: 'شبکه', security: 'امنیت', installer: 'نصاب', integrations: 'یکپارچه‌سازی' },
+      tabs: { general: 'عمومی', store: 'فروشگاه', branding: 'برندینگ', network: 'شبکه', security: 'امنیت', installer: 'نصاب', integrations: 'یکپارچه‌سازی', roadmap: 'نقشه راه' },
       credentials: { title: 'اطلاعات مدیر', newUser: 'نام کاربری جدید', newPass: 'رمز عبور جدید', success: 'ذخیره شد.' },
       branding: { title: 'شخصی‌سازی', name: 'نام برند', logo: 'آدرس لوگو', preview: 'پیش‌نمایش', saveSuccess: 'برندینگ ذخیره شد.' },
+      storeMgmt: { title: 'تنظیمات فروشگاه', currency: 'واحد پول', gateways: 'درگاه‌های پرداخت', merchant: 'مرچنت آیدی / توکن', packages: 'بسته‌های خدمات', edit: 'ویرایش', save: 'ذخیره' },
       security: {
             tfa: {
                 title: 'احراز هویت دو مرحله‌ای (2FA)',
@@ -507,7 +565,7 @@ export const translations: any = {
           detectionBtn: 'تشخیص نوع NAT',
           modes: { 
               stun: 'STUN (P2P)', stunDesc: 'اتصال مستقیم با UDP Hole Punching.',
-              turn: 'TURN (Relay)', turnDesc: 'استفاده از سرور واسط (Relay).',
+              turn: 'TURN (Relay)', stunDesc: 'استفاده از سرور واسط (Relay).',
               reverse: 'تونل معکوس', reverseDesc: 'اتصال خروجی به سرور واسط.'
           },
           stunServer: 'سرور STUN',
@@ -622,6 +680,43 @@ export const translations: any = {
             dohSubdomain: 'زیردامنه‌ای که resolver DoH در آن در دسترس خواهد بود (مثلاً dns.yourdomain.com).',
             iap: 'پراکسی هویت‌محور گوگل به شما امکان می‌دهد تونل‌های امن به ماشین‌های مجازی خود بدون نیاز به IP عمومی ایجاد کنید و امنیت را افزایش می‌دهد.',
         }
+    },
+    roadmap: {
+        title: 'نقشه راه توسعه',
+        description: 'تیم ما دائما در حال کار بر روی ویژگی‌های جدید برای افزایش امنیت، کارایی و سهولت استفاده است. در اینجا برخی از بهبودهای هیجان‌انگیز آینده ما را مشاهده می‌کنید.',
+        status: {
+            researching: 'در حال تحقیق',
+            planned: 'برنامه‌ریزی شده',
+            in_progress: 'در حال توسعه',
+            beta: 'نسخه بتا'
+        },
+        items: [
+            {
+                title: 'پیشنهادات هوشمند',
+                description: 'هوش مصنوعی Gemini الگوهای ترافیک کاربران را تحلیل کرده تا بهترین مکان سرور و پروتکل بهینه را برای کاربران جدید پیشنهاد دهد.',
+                status: 'in_progress'
+            },
+            {
+                title: 'تشخیص خودکار ناهنجاری',
+                description: 'سیستم به طور خودکار فعالیت‌های غیرعادی کاربر، مانند مصرف ناگهانی پهنای باند بالا را شناسایی و برای جلوگیری از سوءاستفاده گزارش می‌دهد.',
+                status: 'planned'
+            },
+            {
+                title: 'اپلیکیشن‌های اختصاصی کلاینت',
+                description: 'یک اپلیکیشن اختصاصی چند پلتفرمی (ویندوز، مک، اندروید، iOS) برای اتصال با یک کلیک و همگام‌سازی آسان پروفایل‌ها.',
+                status: 'planned'
+            },
+            {
+                title: 'احراز هویت غیرمتمرکز',
+                description: 'یکپارچه‌سازی با سیستم‌های هویتی مبتنی بر بلاک‌چین برای افزایش حریم خصوصی و مقاومت در برابر سانسور.',
+                status: 'researching'
+            },
+            {
+                title: 'موتور استتار پویا',
+                description: 'موتور استتار با یادگیری از ترافیک شبکه به صورت زنده، الگوهای ترافیکی متقاعدکننده‌تری ایجاد کرده و خود را با تغییرات شبکه تطبیق می‌دهد.',
+                status: 'researching'
+            }
+        ]
     }
   }
 };

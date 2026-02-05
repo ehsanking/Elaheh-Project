@@ -1,6 +1,7 @@
 
 
 
+
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { GoogleGenAI } from "@google/genai";
 import { DatabaseService } from './database.service';
@@ -412,6 +413,39 @@ export class ElahehCoreService {
         }
       })
       .catch(() => {});
+  }
+
+  // FIX: Implement missing AI log analysis method
+  async analyzeLogsWithAi(logs: LogEntry[]): Promise<string> {
+    if (!this.ai) {
+        this.addLog('ERROR', 'AI client not initialized. Is API_KEY set?');
+        throw new Error("AI client not initialized.");
+    }
+    if (logs.length === 0) {
+        return "No logs to analyze.";
+    }
+
+    const logMessages = logs.slice(0, 25).map(l => `[${l.level}] ${l.message}`).join('\n');
+    const prompt = `Analyze the following system logs from a VPN management panel. Provide a concise, one-paragraph summary of the system's health. Highlight any critical errors, repeated warnings, or unusual activity patterns (like multiple connection failures). The panel manages users, connections, and tunnels between an 'Edge' server (in a restricted region) and an 'Upstream' server (outside).
+
+Logs:
+${logMessages}
+
+Health Summary:
+`;
+
+    try {
+        const response = await this.ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        return response.text;
+    } catch (error) {
+        console.error("Error during AI log analysis:", error);
+        this.addLog('ERROR', 'AI analysis failed. See browser console for details.');
+        throw new Error("Failed to get analysis from AI.");
+    }
   }
 
   async fetchIpLocation(ip?: string): Promise<any> {

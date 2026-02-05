@@ -18,11 +18,12 @@ import { SshSettingsComponent } from './ssh-settings.component';
 import { EmailService } from '../services/email.service';
 import { TelegramBotComponent } from './telegram-bot.component';
 import { TwoFactorAuthComponent } from './two-factor-auth.component';
+import { RoadmapComponent } from './roadmap.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent, RoadmapComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,7 +37,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security' | 'integrations'>('general');
+  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security' | 'integrations' | 'roadmap'>('general');
   successMessage = signal('');
   
   // Store Mgmt Signals
