@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.9 (Anti-Sanction DNS Edition)
+# Version 1.1.0 (Stability Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -76,7 +76,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.9"
+echo "   Version 1.1.0"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -98,6 +98,12 @@ fi
 # Get current user details for file ownership
 CURRENT_USER=$(id -un)
 CURRENT_GROUP=$(id -gn)
+
+# Fix Hostname Resolution (Prevents "sudo: unable to resolve host" delay)
+HOSTNAME=$(hostname)
+if ! grep -q "127.0.0.1.*$HOSTNAME" /etc/hosts; then
+    echo "127.0.0.1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
+fi
 
 # -----------------------------------------------------------------------------
 # Configuration
@@ -128,7 +134,7 @@ if [ "$ROLE_CHOICE" -eq 2 ]; then
         $SUDO cp /etc/resolv.conf /etc/resolv.conf.bak
     fi
     
-    # Overwrite
+    # Overwrite with specific nameservers requested
     $SUDO rm -f /etc/resolv.conf
     cat <<EOF | $SUDO tee /etc/resolv.conf > /dev/null
 nameserver 178.22.122.100
@@ -215,14 +221,15 @@ if [ "$TOTAL_MEM" -lt 2000000 ]; then
     fi
 fi
 
-# Cleanup Ports
+# Cleanup Ports (Fixed lsof syntax)
 show_progress 30 "Releasing Ports..."
 $SUDO systemctl stop nginx >/dev/null 2>&1 || true
 for PORT in 80 110; do
-    PIDS=$($SUDO lsof -t -i:$PORT -sTCP:LISTEN || true)
+    # Simply check for usage without specific state flags to be compatible with older lsof
+    PIDS=$($SUDO lsof -t -i:$PORT || true)
     if [ -n "$PIDS" ]; then $SUDO kill -9 $PIDS || true; fi
 done
-PIDS_UDP=$($SUDO lsof -t -i:1414 -sUDP:LISTEN || true)
+PIDS_UDP=$($SUDO lsof -t -i:1414 || true)
 if [ -n "$PIDS_UDP" ]; then $SUDO kill -9 $PIDS_UDP || true; fi
 
 # SSL
@@ -291,20 +298,68 @@ show_progress 70 "Cloning Repository..."
 # Prevent Git from asking for credentials
 export GIT_TERMINAL_PROMPT=0
 
-if [ ! -d "$INSTALL_DIR" ]; then
-    $SUDO mkdir -p "$INSTALL_DIR"
-    $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
-    git clone "https://github.com/ehsanking/Elaheh-Project.git" "$INSTALL_DIR" >/dev/null 2>&1
-    cd "$INSTALL_DIR"
-else
-    $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
-    git reset --hard >/dev/null 2>&1
-    git pull origin main >/dev/null 2>&1
-fi
+# Retry loop for git clone
+clone_repo() {
+    local max_retries=3
+    local count=0
+    local success=false
+    
+    if [ ! -d "$INSTALL_DIR" ]; then
+        $SUDO mkdir -p "$INSTALL_DIR"
+        $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+        
+        while [ $count -lt $max_retries ]; do
+            echo "   > Attempting clone ($((count+1))/$max_retries)..."
+            if git clone "https://github.com/ehsanking/Elaheh-Project.git" . >/dev/null 2>&1; then
+                success=true
+                break
+            fi
+            count=$((count+1))
+            sleep 2
+        done
+    else
+        $SUDO chown -R $CURRENT_USER:$CURRENT_GROUP "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+        git reset --hard >/dev/null 2>&1
+        
+        while [ $count -lt $max_retries ]; do
+            echo "   > Attempting pull ($((count+1))/$max_retries)..."
+            if git pull origin main >/dev/null 2>&1; then
+                success=true
+                break
+            fi
+            count=$((count+1))
+            sleep 2
+        done
+    fi
+    
+    if [ "$success" = false ]; then
+        echo -e "${RED}Error: Failed to clone/update repository after $max_retries attempts. Check network.${NC}"
+        exit 1
+    fi
+}
+
+clone_repo
 
 show_progress 80 "Installing NPM Packages..."
-npm install --legacy-peer-deps --loglevel error >/dev/null 2>&1 &
+# Retry loop for npm install
+install_npm() {
+    local max_retries=3
+    local count=0
+    
+    while [ $count -lt $max_retries ]; do
+        if npm install --legacy-peer-deps --loglevel error >/dev/null 2>&1; then
+            return 0
+        fi
+        echo "   > NPM Install failed, retrying..."
+        count=$((count+1))
+        sleep 2
+    done
+    return 1
+}
+
+install_npm &
 spinner $!
 
 # Install GenAI SDK if missing
