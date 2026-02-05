@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.9.8 (Fix NPM Hangs & Late Domain Config)
+# Version 1.9.9 (Iran Optimized: Binary Mirrors & No DNS Change)
 # Author: EHSANKiNG
 
 set -e
@@ -15,73 +15,47 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # -----------------------------------------------------------------------------
-# DNS & Network Helper Functions
+# Helper Functions
 # -----------------------------------------------------------------------------
 
-apply_google_dns() {
-    echo -e "${YELLOW}[!] Backing up current DNS and switching to Google DNS (8.8.8.8)...${NC}"
-    if [ -f /etc/resolv.conf ]; then
-        $SUDO cp -L /etc/resolv.conf /tmp/resolv.conf.backup_elaheh
-    fi
-    $SUDO rm -f /etc/resolv.conf
-    echo "nameserver 8.8.8.8" | $SUDO tee /etc/resolv.conf > /dev/null
-    echo "nameserver 8.8.4.4" | $SUDO tee -a /etc/resolv.conf > /dev/null
+# DNS Function REMOVED based on user feedback
 
-    echo -e "   > Restarting Network/DNS Services..."
-    if systemctl list-units --full -all | grep -q "systemd-resolved.service"; then
-        $SUDO systemctl restart systemd-resolved
-    elif systemctl list-units --full -all | grep -q "networking.service"; then
-        $SUDO systemctl restart networking
-    elif systemctl list-units --full -all | grep -q "NetworkManager.service"; then
-        $SUDO systemctl restart NetworkManager
-    fi
-    sleep 3
-    echo -e "${GREEN}[+] Google DNS applied.${NC}"
-}
-
-restore_original_dns() {
-    echo -e "${YELLOW}[!] Restoring original DNS configuration...${NC}"
-    if [ -f /tmp/resolv.conf.backup_elaheh ]; then
-        $SUDO cp /tmp/resolv.conf.backup_elaheh /etc/resolv.conf
-        $SUDO rm -f /tmp/resolv.conf.backup_elaheh
-        if systemctl list-units --full -all | grep -q "systemd-resolved.service"; then
-            $SUDO systemctl restart systemd-resolved
-        elif systemctl list-units --full -all | grep -q "networking.service"; then
-            $SUDO systemctl restart networking
-        fi
-        echo -e "${GREEN}[+] Original DNS restored.${NC}"
-    else
-        echo -e "${RED}[!] Warning: DNS backup not found.${NC}"
-    fi
-}
-
-# Advanced NPM Config for Iran
 configure_iran_npm_environment() {
     echo -e "${YELLOW}[!] Configuring Advanced NPM Mirrors (Binary Bypasses)...${NC}"
     
     # 1. Base Registry (Taobao/NpmMirror is most stable for Iran)
     $SUDO npm config set registry https://registry.npmmirror.com --global 2>/dev/null || true
     
-    # 2. Disable Strict SSL (Fixes random handshake drops)
+    # 2. Disable Strict SSL & Force IPv4 (Fixes random handshake drops & IPv6 timeouts)
     $SUDO npm config set strict-ssl false --global 2>/dev/null || true
+    $SUDO npm config set local-address 0.0.0.0 --global 2>/dev/null || true
     
     # 3. Increase Network Timeouts
     $SUDO npm config set fetch-retry-mintimeout 20000 --global 2>/dev/null || true
     $SUDO npm config set fetch-retry-maxtimeout 120000 --global 2>/dev/null || true
-    $SUDO npm config set fetch-retries 10 --global 2>/dev/null || true
+    $SUDO npm config set fetch-retries 5 --global 2>/dev/null || true
     
-    # 4. CRITICAL: Redirect Binary Downloads to Mirrors
-    # This prevents npm install from trying to download binaries from Github/S3 which usually hangs
+    # 4. CRITICAL: Export Environment Variables for Binary Mirrors
+    # This forces npm to download binaries from mirrors instead of blocked Github/S3 links
+    echo -e "   > Setting binary mirrors env vars..."
+    
+    export SASS_BINARY_SITE=https://npmmirror.com/mirrors/node-sass
+    export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+    export PUPPETEER_DOWNLOAD_HOST=https://npmmirror.com/mirrors/chrome-for-testing
+    export CHROMEDRIVER_CDNURL=https://npmmirror.com/mirrors/chromedriver
+    export SENTRYCLI_CDNURL=https://npmmirror.com/mirrors/sentry-cli
+    export SHARP_BINARY_HOST=https://npmmirror.com/mirrors/sharp
+    export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
+    export PYTHON_MIRROR=https://npmmirror.com/mirrors/python
+    export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
+    
+    # Persist these for the current session and sudo usage
     $SUDO npm config set sass_binary_site https://npmmirror.com/mirrors/node-sass --global 2>/dev/null || true
     $SUDO npm config set electron_mirror https://npmmirror.com/mirrors/electron/ --global 2>/dev/null || true
-    $SUDO npm config set puppeteer_download_host https://npmmirror.com/mirrors/chrome-for-testing --global 2>/dev/null || true
-    $SUDO npm config set chromedriver_cdnurl https://npmmirror.com/mirrors/chromedriver --global 2>/dev/null || true
-    $SUDO npm config set operative_system_selection_disabled true --global 2>/dev/null || true
-    $SUDO npm config set sentrycli_cdnurl https://npmmirror.com/mirrors/sentry-cli --global 2>/dev/null || true
     $SUDO npm config set sharp_binary_host https://npmmirror.com/mirrors/sharp --global 2>/dev/null || true
     $SUDO npm config set sharp_libvips_binary_host https://npmmirror.com/mirrors/sharp-libvips --global 2>/dev/null || true
-    
-    echo -e "${GREEN}[+] NPM Environment Optimized for Restricted Networks.${NC}"
+
+    echo -e "${GREEN}[+] NPM Environment Optimized for Iran (Binary Mirrors Active).${NC}"
 }
 
 repair_apt_system() {
@@ -109,7 +83,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.9.8 (Fix NPM Hangs & Late Domain Config)"
+echo "   Version 1.9.9 (Iran Optimized)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -145,12 +119,10 @@ ROLE="external"
 if [ "$ROLE_CHOICE" -eq 2 ]; then
     ROLE="iran"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
-    apply_google_dns
+    # DNS is NOT changed here anymore.
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
 fi
-
-# NOTE: We do NOT ask for domain here anymore. We wait until installs are done.
 
 # -----------------------------------------------------------------------------
 # System Update & Upgrade
@@ -269,15 +241,27 @@ else
     echo -e "${GREEN}   > ZIP download successful.${NC}"
 fi
 
-echo -e "   > Installing NPM Packages (This may take time)..."
+echo -e "   > Installing NPM Packages..."
 export NODE_OPTIONS="--max-old-space-size=4096"
 
 # Cleanup any previous artifacts
 rm -rf node_modules package-lock.json
 
-# Attempt Install with verbose output reduced, but handling binary mirrors via config
-echo -e "   > Using mirrors: registry.npmmirror.com + Binary Mirrors"
-npm install --legacy-peer-deps --no-audit --no-fund --loglevel warn
+# CRITICAL: Re-export variables here to ensure they persist in this shell context for npm install
+export SASS_BINARY_SITE=https://npmmirror.com/mirrors/node-sass
+export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+export SHARP_BINARY_HOST=https://npmmirror.com/mirrors/sharp
+export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
+
+echo -e "   > Running npm install with Iran-Proof configuration..."
+# Using --legacy-peer-deps to ignore conflicts, --no-audit to skip checks, --loglevel error to reduce noise but show critical fails
+if npm install --legacy-peer-deps --no-audit --no-fund --loglevel warn; then
+    echo -e "${GREEN}   > NPM Install Successful.${NC}"
+else
+    echo -e "${YELLOW}   > Standard install failed. Retrying with network timeout adjustments...${NC}"
+    npm config set fetch-timeout 600000
+    npm install --legacy-peer-deps --no-audit --no-fund
+fi
 
 # Explicitly install GenAI if missed
 npm install @google/genai@latest --legacy-peer-deps --save --no-audit
@@ -288,12 +272,11 @@ npm run build
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
 if [ ! -d "$DIST_PATH" ]; then
     echo -e "${RED}[!] Build Failed! Check memory or logs.${NC}"
-    if [ "$ROLE" == "iran" ]; then restore_original_dns; fi
     exit 1
 fi
 
 # -----------------------------------------------------------------------------
-# DOMAIN & SSL CONFIGURATION (MOVED TO END)
+# DOMAIN & SSL CONFIGURATION
 # -----------------------------------------------------------------------------
 
 echo -e ""
@@ -414,10 +397,6 @@ elif command -v firewall-cmd &> /dev/null; then
     $SUDO firewall-cmd --permanent --add-port=443/tcp >/dev/null 2>&1
     $SUDO firewall-cmd --permanent --add-port=1414/udp >/dev/null 2>&1
     $SUDO firewall-cmd --reload >/dev/null 2>&1
-fi
-
-if [ "$ROLE" == "iran" ]; then
-    restore_original_dns
 fi
 
 echo ""
