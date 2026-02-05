@@ -296,7 +296,7 @@ export const translations: any = {
           siteTitle: 'عنوان سایت',
           logoUrl: 'آدرس لوگو (اختیاری)'
       },
-      role: { title: 'نقش سرور', description: 'نقش این سرور را مشخص کنید.', germany: 'سرور خارج (Upstream)', germanyDesc: 'دیتاسنتر خارجی. تولید کننده کلید اتصال.', iran: 'سرور ایران (Edge)', iranDesc: 'دیتاسنter داخلی. مصرف کننده کلید.', next: 'مرحله بعد' },
+      role: { title: 'نقش سرور', description: 'نقش این سرور را مشخص کنید.', germany: 'سرور خارج (Upstream)', germanyDesc: 'دیتاسنتر خارجی. تولید کننده کلید اتصال.', iran: 'سرور ایران (Edge)', iranDesc: 'دیتاسنتر داخلی. مصرف کننده کلید.', next: 'مرحله بعد' },
       external: {
          genKeyTitle: 'تولید کلید اتصال',
          genKeyDesc: 'این توکن را کپی کنید. برای اتصال سرور ایران به این سرور، باید این توکن را در ویزارد سرور ایران وارد کنید.',
@@ -313,7 +313,6 @@ export const translations: any = {
       },
       finish: { doneButton: 'اتمام نصب' }
     },
-    // ... existing translations ...
     store: {
       title: 'تعرفه‌ها',
       heroTitle: 'دسترسی پایدار به سرویس‌های تحریمی',
@@ -328,7 +327,7 @@ export const translations: any = {
       failTitle: 'تراکنش ناموفق',
       failDesc: 'پرداخت انجام نشد. لطفا مجددا تلاش کنید.',
       retry: 'تلاش مجدد',
-      sanctionedApps: 'پشتیبانی از سرویس‌های',
+      sanctionedApps: 'پشتیبانی از سرویس‌های تحریم‌شده',
       compliance: 'این سامانه منطبق بر قوانین جمهوری اسلامی ایران فعالیت می‌کند.',
       noIllegal: 'دسترسی به محتوای غیراخلاقی، سایت‌های شرط‌بندی و سایت‌های معاند مسدود می‌باشد.',
       buy: 'خرید پکیج'
@@ -486,9 +485,23 @@ export const translations: any = {
         accept: 'می‌پذیرم'
     },
     dashboard: {
-      userBase: 'کاربران', totalUsers: 'کل', liveConnections: 'اتصالات فعال', tunnelEstablished: 'تونل‌ها', totalData: 'ترافیک کل', encryptedPayload: 'ترافیک رمزنگاری', simulatedTraffic: 'نرخ انتقال', networkHealth: 'سلامت شبکه', connectionQuality: 'کیفیت', packetLoss: 'پکت لاس', jitter: 'جیتر', stabilityChart: 'پایداری', systemLogs: 'لاگ سیستم', geoDist: { title: 'توزیع جغرافیایی', users: 'کاربر' }, active: 'فعال', expired: 'منقضی', banned: 'مسدود', used: 'مصرفی', remaining: 'باقی‌مانده', optimalDns: 'DNS بهینه', avgRTT: 'پینگ', tlsActive: 'TLS فعال', tlsInactive: 'TLS غیرفعال', camouflage: { title: 'وضعیت استتار', jobStatus: 'وضعیت', running: 'در حال اجرا', idle: 'آماده‌باش', lastRun: 'آخرین اجرا', never: 'هرگز' }, quality: { Excellent: 'عالی', Good: 'خوب', Fair: 'متوسط', Poor: 'ضعیف' }
+      userBase: 'کاربران', totalUsers: 'کل', liveConnections: 'اتصالات فعال', tunnelEstablished: 'تونل‌ها', totalData: 'ترافیک کل', encryptedPayload: 'ترافیک رمزنگاری شده', simulatedTraffic: 'نرخ انتقال', networkHealth: 'سلامت شبکه', connectionQuality: 'کیفیت', packetLoss: 'پکت لاس', jitter: 'جیتر', stabilityChart: 'پایداری', systemLogs: 'لاگ سیستم', geoDist: { title: 'توزیع جغرافیایی', users: 'کاربر' }, active: 'فعال', expired: 'منقضی', banned: 'مسدود', used: 'مصرفی', remaining: 'باقی‌مانده', optimalDns: 'DNS بهینه', avgRTT: 'پینگ', tlsActive: 'TLS فعال', tlsInactive: 'TLS غیرفعال', camouflage: { title: 'وضعیت استتار', jobStatus: 'وضعیت', running: 'در حال اجرا', idle: 'آماده‌باش', lastRun: 'آخرین اجرا', never: 'هرگز' }, quality: { Excellent: 'عالی', Good: 'خوب', Fair: 'متوسط', Poor: 'ضعیف' }
     },
     users: { title: 'مدیریت کاربران', addUser: 'افزودن کاربر', usage: 'مصرف', expiry: 'انقضا', manageLinks: 'لینک‌ها', addModal: { title: 'کاربر جدید', quota: 'حجم (گیگ)', expiry: 'انقضا (روز)' } },
+    tunnel: {
+      title: 'بهینه‌سازی تونل',
+      description: 'بهترین مسیر ارتباطی بین سرور ایران و خارج را به صورت خودکار یا دستی انتخاب کنید.',
+      autoPilot: 'خلبان خودکار',
+      manual: 'دستی',
+      nextTest: 'تست بعدی تا',
+      disabled: 'تست خودکار غیرفعال است',
+      analyzing: 'در حال تحلیل...',
+      testNow: 'تست مسیرها',
+      failed: 'ناموفق',
+      pinging: 'در حال پینگ...',
+      awaiting: 'در انتظار تست',
+      activate: 'فعالسازی'
+    },
     edgeStatus: { title: 'وضعیت سرور ایران', connectionTitle: 'وضعیت تونل', statusLabel: 'وضعیت', statusConnected: 'متصل', activeTunnel: 'پروتکل فعال' },
     camouflageSite: { title: 'پژوهشکده هوش مصنوعی', navHome: 'خانه', navApi: 'API', navContact: 'تماس', login: 'پرتال', signup: 'درخواست', status: 'وضعیت', statusIdle: 'عملیاتی', statusRunningAI: 'آموزش مدل', statusRunningData: 'همگام‌سازی', statusRunningMedia: 'دریافت مدیا', getStarted: 'شروع پژوهش', footer: '© ۱۴۰۳ تمامی حقوق محفوظ است.' },
     signup: { title: 'ثبت‌نام', description: 'اطلاعات خود را وارد کنید.', successTitle: 'دریافت شد', successMessage: 'درخواست شما بررسی می‌شود.', backButton: 'بازگشت', form: { name: 'نام و نام خانوادگی', email: 'ایمیل', reason: 'مورد مصرف', submit: 'ارسال درخواست' } },
@@ -496,7 +509,7 @@ export const translations: any = {
     view: { dashboard: 'داشبورد', users: 'کاربران', settings: 'تنظیمات' },
     tooltips: {
         dashboard: {
-            userCard: 'خلاصه‌ای از وضعیت کاربران شما.',
+            userCard: 'خلاصه‌ای از وضعیت کاربران شما بر اساس وضعیت فعلی آنها.',
             connectionsCard: 'تعداد کاربرانی که در حال حاضر به تونل متصل هستند و ترافیک رد و بدل می‌کنند.',
             dataCard: 'حجم کل داده‌های منتقل شده از آخرین ری‌استارت سرور و نرخ انتقال لحظه‌ای.',
             trafficChart: 'این نمودار ترافیک واقعی کاربران (آبی) و ترافیک استتار (سبز) را برای نمایش فعالیت شبکه شبیه‌سازی می‌کند.'
