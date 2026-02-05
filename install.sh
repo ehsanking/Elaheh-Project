@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.4.0 (Stable & Direct)
+# Version 1.5.0 (Anti-Sanction Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -15,6 +15,51 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # -----------------------------------------------------------------------------
+# Helper Functions
+# -----------------------------------------------------------------------------
+
+switch_to_iran_mirrors() {
+    echo -e "${YELLOW}[!] Network error detected. Switching to Iranian Mirrors...${NC}"
+    
+    if [ -f /etc/apt/sources.list ]; then
+        # Backup original
+        cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
+        
+        # Replace with ir.archive.ubuntu.com
+        # Using a comprehensive regex to catch archive.ubuntu.com, security.ubuntu.com, nova.clouds..., etc.
+        sed -i 's|http://[a-z0-9.-]*ubuntu.com/ubuntu|http://ir.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+        sed -i 's|https://[a-z0-9.-]*ubuntu.com/ubuntu|http://ir.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+        
+        echo -e "${GREEN}[+] Mirrors switched to ir.archive.ubuntu.com${NC}"
+    fi
+}
+
+run_apt_robust() {
+    local cmd="$1"
+    
+    # Try running directly first
+    set +e
+    eval "$cmd"
+    local status=$?
+    set -e
+    
+    if [ $status -ne 0 ]; then
+        echo -e "${RED}[!] APT command failed (Code: $status).${NC}"
+        
+        # Switch mirrors
+        switch_to_iran_mirrors
+        
+        echo -e "${CYAN}>> Retrying update with new mirrors...${NC}"
+        # Update cache first after switch
+        $SUDO apt-get update -y -qq || echo -e "${YELLOW}[!] Update warning (ignoring)...${NC}"
+        
+        # Retry the original install command
+        echo -e "${CYAN}>> Retrying installation...${NC}"
+        eval "$cmd"
+    fi
+}
+
+# -----------------------------------------------------------------------------
 # Initialization
 # -----------------------------------------------------------------------------
 
@@ -22,7 +67,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.4.0"
+echo "   Version 1.5.0"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -90,9 +135,16 @@ export DEBIAN_FRONTEND=noninteractive
 
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     $SUDO rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
-    $SUDO apt-get update -y -qq
-    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server
+    
+    # Try standard update, fallback to Iran mirrors if failed
+    UPDATE_CMD="$SUDO apt-get update -y -qq"
+    run_apt_robust "$UPDATE_CMD"
+    
+    INSTALL_CMD="$SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server"
+    run_apt_robust "$INSTALL_CMD"
+    
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+    # DNF usually handles mirrors better, but we can add retry logic if needed
     $SUDO dnf upgrade -y --refresh
     if ! rpm -q epel-release >/dev/null 2>&1; then
          $SUDO dnf install -y epel-release
@@ -182,7 +234,7 @@ fi
 $SUDO npm install -g pm2 @angular/cli >/dev/null 2>&1
 
 # -----------------------------------------------------------------------------
-# Project Setup (Fix for git errors)
+# Project Setup
 # -----------------------------------------------------------------------------
 
 INSTALL_DIR="/opt/elaheh-project"
@@ -191,7 +243,7 @@ CURRENT_GROUP=$(id -gn)
 
 echo -e "   > Setting up Project..."
 
-# Force remove directory to ensure fresh clone (Fixes "not a git repository" error)
+# Force remove directory to ensure fresh clone
 if [ -d "$INSTALL_DIR" ]; then
     echo -e "${YELLOW}   > Cleaning existing directory to prevent conflicts...${NC}"
     $SUDO rm -rf "$INSTALL_DIR"
