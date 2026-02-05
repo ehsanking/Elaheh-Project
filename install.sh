@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.1.0 (Stability Edition)
+# Version 1.1.2 (Smart DNS Edition)
 # Author: EHSANKiNG
 
 set -e
@@ -13,6 +13,9 @@ CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Global Flag for Success
+INSTALL_SUCCESS=false
 
 # -----------------------------------------------------------------------------
 # Helper Functions
@@ -47,26 +50,47 @@ show_progress() {
     printf "] %3d%% - %s" "$percent" "$info"
 }
 
-# DNS Restoration Logic
-restore_dns() {
-    if [ -f /etc/resolv.conf.bak ]; then
+# Cleanup & DNS Logic
+cleanup_and_exit() {
+    # Check if this was a clean exit or a crash
+    if [ "$INSTALL_SUCCESS" = true ]; then
         echo ""
-        echo -e "${YELLOW}[!] Restoring original DNS settings...${NC}"
+        echo -e "${GREEN}[+] Installation Finished Successfully.${NC}"
+        echo -e "${YELLOW}[!] Setting DNS to Google (8.8.8.8) as requested...${NC}"
         
-        # Use SUDO if defined
+        # Set Google DNS
         if [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
-             sudo rm -f /etc/resolv.conf
-             sudo mv /etc/resolv.conf.bak /etc/resolv.conf
+             echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+             echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf > /dev/null
         else
-             rm -f /etc/resolv.conf
-             mv /etc/resolv.conf.bak /etc/resolv.conf
+             echo "nameserver 8.8.8.8" > /etc/resolv.conf
+             echo "nameserver 8.8.4.4" >> /etc/resolv.conf
         fi
-        echo -e "${GREEN}[+] Original DNS restored.${NC}"
+        echo -e "${GREEN}[+] DNS set to Google.${NC}"
+        
+        # Remove backup if it exists since we intentionally changed DNS
+        [ -f /etc/resolv.conf.bak ] && rm -f /etc/resolv.conf.bak
+
+    else
+        # If failed or interrupted, restore original DNS
+        if [ -f /etc/resolv.conf.bak ]; then
+            echo ""
+            echo -e "${RED}[!] Script interrupted or failed.${NC}"
+            echo -e "${YELLOW}[!] Restoring original DNS settings...${NC}"
+            
+            if [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+                 sudo rm -f /etc/resolv.conf
+                 sudo mv /etc/resolv.conf.bak /etc/resolv.conf
+            else
+                 rm -f /etc/resolv.conf
+                 mv /etc/resolv.conf.bak /etc/resolv.conf
+            fi
+            echo -e "${GREEN}[+] Original DNS restored.${NC}"
+        fi
     fi
 }
 
-# Ensure DNS is restored on exit (success or failure)
-trap restore_dns EXIT
+trap cleanup_and_exit EXIT
 
 # -----------------------------------------------------------------------------
 # Initialization
@@ -76,7 +100,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.1.0"
+echo "   Version 1.1.2"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -125,25 +149,56 @@ if [ "$ROLE_CHOICE" -eq 2 ]; then
     echo -e "${GREEN}>> Configuring as IRAN (Edge/Main) Server...${NC}"
     
     # -------------------------------------------------------------------------
-    # Anti-Sanction DNS Setup (Iran Only)
+    # Smart DNS Checker (Iran Only)
     # -------------------------------------------------------------------------
-    echo -e "${YELLOW}[!] Configuring Anti-Sanction DNS (Shecan/403) for installation...${NC}"
     
-    # Backup existing
-    if [ -f /etc/resolv.conf ]; then
+    # List provided by user
+    CANDIDATE_DNS=(
+        "172.29.2.100"
+        "178.22.122.100"
+        "10.139.177.21"
+        "185.55.226.26"
+        "172.16.1.100"
+        "194.104.158.48"
+        "85.15.1.15"
+    )
+    
+    echo -e "${YELLOW}[!] Backing up current DNS...${NC}"
+    if [ ! -f /etc/resolv.conf.bak ]; then
         $SUDO cp /etc/resolv.conf /etc/resolv.conf.bak
     fi
-    
-    # Overwrite with specific nameservers requested
-    $SUDO rm -f /etc/resolv.conf
-    cat <<EOF | $SUDO tee /etc/resolv.conf > /dev/null
-nameserver 178.22.122.100
-nameserver 185.51.200.2
-nameserver 172.29.2.100
-nameserver 172.29.0.100
-options timeout:2 attempts:1
-EOF
-    echo -e "${GREEN}[+] Temporary DNS applied successfully.${NC}"
+
+    echo -e "${YELLOW}[?] Searching for a working DNS to access GitHub/NPM...${NC}"
+    FOUND_WORKING_DNS=false
+
+    for dns in "${CANDIDATE_DNS[@]}"; do
+        echo -ne "   > Testing DNS: $dns ... "
+        
+        # Apply DNS
+        echo "nameserver $dns" | $SUDO tee /etc/resolv.conf > /dev/null
+        echo "options timeout:2 attempts:1" | $SUDO tee -a /etc/resolv.conf > /dev/null
+        
+        # Test Connectivity (Try curl first, then ping)
+        if curl --connect-timeout 3 -sI https://github.com >/dev/null 2>&1; then
+            echo -e "${GREEN}CONNECTED (via HTTPS)${NC}"
+            FOUND_WORKING_DNS=true
+            break
+        elif ping -c 1 -W 2 github.com >/dev/null 2>&1; then
+            echo -e "${GREEN}CONNECTED (via Ping)${NC}"
+            FOUND_WORKING_DNS=true
+            break
+        else
+            echo -e "${RED}TIMEOUT${NC}"
+        fi
+    done
+
+    if [ "$FOUND_WORKING_DNS" = false ]; then
+        echo -e "${RED}[!] Warning: None of the provided DNS servers could reach GitHub.${NC}"
+        echo -e "${YELLOW}[!] Attempting fallback to Shecan (178.22.122.100) and hoping for the best...${NC}"
+        echo "nameserver 178.22.122.100" | $SUDO tee /etc/resolv.conf > /dev/null
+    else
+        echo -e "${GREEN}[+] Working DNS locked in. Proceeding with installation.${NC}"
+    fi
 
 else
     ROLE="external"
@@ -221,11 +276,10 @@ if [ "$TOTAL_MEM" -lt 2000000 ]; then
     fi
 fi
 
-# Cleanup Ports (Fixed lsof syntax)
+# Cleanup Ports (Compatible lsof check)
 show_progress 30 "Releasing Ports..."
 $SUDO systemctl stop nginx >/dev/null 2>&1 || true
 for PORT in 80 110; do
-    # Simply check for usage without specific state flags to be compatible with older lsof
     PIDS=$($SUDO lsof -t -i:$PORT || true)
     if [ -n "$PIDS" ]; then $SUDO kill -9 $PIDS || true; fi
 done
@@ -410,6 +464,9 @@ elif command -v firewall-cmd &> /dev/null; then
     $SUDO firewall-cmd --permanent --add-port=1414/udp >/dev/null 2>&1
     $SUDO firewall-cmd --reload >/dev/null 2>&1
 fi
+
+# Set flag for successful installation to trigger DNS switch to Google
+INSTALL_SUCCESS=true
 
 show_progress 100 "Installation Complete!"
 echo ""
