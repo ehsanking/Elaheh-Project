@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.8 (ArvanCloud Mirror Integration)
+# Version 2.1.9 (Node.js Binary Mirror Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -80,7 +80,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.8 (ArvanCloud Mirror Integration)"
+echo "   Version 2.1.9 (Node.js Binary Mirror Fix)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -191,8 +191,10 @@ install_node_iran_standard() {
     NODE_DIST="node-${NODE_VERSION}-linux-x64"
     
     if [[ "$ROLE" == "iran" ]]; then
-        NODE_URL="https://lib.arvancloud.ir/node/${NODE_VERSION}/${NODE_DIST}.tar.xz"
-        echo -e "   > Using ArvanCloud mirror for Node.js download."
+        # CRITICAL FIX: Arvan's node binary mirror is unreliable/has a different path.
+        # npmmirror.com is the most stable and fastest option for binaries in Iran.
+        NODE_URL="https://npmmirror.com/mirrors/node/${NODE_VERSION}/${NODE_DIST}.tar.xz"
+        echo -e "   > Using npmmirror.com for Node.js binary download (fastest mirror for region)."
     else
         NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz"
     fi
