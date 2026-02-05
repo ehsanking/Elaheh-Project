@@ -19,8 +19,106 @@ import { UpstreamDashboardComponent } from './components/upstream-dashboard.comp
   selector: 'app-root',
   standalone: true,
   imports: [LoginComponent, SetupWizardComponent, DashboardComponent, UserManagementComponent, SettingsComponent, CommonModule, StorefrontComponent, SignupComponent, LogoComponent, NotFoundComponent, SubscriptionPageComponent, UpstreamDashboardComponent],
-  templateUrl: './app.component.html',
-  styleUrls: [],
+  template: `
+@if(isSubscriptionView()) {
+    <app-subscription-page></app-subscription-page>
+} @else {
+    <!-- Initial Setup Wizard (Only if not configured) -->
+    @if (!core.isConfigured()) {
+      <div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col items-center pt-10">
+        <app-setup-wizard></app-setup-wizard>
+      </div>
+    } @else {
+      
+      <!-- AUTHENTICATION CHECK (Applies to both roles) -->
+      @if (!core.isAuthenticated() && core.serverRole() === 'external') {
+          <div class="min-h-screen flex items-center justify-center bg-gray-900">
+             <app-login></app-login>
+          </div>
+      } @else {
+
+          <!-- ROLE: UPSTREAM (FOREIGN) SERVER -->
+          @if (core.serverRole() === 'external') {
+              <app-upstream-dashboard></app-upstream-dashboard>
+          } 
+          
+          <!-- ROLE: EDGE (IRAN) SERVER -->
+          @else {
+            
+            <!-- Iran Logic: Public Store -> Login -> Admin Dashboard -->
+            @switch(iranView()) {
+              @case('public') {
+                <app-storefront (loginRequest)="iranView.set('login')"></app-storefront>
+              }
+              @case('login') {
+                <div class="min-h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0 z-50">
+                   <app-login (closeLogin)="iranView.set('public')"></app-login>
+                </div>
+                <app-storefront></app-storefront>
+              }
+              @case('signup') {
+                <app-signup (backToHome)="iranView.set('public')"></app-signup>
+              }
+              @case('status') {
+                <!-- Full Admin Dashboard for Iran Server -->
+                <div class="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans">
+                    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+                      <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                        <div class="w-10 h-10 flex-shrink-0 text-teal-500 dark:text-teal-400">
+                          <app-logo></app-logo>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold tracking-tight text-gray-900 dark:text-white block">ELAHEH</span>
+                            <span class="text-[10px] text-gray-500 uppercase tracking-wider">Edge Panel (Iran)</span>
+                        </div>
+                      </div>
+                      <nav class="flex-1 p-4 space-y-2">
+                        <button (click)="setView('dashboard')" class="w-full text-left rtl:text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors text-gray-600 dark:text-gray-300" [class.bg-teal-100]="currentView() === 'dashboard'" [class.dark:bg-teal-900]="currentView() === 'dashboard'" [class.text-teal-600]="currentView() === 'dashboard'" [class.dark:text-teal-400]="currentView() === 'dashboard'" [class.hover:bg-gray-200]="currentView() !== 'dashboard'" [class.dark:hover:bg-gray-700]="currentView() !== 'dashboard'"><span class="text-xl">📊</span> {{ languageService.translate('nav.dashboard') }}</button>
+                        <button (click)="setView('users')" class="w-full text-left rtl:text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors text-gray-600 dark:text-gray-300" [class.bg-teal-100]="currentView() === 'users'" [class.dark:bg-teal-900]="currentView() === 'users'" [class.text-teal-600]="currentView() === 'users'" [class.dark:text-teal-400]="currentView() === 'users'" [class.hover:bg-gray-200]="currentView() !== 'users'" [class.dark:hover:bg-gray-700]="currentView() !== 'users'"><span class="text-xl">👥</span> {{ languageService.translate('nav.users') }}</button>
+                        <button (click)="setView('settings')" class="w-full text-left rtl:text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors text-gray-600 dark:text-gray-300" [class.bg-teal-100]="currentView() === 'settings'" [class.dark:bg-teal-900]="currentView() === 'settings'" [class.text-teal-600]="currentView() === 'settings'" [class.dark:text-teal-400]="currentView() === 'settings'" [class.hover:bg-gray-200]="currentView() !== 'settings'" [class.dark:hover:bg-gray-700]="currentView() !== 'settings'"><span class="text-xl">⚙️</span> {{ languageService.translate('nav.settings') }}</button>
+                        <div class="mt-8 px-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{{ languageService.translate('nav.system') }}</div>
+                        <div class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400"><div class="flex justify-between mb-1"><span>CPU</span><span>{{ core.serverLoad() }}%</span></div><div class="h-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden"><div class="h-full bg-blue-500" [style.width.%]="core.serverLoad()"></div></div></div>
+                        <div class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400"><div class="flex justify-between mb-1"><span>RAM</span><span>{{ core.memoryUsage() }}%</span></div><div class="h-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden"><div class="h-full bg-purple-500" [style.width.%]="core.memoryUsage()"></div></div></div>
+                      </nav>
+                      <div class="p-4 border-t border-gray-200 dark:border-gray-700"><button (click)="logout()" class="w-full bg-gray-200 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 text-gray-600 dark:text-gray-300 py-2 rounded transition-colors text-sm">{{ languageService.translate('nav.signOut') }}</button></div>
+                    </aside>
+                    <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 relative">
+                      <header class="bg-white/80 dark:bg-gray-800/50 backdrop-blur border-b border-gray-200 dark:border-gray-700 p-4 sticky top-0 z-20 flex justify-between items-center">
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-white capitalize">{{ languageService.translate('view.' + currentView()) }}</h1>
+                        <div class="flex items-center gap-2">
+                           <!-- Theme Toggle -->
+                          <button (click)="core.toggleTheme()" class="flex items-center justify-center w-10 h-10 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white bg-gray-200/50 dark:bg-black/20 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            @if (core.theme() === 'dark') {
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            } @else {
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                            }
+                          </button>
+                          
+                          <div class="flex items-center gap-2 text-xs">
+                            <span class="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded border border-green-200 dark:border-green-900"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>{{ languageService.translate('header.systemSecure') }}</span>
+                          </div>
+                        </div>
+                      </header>
+                      <div class="p-8">
+                        @switch (currentView()) {
+                          @case ('dashboard') { <app-dashboard></app-dashboard> }
+                          @case ('users') { <app-user-management></app-user-management> }
+                          @case ('settings') { <app-settings></app-settings> }
+                        }
+                      </div>
+                    </main>
+                </div>
+              }
+              @default {
+                <app-not-found (goHome)="iranView.set('public')"></app-not-found>
+              }
+            }
+          }
+      }
+    }
+}
+`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
