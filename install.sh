@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.5 (pnpm registry fix for Iran)
+# Version 2.1.6 (pnpm local .npmrc registry fix)
 # Author: EHSANKiNG
 
 set -e
@@ -81,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.5 (pnpm registry fix for Iran)"
+echo "   Version 2.1.6 (pnpm local .npmrc registry fix)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -275,6 +275,12 @@ export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
 
 # Create .npmrc to handle peer dependency issues in modern pnpm
 echo "legacy-peer-deps=true" > .npmrc
+if [[ "$ROLE" == "iran" ]]; then
+    # This is the most robust fix: A project-local .npmrc overrides any user/global config.
+    echo "registry=https://registry.npmmirror.com/" >> .npmrc
+    echo -e "   > Enforcing Iran-friendly mirror via local .npmrc file."
+fi
+
 
 if pnpm install; then
     echo -e "${GREEN}   > pnpm install successful.${NC}"
