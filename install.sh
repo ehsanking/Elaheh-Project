@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.8.0 (Runflare Mirrors Only)
+# Version 1.8.1 (Permission Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -33,7 +33,8 @@ configure_runflare_mirrors() {
     # 1. APT Configuration for Ubuntu/Debian
     if [[ "$OS_ID" == "ubuntu" ]]; then
         echo -e "   > Setting up Ubuntu mirrors..."
-        cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
+        # Fixed: Added $SUDO to cp command
+        $SUDO cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
         
         cat <<EOF | $SUDO tee /etc/apt/sources.list > /dev/null
 deb http://mirror.runflare.com/ubuntu/ ${CODENAME} main restricted universe multiverse
@@ -43,7 +44,8 @@ deb http://mirror.runflare.com/ubuntu/ ${CODENAME}-security main restricted univ
 EOF
     elif [[ "$OS_ID" == "debian" ]]; then
         echo -e "   > Setting up Debian mirrors..."
-        cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
+        # Fixed: Added $SUDO to cp command
+        $SUDO cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
         
         cat <<EOF | $SUDO tee /etc/apt/sources.list > /dev/null
 deb http://mirror.runflare.com/debian/ ${CODENAME} main contrib non-free
@@ -55,7 +57,9 @@ EOF
     # 2. NPM Configuration
     echo -e "   > Setting up NPM mirror..."
     # Set global registry to Runflare
-    npm config set registry https://npm.runflare.com --global 2>/dev/null || true
+    if command -v npm >/dev/null 2>&1; then
+        $SUDO npm config set registry https://npm.runflare.com --global 2>/dev/null || true
+    fi
     
     echo -e "${GREEN}[+] Mirrors configured successfully.${NC}"
 }
@@ -68,7 +72,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.8.0 (Runflare Edition)"
+echo "   Version 1.8.1 (Runflare Edition)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
