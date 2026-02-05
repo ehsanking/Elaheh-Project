@@ -31,6 +31,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   // Filter State
   statusFilter = signal<'all' | 'active' | 'expired' | 'banned'>('all');
+  searchTerm = signal('');
   
   // Creation Mode
   creationMode = signal<'auto' | 'manual'>('auto');
@@ -54,9 +55,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   filteredUsers = computed(() => {
     const filter = this.statusFilter();
+    const term = this.searchTerm().toLowerCase();
     const users = this.core.users();
-    if (filter === 'all') return users;
-    return users.filter(u => u.status === filter);
+
+    return users.filter(u => {
+      const statusMatch = filter === 'all' || u.status === filter;
+      const termMatch = term === '' || u.username.toLowerCase().includes(term);
+      return statusMatch && termMatch;
+    });
   });
 
   ngOnInit(): void { }
@@ -64,6 +70,11 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   setFilter(filter: 'all' | 'active' | 'expired' | 'banned') {
     this.statusFilter.set(filter);
+  }
+
+  handleSearchInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.searchTerm.set(input.value);
   }
 
   toggleAddModal() {
@@ -124,6 +135,13 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       if(this.selectedUser()) {
           this.core.removeLinkFromUser(this.selectedUser()!.id, index);
       }
+  }
+
+  confirmDelete(user: User) {
+    const message = `${this.languageService.translate('common.deleteConfirm')} "${user.username}"?`;
+    if (confirm(message)) {
+      this.core.removeUser(user.id);
+    }
   }
   
   updateConcurrency(userId: string, event: any) {
@@ -187,6 +205,13 @@ export class UserManagementComponent implements OnInit, OnDestroy {
               { name: 'WireGuard iOS', icon: '🍏', url: 'https://itunes.apple.com/us/app/wireguard/id1451685025?ls=1&mt=12' },
               { name: 'WireGuard Android', icon: '🤖', url: 'https://play.google.com/store/apps/details?id=com.wireguard.android' },
               { name: 'WireGuard macOS', icon: '💻', url: 'https://itunes.apple.com/us/app/wireguard/id1441195209?ls=1&mt=8' }
+          ];
+      }
+      
+      if (p.includes('hysteria')) {
+           return [
+              { name: 'NekoBox (Android)', icon: '🤖', url: 'https://github.com/MatsuriDayo/NekoBoxForAndroid/releases' },
+              { name: 'Hiddify', icon: '🚀', url: 'https://hiddify.com/en/download/' },
           ];
       }
 

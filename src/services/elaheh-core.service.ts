@@ -1,4 +1,6 @@
 
+
+
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { GoogleGenAI } from "@google/genai";
 import { DatabaseService } from './database.service';
@@ -218,6 +220,23 @@ export class ElahehCoreService {
   
   users = signal<User[]>([]); 
   userStats = computed(() => { const all = this.users(); return { total: all.length, active: all.filter(u => u.status === 'active').length, expired: all.filter(u => u.status === 'expired').length, banned: all.filter(u => u.status === 'banned').length }; });
+
+  // FIX: Added missing protocolUsage computed property to calculate usage statistics.
+  protocolUsage = computed(() => {
+    const usage: { [protocol: string]: number } = {};
+    this.users().forEach(user => {
+      if (user.status === 'active') {
+        const protocols = new Set<string>();
+        user.links.forEach(link => {
+          protocols.add(link.protocol);
+        });
+        protocols.forEach(protocol => {
+          usage[protocol] = (usage[protocol] || 0) + 1;
+        });
+      }
+    });
+    return usage;
+  });
 
   products = signal<Product[]>([
     { id: 'p1', title: 'پکیج پایه', description: 'مناسب وب‌گردی و تحقیق', price: 90000, durationDays: 30, trafficGb: 30, userLimit: 1, features: ['۳۰ گیگابایت', '۱ کاربر', 'سرعت بالا', 'آی‌پی ثابت'], highlight: false },
@@ -542,7 +561,7 @@ export class ElahehCoreService {
   }
 
   addUser(username: string, quota: number, days: number, concurrentLimit: number, mode: 'auto' | 'manual' = 'auto', manualConfig: any = null): User {
-    const userId = Math.random().toString(36).substring(2);
+    const userId = crypto.randomUUID();
     // User custom domain for links
     const host = this.customDomain() || 'YOUR_DOMAIN.COM';
     const subUrl = `https://${host}/sub/${userId}`;
@@ -564,6 +583,7 @@ export class ElahehCoreService {
             this.checkAndOpenFirewall(510, 'tcp');
             this.checkAndOpenFirewall(1414, 'udp');
             this.checkAndOpenFirewall(53133, 'udp');
+            this.checkAndOpenFirewall(36712, 'udp'); // Hysteria2 Port
 
             // 1. TrustTunnel (AdGuard) - Best Obfuscation
             links.push({
@@ -571,15 +591,22 @@ export class ElahehCoreService {
                 url: `trust://${username}:${uuid}@${sHost}:443?mode=http3&sni=${sHost}#${username}_Trust_${sName}`,
                 quotaGb: null, expiryDate: null, protocol: 'trusttunnel', description: 'Stealth HTTPS/HTTP3'
             });
+            
+            // 2. Hysteria2 - High Performance UDP
+            links.push({
+                alias: `${sName} - Hysteria2`,
+                url: `hysteria2://${password}@${sHost}:36712?sni=${sHost}&insecure=1#${username}_HY2_${sName}`,
+                quotaGb: null, expiryDate: null, protocol: 'hysteria2', description: 'High-Speed UDP / QUIC'
+            });
 
-            // 2. VLESS Reality (TCP-Vision)
+            // 3. VLESS Reality (TCP-Vision)
             links.push({
                 alias: `${sName} - VLESS Reality`,
                 url: `vless://${uuid}@${sHost}:443?type=tcp&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com&flow=xtls-rprx-vision#${username}_VLESS_${sName}`,
                 quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Low Latency / Vision'
             });
 
-            // 3. OpenVPN (Dual Ports: 110, 510)
+            // 4. OpenVPN (Dual Ports: 110, 510)
             links.push({
                 alias: `${sName} - OpenVPN (110)`,
                 url: `https://${sHost}/api/ovpn/connect?port=110&user=${username}&pass=${password}`,
@@ -591,7 +618,7 @@ export class ElahehCoreService {
                 quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 510 (Alt)'
             });
 
-            // 4. WireGuard (Dual Ports: 1414, 53133)
+            // 5. WireGuard (Dual Ports: 1414, 53133)
             links.push({
                 alias: `${sName} - WireGuard (1414)`,
                 url: `wireguard://${sHost}:1414?privateKey=${uuid}&address=10.0.0.2/32`,
@@ -685,7 +712,7 @@ export class ElahehCoreService {
       const config = {
           host: host,
           token: token,
-          ports: [80, 443, 110, 510, 1414, 53133], // Default open ports
+          ports: [80, 443, 110, 510, 1414, 53133, 36712], // Default open ports
           type: 'UPSTREAM',
           version: APP_VERSION
       };
@@ -744,7 +771,7 @@ export class ElahehCoreService {
       // Simulate Connection Handshake
       setTimeout(() => {
           this.edgeNodeStatus.set('connected');
-          this.addLog('SUCCESS', 'Tunnel established! Routing traffic via WireGuard(1414, 53133) & OpenVPN(110, 510).');
+          this.addLog('SUCCESS', 'Tunnel established! Routing traffic via Hysteria2, WireGuard & OpenVPN.');
           this.natStatus.set('Connected');
       }, 2000);
   }

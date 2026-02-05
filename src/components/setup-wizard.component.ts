@@ -65,14 +65,19 @@ import { FormsModule } from '@angular/forms';
                 <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.branding.title') }}</h3>
                 <p class="text-gray-400 mb-8">{{ languageService.translate('wizard.branding.description') }}</p>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-center">
                     <div>
                         <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.siteTitle') }}</label>
                         <input type="text" [(ngModel)]="siteTitle" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="My VPN Service">
                     </div>
-                    <div>
-                        <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.logoUrl') }}</label>
-                        <input type="text" [(ngModel)]="logoUrl" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="https://example.com/logo.png">
+                    <div class="flex items-center gap-4">
+                        @if(logoUrl()) {
+                            <img [src]="logoUrl()" alt="Logo Preview" class="w-16 h-16 rounded-full object-cover border-2 border-gray-600 bg-gray-900 flex-shrink-0">
+                        }
+                        <div class="flex-1">
+                            <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.logoUrl') }}</label>
+                            <input type="file" (change)="onLogoSelected($event)" accept=".png, .jpg, .jpeg, .svg" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-900/30 file:text-teal-400 hover:file:bg-teal-900/50 cursor-pointer">
+                        </div>
                     </div>
                 </div>
 
@@ -251,6 +256,24 @@ export class SetupWizardComponent implements OnInit {
   }
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
+
+  onLogoSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Invalid file type. Please select a PNG, JPG, or SVG file.');
+            (event.target as HTMLInputElement).value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.logoUrl.set(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  }
 
   nextStep() {
     this.currentStep.update(s => s + 1);

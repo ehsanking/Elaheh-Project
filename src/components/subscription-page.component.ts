@@ -1,5 +1,5 @@
 
-import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, OnInit, signal, ChangeDetectionStrategy, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ElahehCoreService, User } from '../services/elaheh-core.service';
 import * as QRCode from 'qrcode';
@@ -13,17 +13,26 @@ import * as QRCode from 'qrcode';
       <div class="max-w-2xl mx-auto">
         @if (user()) {
             <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
-                <div class="bg-teal-900/30 p-6 border-b border-gray-700 flex justify-between items-center">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white mb-2">Welcome, {{ user()?.username }}</h1>
-                        <div class="flex gap-4 text-sm text-gray-300">
-                            <span>Traffic: {{ user()?.usedGb }} / {{ user()?.quotaGb }} GB</span>
-                            <span>Expires: {{ user()?.expiryDays }} Days</span>
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex flex-col md:flex-row gap-6 items-center">
+                        <div class="w-32 h-32 flex-shrink-0">
+                            <canvas id="usageChart"></canvas>
                         </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs text-gray-400 uppercase">Status</div>
-                        <div class="text-green-400 font-bold uppercase">{{ user()?.status }}</div>
+                        <div class="flex-1">
+                            <h1 class="text-2xl font-bold text-white mb-2">Welcome, {{ user()?.username }}</h1>
+                            <div class="flex flex-col md:flex-row gap-x-4 gap-y-1 text-sm text-gray-300">
+                                <span>Traffic: {{ user()?.usedGb | number:'1.2-2' }} / {{ user()?.quotaGb }} GB</span>
+                                <span>Expires: {{ user()?.expiryDays }} Days</span>
+                                <span class="flex items-center gap-2">Status: 
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-bold" 
+                                        [class.bg-green-900]="user()?.status === 'active'" [class.text-green-300]="user()?.status === 'active'"
+                                        [class.bg-yellow-900]="user()?.status === 'expired'" [class.text-yellow-300]="user()?.status === 'expired'"
+                                        [class.bg-red-900]="user()?.status === 'banned'" [class.text-red-300]="user()?.status === 'banned'">
+                                        {{ user()?.status }}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -82,15 +91,15 @@ import * as QRCode from 'qrcode';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SubscriptionPageComponent implements OnInit {
+export class SubscriptionPageComponent implements OnInit, AfterViewInit, OnDestroy {
     core = inject(ElahehCoreService);
     user = signal<User | undefined>(undefined);
     qrData = signal<string | null>(null);
     qrTitle = signal('');
     urlId = signal('');
+    private chart: any;
 
     ngOnInit() {
-        // Extract ID from URL for simulation
         const parts = window.location.href.split('/sub/');
         const id = parts.length > 1 ? parts[1] : '';
         this.urlId.set(id);
@@ -100,9 +109,77 @@ export class SubscriptionPageComponent implements OnInit {
             if (found) this.user.set(found);
         }
         
-        // Fallback for Demo: If no ID but users exist, show first user to demonstrate UI
         if (!this.user() && this.core.users().length > 0) {
             this.user.set(this.core.users()[0]);
+        }
+    }
+
+    ngAfterViewInit(): void {
+        if (this.user()) {
+            this.loadChartScript();
+        }
+    }
+    
+    ngOnDestroy(): void {
+        if (this.chart) {
+            this.chart.destroy();
+        }
+    }
+
+    loadChartScript() {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        script.onload = () => this.initChart();
+        if((window as any).Chart) {
+            this.initChart();
+        } else {
+            document.head.appendChild(script);
+        }
+    }
+
+    initChart() {
+        const Chart = (window as any).Chart;
+        if (!Chart || !this.user()) return;
+        
+        const ctx = (document.getElementById('usageChart') as HTMLCanvasElement)?.getContext('2d');
+        if (ctx) {
+            const userData = this.user()!;
+            const used = userData.usedGb;
+            const quota = userData.quotaGb;
+            const remaining = Math.max(0, quota - used);
+            const usedPercent = (used / quota * 100).toFixed(1);
+
+            const data = {
+                labels: ['Used', 'Remaining'],
+                datasets: [{
+                    data: [used, remaining],
+                    backgroundColor: ['#2dd4bf', '#374151'], // Teal, Gray
+                    borderColor: '#1f2937',
+                    borderWidth: 4,
+                    hoverOffset: 4
+                }]
+            };
+
+            this.chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                        title: {
+                            display: true,
+                            text: `${usedPercent}%`,
+                            position: 'bottom',
+                            color: '#e5e7eb',
+                            font: { size: 24, weight: 'bold', family: 'monospace' }
+                        }
+                    }
+                }
+            });
         }
     }
 

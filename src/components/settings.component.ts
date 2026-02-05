@@ -17,11 +17,12 @@ import { NatTraversalComponent } from './nat-traversal.component';
 import { SshSettingsComponent } from './ssh-settings.component';
 import { EmailService } from '../services/email.service';
 import { TelegramBotComponent } from './telegram-bot.component';
+import { TwoFactorAuthComponent } from './two-factor-auth.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

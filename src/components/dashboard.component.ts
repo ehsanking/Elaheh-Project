@@ -1,6 +1,6 @@
 
 import { Component, inject, OnInit, OnDestroy, signal, effect, ChangeDetectionStrategy, computed, untracked } from '@angular/core';
-import { ElahehCoreService } from '../services/elaheh-core.service';
+import { ElahehCoreService, LogEntry } from '../services/elaheh-core.service';
 import { CommonModule } from '@angular/common';
 import { LanguageService } from '../services/language.service';
 
@@ -23,6 +23,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   private timer = signal(Date.now());
   private timerInterval: any;
+  
+  // AI Analysis State
+  isAnalyzingLogs = signal(false);
+  showAiAnalysisModal = signal(false);
+  aiAnalysisResult = signal('');
+  aiAnalysisError = signal('');
 
   lastRun = computed(() => {
     const now = this.timer();
@@ -107,6 +113,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   });
 
+  sortedProtocols = computed(() => {
+      const usage = this.core.protocolUsage();
+      return Object.entries(usage).sort((a, b) => b[1] - a[1]);
+  });
+
   constructor() {
     effect(() => {
       // Re-render charts on theme change
@@ -141,7 +152,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Dynamically load Chart.js if not present
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
     script.onload = () => this.initCharts();
@@ -159,13 +169,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.chart) this.chart.destroy();
     if (this.stabilityChart) this.stabilityChart.destroy();
   }
+  
+  async analyzeLogs() {
+      this.isAnalyzingLogs.set(true);
+      this.showAiAnalysisModal.set(true);
+      this.aiAnalysisResult.set('');
+      this.aiAnalysisError.set('');
+
+      try {
+          const result = await this.core.analyzeLogsWithAi(this.core.logs());
+          this.aiAnalysisResult.set(result);
+      } catch (e) {
+          console.error(e);
+          this.aiAnalysisError.set(this.languageService.translate('dashboard.ai.analysisError'));
+      } finally {
+          this.isAnalyzingLogs.set(false);
+      }
+  }
 
   private initCharts(): void {
     const Chart = (window as any).Chart;
     if (!Chart) return;
     
     // 1. Throughput Chart
-    const ctx = (document.getElementById('trafficChart') as HTMLCanvasElement)?.getContext('d');
+    const ctx = (document.getElementById('trafficChart') as HTMLCanvasElement)?.getContext('2d');
     if (ctx) {
         const labels = Array.from({ length: 30 }, (_, i) => `${(30 - i) * 2}s`);
         const data = {
@@ -199,7 +226,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     // 2. Stability Chart
-    const ctx2 = (document.getElementById('stabilityChart') as HTMLCanvasElement)?.getContext('d');
+    const ctx2 = (document.getElementById('stabilityChart') as HTMLCanvasElement)?.getContext('2d');
     if (ctx2) {
         const labels = Array.from({ length: 30 }, (_, i) => ``);
         const data2 = {
@@ -238,7 +265,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private updateChartData(transferRate: number, jobStatus: 'IDLE' | 'RUNNING'): void {
     if (!this.chart) return;
     
-    // We update the data structure immediately but rely on Chart.js to render
     const realTraffic = transferRate + (Math.random() * 20 - 10);
     this.chart.data.datasets[0].data.shift();
     this.chart.data.datasets[0].data.push(Math.max(0, realTraffic));
@@ -250,7 +276,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.chart.data.datasets[1].data.shift();
     this.chart.data.datasets[1].data.push(camouflageTraffic);
 
-    // Defer update to ensure no synchronous layout thrashing affects NG check
     requestAnimationFrame(() => {
         if(this.chart) this.chart.update('quiet');
     });

@@ -73,6 +73,28 @@ import { LogoComponent } from './logo.component';
             </div>
           </div>
         }
+        @case ('tfa_input') {
+            <div>
+                <h2 class="text-2xl font-bold text-center text-white mb-2">{{ languageService.translate('login.tfaTitle') }}</h2>
+                <p class="text-center text-gray-400 text-sm mb-6">{{ languageService.translate('login.tfaDescription') }}</p>
+                <div class="space-y-4">
+                    <div>
+                        <input type="text" [(ngModel)]="tfaCode" 
+                        class="w-full bg-gray-100 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-gray-900 dark:text-white text-center text-2xl tracking-[0.5em] focus:border-teal-500 dark:focus:border-teal-400 focus:ring-1 focus:ring-teal-500 dark:focus:ring-teal-400 outline-none transition-all"
+                        [placeholder]="languageService.translate('login.tfaPlaceholder')" maxlength="6">
+                    </div>
+                    @if (errorMsg()) {
+                        <div class="text-red-600 dark:text-red-400 text-sm text-center">{{ errorMsg() }}</div>
+                    }
+                    <button (click)="verifyTfa()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition-all">
+                        {{ languageService.translate('login.verify') }}
+                    </button>
+                </div>
+                <div class="mt-6 text-center">
+                    <button (click)="setView('login')" class="text-sm text-gray-400 hover:underline">{{ languageService.translate('login.forgotPassword.backToLogin') }}</button>
+                </div>
+            </div>
+        }
         @case ('reset') {
           <div>
             <h2 class="text-2xl font-bold text-center text-white mb-2">{{ languageService.translate('login.forgotPassword.title') }}</h2>
@@ -128,8 +150,9 @@ export class LoginComponent implements AfterViewInit {
   captchaInput = signal('');
   errorMsg = signal('');
   resetEmail = signal('');
+  tfaCode = signal('');
 
-  view = signal<'login' | 'reset' | 'reset_sent'>('login');
+  view = signal<'login' | 'tfa_input' | 'reset' | 'reset_sent'>('login');
 
   @Output() closeLogin = new EventEmitter<void>();
 
@@ -189,6 +212,7 @@ export class LoginComponent implements AfterViewInit {
   }
 
   attemptLogin() {
+    this.errorMsg.set('');
     if (this.captchaInput().toUpperCase() !== this.captchaText.toUpperCase()) {
       this.errorMsg.set('Invalid CAPTCHA.');
       this.refreshCaptcha();
@@ -196,22 +220,45 @@ export class LoginComponent implements AfterViewInit {
       return;
     }
 
-    const success = this.core.login(this.username(), this.password());
-    if (!success) {
-      this.errorMsg.set(this.languageService.translate('login.error'));
-      this.password.set('');
-      this.captchaInput.set('');
-      this.refreshCaptcha();
+    const credentialsValid = this.username() === this.core.adminUsername() && this.password() === this.core.adminPassword();
+
+    if (credentialsValid) {
+        if (this.core.is2faEnabled()) {
+            this.setView('tfa_input');
+        } else {
+            this.core.isAuthenticated.set(true);
+        }
+    } else {
+        this.errorMsg.set(this.languageService.translate('login.error'));
+        this.password.set('');
+        this.captchaInput.set('');
+        this.refreshCaptcha();
     }
   }
+  
+  verifyTfa() {
+      // This is a simulation. A real implementation would use a library like `otplib`.
+      // For this demo, any 6-digit code is considered valid.
+      if (this.tfaCode().length === 6 && /^\d+$/.test(this.tfaCode())) {
+          this.core.isAuthenticated.set(true);
+      } else {
+          this.errorMsg.set('Invalid 2FA code.');
+          this.tfaCode.set('');
+      }
+  }
 
-  setView(newView: 'login' | 'reset' | 'reset_sent') {
+  setView(newView: 'login' | 'tfa_input' | 'reset' | 'reset_sent') {
     this.errorMsg.set('');
     this.password.set('');
+    this.captchaInput.set('');
+    this.tfaCode.set('');
     if (newView === 'login') {
       this.resetEmail.set('');
     }
     this.view.set(newView);
+    if(newView === 'login') {
+        setTimeout(() => this.refreshCaptcha(), 0);
+    }
   }
 
   requestPasswordReset() {

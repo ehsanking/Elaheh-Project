@@ -7,10 +7,10 @@
     </div>
     <div class="flex border-b border-gray-700 overflow-x-auto gap-1">
       <button (click)="setTab('general')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'general'" [class.text-white]="currentTab() === 'general'" [class.border-transparent]="currentTab() !== 'general'" [class.text-gray-400]="currentTab() !== 'general'">{{ languageService.translate('settings.tabs.general') }}</button>
+      <button (click)="setTab('security')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-red-500]="currentTab() === 'security'" [class.text-white]="currentTab() === 'security'" [class.border-transparent]="currentTab() !== 'security'" [class.text-gray-400]="currentTab() !== 'security'">{{ languageService.translate('settings.tabs.security') }}</button>
       <button (click)="setTab('branding')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-pink-500]="currentTab() === 'branding'" [class.text-white]="currentTab() === 'branding'" [class.border-transparent]="currentTab() !== 'branding'" [class.text-gray-400]="currentTab() !== 'branding'">{{ languageService.translate('settings.tabs.branding') }}</button>
       <button (click)="setTab('store')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-yellow-500]="currentTab() === 'store'" [class.text-white]="currentTab() === 'store'" [class.border-transparent]="currentTab() !== 'store'" [class.text-gray-400]="currentTab() !== 'store'">{{ languageService.translate('settings.tabs.store') }}</button>
       <button (click)="setTab('network')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'network'" [class.text-white]="currentTab() === 'network'" [class.border-transparent]="currentTab() !== 'network'" [class.text-gray-400]="currentTab() !== 'network'">{{ languageService.translate('settings.tabs.network') }}</button>
-      <button (click)="setTab('security')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'security'" [class.text-white]="currentTab() === 'security'" [class.border-transparent]="currentTab() !== 'security'" [class.text-gray-400]="currentTab() !== 'security'">{{ languageService.translate('settings.tabs.security') }}</button>
       <button (click)="setTab('integrations')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-indigo-500]="currentTab() === 'integrations'" [class.text-white]="currentTab() === 'integrations'" [class.border-transparent]="currentTab() !== 'integrations'" [class.text-gray-400]="currentTab() !== 'integrations'">{{ languageService.translate('settings.tabs.integrations') }}</button>
     </div>
   </div>
@@ -39,6 +39,12 @@
               <button type="submit" [disabled]="adminForm.invalid" class="mt-4 bg-teal-600 text-white px-4 py-2 rounded w-full">{{ languageService.translate('common.saveChanges') }}</button>
             </form>
         </div>
+      }
+      @case ('security') {
+          <app-two-factor-auth></app-two-factor-auth>
+          <app-camouflage-settings></app-camouflage-settings>
+          <app-application-camouflage></app-application-camouflage>
+          <app-doh-settings></app-doh-settings>
       }
       @case ('branding') {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -175,13 +181,6 @@
             <app-nat-traversal></app-nat-traversal>
             <app-iap-settings></app-iap-settings>
             <app-ssh-settings></app-ssh-settings>
-        </div>
-      }
-      @case ('security') {
-        <div class="space-y-8">
-          <app-camouflage-settings></app-camouflage-settings>
-          <app-application-camouflage></app-application-camouflage>
-          <app-doh-settings></app-doh-settings>
         </div>
       }
       @case ('integrations') {

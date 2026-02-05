@@ -8,7 +8,8 @@ export const translations: any = {
       currency: 'Currency', duration: 'Duration', traffic: 'Traffic', buy: 'Purchase', 
       email: 'Email', pay: 'Pay Now', gateway: 'Gateway', subLink: 'Subscription Link', 
       copy: 'Copy', copied: 'Copied!', telegram: 'Telegram ID', trackId: 'Tracking ID',
-      back: 'Back', close: 'Close', next: 'Next', download: 'Download', recommendedApps: 'Recommended Apps'
+      back: 'Back', close: 'Close', next: 'Next', download: 'Download', recommendedApps: 'Recommended Apps',
+      deleteConfirm: 'Are you sure you want to delete user'
     },
     nav: { 
       signOut: 'Sign Out', dashboard: 'Dashboard', users: 'Users', 
@@ -21,7 +22,7 @@ export const translations: any = {
           title: 'Brand Identity',
           description: 'Configure the look and feel of your panel.',
           siteTitle: 'Site Title',
-          logoUrl: 'Logo URL (Optional)'
+          logoUrl: 'Upload Logo (Optional)'
       },
       role: { title: 'Server Role', description: 'Select the role of this server.', germany: 'Upstream (Foreign)', germanyDesc: 'Located outside Iran. Generates connection keys.', iran: 'Edge (Iran)', iranDesc: 'Located inside Iran. Connects to Upstream.', next: 'Next Step' },
       external: {
@@ -39,6 +40,10 @@ export const translations: any = {
          verified: 'Upstream Verified'
       },
       finish: { doneButton: 'Finish Installation' }
+    },
+    upstream: {
+        donateButton: 'Donate Server (Share Key)',
+        donateDesc: 'This opens your device\'s share dialog to send the key to someone in a restricted region.'
     },
     store: {
       title: 'Service Plans',
@@ -59,13 +64,31 @@ export const translations: any = {
       noIllegal: 'Access to immoral content, gambling, and anti-state media is strictly blocked.',
       buy: 'Purchase Plan'
     },
-    // ... Settings translations ...
     settings: {
         title: 'System Settings',
         tabs: { general: 'General', store: 'Store & Plans', branding: 'Branding', network: 'Network', security: 'Security', installer: 'Installer', integrations: 'Integrations' },
         credentials: { title: 'Admin Credentials', newUser: 'New Username', newPass: 'New Password', success: 'Credentials updated successfully.' },
         branding: { title: 'Branding', name: 'Brand Name', logo: 'Logo URL / Upload', preview: 'Preview', saveSuccess: 'Branding updated.' },
         storeMgmt: { title: 'Store Configuration', currency: 'Currency Unit', gateways: 'Payment Gateways', merchant: 'Merchant ID / Token', packages: 'Service Packages', edit: 'Edit', save: 'Save' },
+        security: {
+            tfa: {
+                title: 'Two-Factor Authentication (2FA)',
+                description: 'Add an extra layer of security to your admin account using a time-based one-time password (TOTP) application.',
+                enable: 'Enable 2FA',
+                disable: 'Disable 2FA',
+                step1: '1. Scan this QR Code',
+                step1Desc: 'Scan this image with an authenticator app like Google Authenticator, Authy, or 1Password.',
+                step2: '2. Or Enter Key Manually',
+                step2Desc: 'If you cannot scan the QR code, you can manually enter this secret key into your authenticator app.',
+                step3: '3. Verify Code',
+                step3Desc: 'Enter the 6-digit code from your app to confirm setup.',
+                verifyButton: 'Verify & Activate',
+                verifying: 'Verifying...',
+                success: '2FA enabled successfully!',
+                fail: 'Invalid code. Please try again.',
+                enterCode: 'Enter 6-digit code'
+            }
+        },
         telegram: {
             title: 'Telegram Bot',
             description: 'Manage users and send notifications via Telegram.',
@@ -201,6 +224,10 @@ export const translations: any = {
       error: 'Invalid credentials.',
       authenticate: 'Login',
       statusLabel: 'System Status',
+      tfaTitle: 'Two-Factor Authentication',
+      tfaDescription: 'Enter the 6-digit code from your authenticator app.',
+      tfaPlaceholder: '123456',
+      verify: 'Verify',
       forgotPassword: { title: 'Password Recovery', description: 'Enter your admin email to receive a reset link.', forgotLink: 'Forgot Password?', sendButton: 'Send Reset Link', backToLogin: 'Back to Login', successTitle: 'Link Sent', successMessage: 'A password reset link has been sent to your email.' }
     },
     notFound: { title: '404', desc: 'Page not found.', home: 'Return Home' },
@@ -214,9 +241,27 @@ export const translations: any = {
         accept: 'I Accept'
     },
     dashboard: {
-      userBase: 'Users', totalUsers: 'Total', liveConnections: 'Active Connections', tunnelEstablished: 'Tunnels', totalData: 'Data Usage', encryptedPayload: 'Encrypted Traffic', simulatedTraffic: 'Throughput', networkHealth: 'Health', connectionQuality: 'Quality', packetLoss: 'Packet Loss', jitter: 'Jitter', stabilityChart: 'Stability', systemLogs: 'System Logs', geoDist: { title: 'Geo Distribution', users: 'users' }, active: 'Active', expired: 'Expired', banned: 'Banned', used: 'Used', remaining: 'Free', optimalDns: 'Optimal DNS', avgRTT: 'Avg RTT', tlsActive: 'TLS 1.3', tlsInactive: 'No TLS', camouflage: { title: 'Camouflage', jobStatus: 'Status', running: 'Running', idle: 'Idle', lastRun: 'Last Run', never: 'Never' }, quality: { Excellent: 'Excellent', Good: 'Good', Fair: 'Fair', Poor: 'Poor' }
+      userBase: 'Users', totalUsers: 'Total', liveConnections: 'Active Connections', tunnelEstablished: 'Tunnels', totalData: 'Data Usage', encryptedPayload: 'Encrypted Traffic', simulatedTraffic: 'Throughput', networkHealth: 'Health', connectionQuality: 'Quality', packetLoss: 'Packet Loss', jitter: 'Jitter', stabilityChart: 'Stability', systemLogs: 'System Logs', geoDist: { title: 'Geo Distribution', users: 'users' }, active: 'Active', expired: 'Expired', banned: 'Banned', used: 'Used', remaining: 'Free', optimalDns: 'Optimal DNS', avgRTT: 'Avg RTT', tlsActive: 'TLS 1.3', tlsInactive: 'No TLS', camouflage: { title: 'Camouflage', jobStatus: 'Status', running: 'Running', idle: 'Idle', lastRun: 'Last Run', never: 'Never' }, quality: { Excellent: 'Excellent', Good: 'Good', Fair: 'Fair', Poor: 'Poor' },
+      ai: {
+          analyze: 'Analyze with AI',
+          analyzing: 'Analyzing...',
+          analysisTitle: 'AI Log Analysis',
+          analysisError: 'Could not get analysis from AI.'
+      },
+      protocols: {
+          title: 'Protocol Usage'
+      }
     },
-    users: { title: 'User Management', addUser: 'Add User', usage: 'Usage', expiry: 'Expiry', manageLinks: 'Links', addModal: { title: 'Create User', quota: 'Quota (GB)', expiry: 'Expiry (Days)' } },
+    users: { 
+        title: 'User Management', addUser: 'Add User', usage: 'Usage', expiry: 'Expiry', manageLinks: 'Links', addModal: { title: 'Create User', quota: 'Quota (GB)', expiry: 'Expiry (Days)' },
+        bulk: {
+            actions: 'Bulk Actions',
+            delete: 'Delete Selected',
+            extend: 'Extend Expiry',
+            addQuota: 'Add Quota',
+            selected: 'selected'
+        }
+    },
     edgeStatus: { title: 'Edge Node Status', connectionTitle: 'Tunnel Status', statusLabel: 'Status', statusConnected: 'Connected', activeTunnel: 'Active Protocol' },
     camouflageSite: { title: 'AI Research Lab', navHome: 'Home', navApi: 'API', navContact: 'Contact', login: 'Portal', signup: 'Request Access', status: 'System Status', statusIdle: 'Operational', statusRunningAI: 'Training Models', statusRunningData: 'Syncing Data', statusRunningMedia: 'Fetching Assets', getStarted: 'Start Research', footer: '© 2024 AI Research Institute. All rights reserved.' },
     signup: { title: 'Request Access', description: 'Submit your details for review.', successTitle: 'Received', successMessage: 'Your request is under review.', backButton: 'Back', form: { name: 'Full Name', email: 'Email Address', reason: 'Usage Reason', submit: 'Submit Request' } },
@@ -277,7 +322,8 @@ export const translations: any = {
       close: 'بستن',
       next: 'مرحله بعد',
       download: 'دانلود برنامه',
-      recommendedApps: 'برنامه‌های پیشنهادی'
+      recommendedApps: 'برنامه‌های پیشنهادی',
+      deleteConfirm: 'آیا از حذف کاربر مطمئن هستید'
     },
     nav: {
       signOut: 'خروج',
@@ -294,7 +340,7 @@ export const translations: any = {
           title: 'هویت بصری',
           description: 'عنوان و لوگوی پنل را تنظیم کنید.',
           siteTitle: 'عنوان سایت',
-          logoUrl: 'آدرس لوگو (اختیاری)'
+          logoUrl: 'آپلود لوگو (اختیاری)'
       },
       role: { title: 'نقش سرور', description: 'نقش این سرور را مشخص کنید.', germany: 'سرور خارج (Upstream)', germanyDesc: 'دیتاسنتر خارجی. تولید کننده کلید اتصال.', iran: 'سرور ایران (Edge)', iranDesc: 'دیتاسنتر داخلی. مصرف کننده کلید.', next: 'مرحله بعد' },
       external: {
@@ -312,6 +358,10 @@ export const translations: any = {
          verified: 'ارتباط با سرور خارج برقرار شد'
       },
       finish: { doneButton: 'اتمام نصب' }
+    },
+    upstream: {
+        donateButton: 'اهدای سرور (اشتراک‌گذاری کلید)',
+        donateDesc: 'با این دکمه می‌توانید کلید اتصال را از طریق منوی اشتراک‌گذاری دستگاه خود برای دیگران ارسال کنید.'
     },
     store: {
       title: 'تعرفه‌ها',
@@ -337,6 +387,25 @@ export const translations: any = {
       tabs: { general: 'عمومی', store: 'فروشگاه', branding: 'برندینگ', network: 'شبکه', security: 'امنیت', installer: 'نصاب', integrations: 'یکپارچه‌سازی' },
       credentials: { title: 'اطلاعات مدیر', newUser: 'نام کاربری جدید', newPass: 'رمز عبور جدید', success: 'ذخیره شد.' },
       branding: { title: 'شخصی‌سازی', name: 'نام برند', logo: 'آدرس لوگو', preview: 'پیش‌نمایش', saveSuccess: 'برندینگ ذخیره شد.' },
+      security: {
+            tfa: {
+                title: 'احراز هویت دو مرحله‌ای (2FA)',
+                description: 'با استفاده از یک برنامه احراز هویت (مانند Google Authenticator)، یک لایه امنیتی اضافی به حساب کاربری خود اضافه کنید.',
+                enable: 'فعال‌سازی 2FA',
+                disable: 'غیرفعال‌سازی 2FA',
+                step1: '۱. اسکن کد QR',
+                step1Desc: 'این تصویر را با برنامه احراز هویت خود اسکن کنید.',
+                step2: '۲. یا ورود دستی کلید',
+                step2Desc: 'اگر نمی‌توانید کد را اسکن کنید، این کلید را به صورت دستی در برنامه وارد کنید.',
+                step3: '۳. تایید کد',
+                step3Desc: 'کد ۶ رقمی از برنامه خود را برای تایید نهایی وارد کنید.',
+                verifyButton: 'تایید و فعال‌سازی',
+                verifying: 'در حال بررسی...',
+                success: 'احراز هویت دو مرحله‌ای با موفقیت فعال شد!',
+                fail: 'کد نامعتبر است. لطفا دوباره تلاش کنید.',
+                enterCode: 'کد ۶ رقمی را وارد کنید'
+            }
+      },
       telegram: {
           title: 'ربات تلگرام',
           description: 'مدیریت کاربران و ارسال نوتیفیکیشن از طریق تلگرام.',
@@ -472,6 +541,10 @@ export const translations: any = {
       error: 'اطلاعات اشتباه است.',
       authenticate: 'ورود به پنل',
       statusLabel: 'وضعیت سامانه',
+      tfaTitle: 'احراز هویت دو مرحله‌ای',
+      tfaDescription: 'کد ۶ رقمی را از برنامه احراز هویت خود وارد کنید.',
+      tfaPlaceholder: '۱۲۳۴۵۶',
+      verify: 'تایید',
       forgotPassword: { title: 'بازیابی رمز عبور', description: 'ایمیل ادمین را وارد کنید تا لینک بازیابی ارسال شود.', forgotLink: 'فراموشی رمز؟', sendButton: 'ارسال لینک', backToLogin: 'بازگشت به ورود', successTitle: 'لینک ارسال شد', successMessage: 'لینک بازیابی رمز عبور به ایمیل شما ارسال شد.' }
     },
     notFound: { title: '۴۰۴', desc: 'صفحه یافت نشد.', home: 'خانه' },
@@ -485,9 +558,27 @@ export const translations: any = {
         accept: 'می‌پذیرم'
     },
     dashboard: {
-      userBase: 'کاربران', totalUsers: 'کل', liveConnections: 'اتصالات فعال', tunnelEstablished: 'تونل‌ها', totalData: 'ترافیک کل', encryptedPayload: 'ترافیک رمزنگاری شده', simulatedTraffic: 'نرخ انتقال', networkHealth: 'سلامت شبکه', connectionQuality: 'کیفیت', packetLoss: 'پکت لاس', jitter: 'جیتر', stabilityChart: 'پایداری', systemLogs: 'لاگ سیستم', geoDist: { title: 'توزیع جغرافیایی', users: 'کاربر' }, active: 'فعال', expired: 'منقضی', banned: 'مسدود', used: 'مصرفی', remaining: 'باقی‌مانده', optimalDns: 'DNS بهینه', avgRTT: 'پینگ', tlsActive: 'TLS فعال', tlsInactive: 'TLS غیرفعال', camouflage: { title: 'وضعیت استتار', jobStatus: 'وضعیت', running: 'در حال اجرا', idle: 'آماده‌باش', lastRun: 'آخرین اجرا', never: 'هرگز' }, quality: { Excellent: 'عالی', Good: 'خوب', Fair: 'متوسط', Poor: 'ضعیف' }
+      userBase: 'کاربران', totalUsers: 'کل', liveConnections: 'اتصالات فعال', tunnelEstablished: 'تونل‌ها', totalData: 'ترافیک کل', encryptedPayload: 'ترافیک رمزنگاری شده', simulatedTraffic: 'نرخ انتقال', networkHealth: 'سلامت شبکه', connectionQuality: 'کیفیت', packetLoss: 'پکت لاس', jitter: 'جیتر', stabilityChart: 'پایداری', systemLogs: 'لاگ سیستم', geoDist: { title: 'توزیع جغرافیایی', users: 'کاربر' }, active: 'فعال', expired: 'منقضی', banned: 'مسدود', used: 'مصرفی', remaining: 'باقی‌مانده', optimalDns: 'DNS بهینه', avgRTT: 'پینگ', tlsActive: 'TLS فعال', tlsInactive: 'TLS غیرفعال', camouflage: { title: 'وضعیت استتار', jobStatus: 'وضعیت', running: 'در حال اجرا', idle: 'آماده‌باش', lastRun: 'آخرین اجرا', never: 'هرگز' }, quality: { Excellent: 'عالی', Good: 'خوب', Fair: 'متوسط', Poor: 'ضعیف' },
+      ai: {
+          analyze: 'تحلیل با هوش مصنوعی',
+          analyzing: 'در حال تحلیل...',
+          analysisTitle: 'تحلیل لاگ‌ها با AI',
+          analysisError: 'دریافت تحلیل از هوش مصنوعی ناموفق بود.'
+      },
+      protocols: {
+          title: 'آمار مصرف پروتکل‌ها'
+      }
     },
-    users: { title: 'مدیریت کاربران', addUser: 'افزودن کاربر', usage: 'مصرف', expiry: 'انقضا', manageLinks: 'لینک‌ها', addModal: { title: 'کاربر جدید', quota: 'حجم (گیگ)', expiry: 'انقضا (روز)' } },
+    users: { 
+        title: 'مدیریت کاربران', addUser: 'افزودن کاربر', usage: 'مصرف', expiry: 'انقضا', manageLinks: 'لینک‌ها', addModal: { title: 'کاربر جدید', quota: 'حجم (گیگ)', expiry: 'انقضا (روز)' },
+        bulk: {
+            actions: 'عملیات گروهی',
+            delete: 'حذف انتخاب شده‌ها',
+            extend: 'تمدید روز',
+            addQuota: 'افزایش حجم',
+            selected: 'مورد انتخاب شده'
+        }
+    },
     tunnel: {
       title: 'بهینه‌سازی تونل',
       description: 'بهترین مسیر ارتباطی بین سرور ایران و خارج را به صورت خودکار یا دستی انتخاب کنید.',

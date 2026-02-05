@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { LogoComponent } from './logo.component';
+import { LanguageService } from '../services/language.service';
 
 @Component({
   selector: 'app-upstream-dashboard',
@@ -25,55 +26,22 @@ import { LogoComponent } from './logo.component';
             <div class="bg-gray-800 rounded-xl border border-gray-700 p-8 shadow-2xl mb-8 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 to-blue-500"></div>
                 
-                @if(!isDonationMode()) {
-                    <h2 class="text-xl font-bold text-teal-400 mb-2">Connection Token</h2>
-                    <p class="text-sm text-gray-400 mb-6">Copy this token and paste it into the settings of your Iran server to establish the secure tunnel.</p>
-                    
-                    <div class="relative bg-black/50 p-4 rounded border border-gray-600 font-mono text-xs text-green-400 break-all shadow-inner">
-                        {{ core.upstreamToken() }}
-                        <button (click)="copyToken()" class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs transition-colors">
-                            {{ copied() ? 'Copied!' : 'Copy' }}
-                        </button>
-                    </div>
-                } @else {
-                    <!-- DONATION MODE UI -->
-                    <div class="animate-in fade-in">
-                        <h2 class="text-xl font-bold text-pink-400 mb-2 flex items-center gap-2">
-                            <span class="text-2xl">❤️</span> Server Donation Mode
-                        </h2>
-                        <p class="text-sm text-gray-300 mb-4 bg-pink-900/20 p-3 rounded border border-pink-900/50">
-                            Thank you for supporting internet freedom! By sharing this key, you allow censorship-affected users to tunnel securely through this node.
-                            <br><br>
-                            <strong class="text-white">Security Note:</strong> All traffic routed through this server is encrypted (XTLS/TLS). You cannot see user activity, and no logs are stored, protecting you from liability.
-                        </p>
-                        
-                        <div class="relative bg-black/50 p-4 rounded border border-pink-600/50 font-mono text-xs text-pink-300 break-all shadow-inner">
-                            {{ core.upstreamToken() }}
-                            <button (click)="copyToken()" class="absolute top-2 right-2 bg-pink-700 hover:bg-pink-600 text-white px-3 py-1 rounded text-xs transition-colors">
-                                {{ copied() ? 'Copied!' : 'Copy Key' }}
-                            </button>
-                        </div>
-                    </div>
-                }
+                <h2 class="text-xl font-bold text-teal-400 mb-2">Connection Token</h2>
+                <p class="text-sm text-gray-400 mb-6">Copy this token and paste it into the settings of your Iran server to establish the secure tunnel.</p>
                 
-                <div class="mt-4 flex justify-between items-center border-t border-gray-700 pt-4">
-                    <button (click)="toggleDonationMode()" class="text-xs flex items-center gap-2 px-3 py-1 rounded transition-colors" [class.text-pink-400]="!isDonationMode()" [class.hover:bg-pink-900/20]="!isDonationMode()" [class.text-teal-400]="isDonationMode()">
-                        @if(!isDonationMode()) {
-                            <span>❤️ Donate This Server</span>
-                        } @else {
-                            <span>🔙 Standard View</span>
-                        }
+                <div class="relative bg-black/50 p-4 rounded border border-gray-600 font-mono text-xs text-green-400 break-all shadow-inner">
+                    {{ core.upstreamToken() }}
+                    <button (click)="copyToken()" class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs transition-colors">
+                        {{ copied() ? 'Copied!' : 'Copy' }}
                     </button>
-
-                    <div class="flex flex-col gap-1 text-right">
-                        <div class="flex items-center gap-2 text-xs text-green-400 justify-end">
-                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <span class="font-bold">Active Ports:</span>
-                        </div>
-                        <div class="text-[10px] text-gray-400 font-mono">
-                            <span class="text-teal-500">OVPN:</span> 110, 510 | <span class="text-teal-500">WG:</span> 1414, 53133
-                        </div>
-                    </div>
+                </div>
+                
+                <div class="mt-4 border-t border-gray-700 pt-4">
+                    <button (click)="donateServer()" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+                        <span>{{ languageService.translate('upstream.donateButton') }}</span>
+                    </button>
+                    <p class="text-xs text-gray-500 text-center mt-2">{{ languageService.translate('upstream.donateDesc') }}</p>
                 </div>
             </div>
 
@@ -118,8 +86,8 @@ import { LogoComponent } from './logo.component';
 })
 export class UpstreamDashboardComponent {
     core = inject(ElahehCoreService);
+    languageService = inject(LanguageService);
     copied = signal(false);
-    isDonationMode = signal(false);
     
     newUsername = '';
     newPassword = '';
@@ -127,8 +95,33 @@ export class UpstreamDashboardComponent {
     credsUpdated = signal(false);
     updateError = signal('');
 
-    toggleDonationMode() {
-        this.isDonationMode.update(v => !v);
+    async donateServer() {
+        const token = this.core.upstreamToken();
+        if (!token) {
+            alert('Token not available.');
+            return;
+        }
+
+        const shareData = {
+            title: 'Elaheh VPN Server Donation',
+            text: `Here is my Elaheh VPN connection key. You can use this to bypass censorship.\n\nKey: ${token}`,
+            url: window.location.origin
+        };
+
+        if (navigator.share && navigator.canShare(shareData)) {
+            try {
+                await navigator.share(shareData);
+                this.core.addLog('SUCCESS', 'Donation key shared successfully.');
+            } catch (err) {
+                // This can happen if the user cancels the share dialog
+                this.core.addLog('WARN', 'Sharing was cancelled or failed.');
+            }
+        } else {
+            // Fallback for browsers that don't support the Share API
+            this.core.addLog('INFO', 'Share API not supported, copying to clipboard instead.');
+            this.copyToken();
+            alert('Your browser does not support sharing. The key has been copied to your clipboard instead.');
+        }
     }
 
     copyToken() {
