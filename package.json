@@ -4,9 +4,9 @@
   "description": "Advanced Tunneling Management System",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 0.0.0.0 --disable-host-check",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "start": "ng serve --host 0.0.0.0 --disable-host-check --index index.html --browser index.tsx",
+    "build": "ng build --index index.html --browser index.tsx",
+    "watch": "ng build --watch --configuration development --index index.html --browser index.tsx",
     "test": "ng test"
   },
   "private": true,
