@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.1 (pnpm setup fix)
+# Version 2.1.2 (pnpm global path fix)
 # Author: EHSANKiNG
 
 set -e
@@ -81,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.1 (pnpm setup fix)"
+echo "   Version 2.1.2 (pnpm global path fix)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -214,8 +214,8 @@ echo -e "   > Installing pnpm package manager for faster installs..."
 $SUDO npm install -g pnpm --loglevel error # Use npm once to get pnpm
 echo -e "${GREEN}   > pnpm installed successfully.${NC}"
 
-echo -e "   > Setting up pnpm environment..."
-$SUDO pnpm setup >/dev/null 2>&1
+echo -e "   > Configuring pnpm global location..."
+$SUDO pnpm config set global-bin-dir /usr/local/bin
 
 echo -e "   > Installing global tools (pm2, @angular/cli) using pnpm..."
 $SUDO pnpm add -g pm2 @angular/cli
