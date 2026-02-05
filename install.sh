@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.9.4 (Fix DPKG & Clean Sources)
+# Version 1.9.5 (Fix APT Locks & NVM Node v24)
 # Author: EHSANKiNG
 
 set -e
@@ -81,6 +81,36 @@ configure_iran_npm_mirrors() {
     fi
 }
 
+kill_package_locks() {
+    echo -e "${YELLOW}[!] Checking for background APT/DPKG processes...${NC}"
+    # Kill apt/dpkg processes that might be holding locks (e.g. unattended-upgrades)
+    $SUDO killall apt apt-get dpkg 2>/dev/null || true
+    
+    # Wait a moment
+    sleep 2
+    
+    # Force remove locks if they still exist
+    if [ -f /var/lib/dpkg/lock-frontend ]; then
+        echo -e "   > Removing stale lock: /var/lib/dpkg/lock-frontend"
+        $SUDO rm -f /var/lib/dpkg/lock-frontend
+    fi
+    if [ -f /var/lib/dpkg/lock ]; then
+        echo -e "   > Removing stale lock: /var/lib/dpkg/lock"
+        $SUDO rm -f /var/lib/dpkg/lock
+    fi
+    if [ -f /var/cache/apt/archives/lock ]; then
+        echo -e "   > Removing stale lock: /var/cache/apt/archives/lock"
+        $SUDO rm -f /var/cache/apt/archives/lock
+    fi
+    if [ -f /var/lib/apt/lists/lock ]; then
+        echo -e "   > Removing stale lock: /var/lib/apt/lists/lock"
+        $SUDO rm -f /var/lib/apt/lists/lock
+    fi
+    
+    # Reconfigure just in case
+    $SUDO dpkg --configure -a || true
+}
+
 # -----------------------------------------------------------------------------
 # Initialization
 # -----------------------------------------------------------------------------
@@ -89,7 +119,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.9.4 (Fix DPKG & Clean Sources)"
+echo "   Version 1.9.5 (Fix APT Locks & NVM Node v24)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -168,9 +198,8 @@ echo -e "   > Updating and Upgrading System Packages..."
 export DEBIAN_FRONTEND=noninteractive
 
 if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
-    # Fix interrupted package installations (Critical Fix)
-    echo -e "   > Fixing potential interrupted package manager states..."
-    $SUDO dpkg --configure -a || echo -e "${YELLOW}   > DPKG configure warning (ignorable if next steps work).${NC}"
+    # CRITICAL FIX: Kill locks before doing anything
+    kill_package_locks
     
     # Fix APT Sources: Remove Runflare from sources.list if present
     # Runflare should ONLY be used for NPM, not system updates
@@ -183,10 +212,8 @@ if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
         fi
     fi
 
-    # Fix potential lock issues
-    $SUDO rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
-    
     # Update lists
+    echo -e "   > Running apt-get update..."
     $SUDO apt-get update -y -qq
     
     # Full Upgrade
@@ -288,17 +315,34 @@ EOF
 $SUDO ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 $SUDO systemctl restart nginx
 
-# Node.js
-echo -e "   > Installing Node.js v22..."
-NODE_VERSION="v22.12.0"
-if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
-    MACHINE_ARCH=$(uname -m)
-    if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; else NODE_ARCH="arm64"; fi
-    
-    # Try alternate mirror for binary if in Iran (though binary d/l usually works, using standard)
-    curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
-    $SUDO tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
-fi
+# Node.js with NVM (Replaced logic per user request)
+echo -e "   > Installing Node.js v24 via NVM..."
+
+# 1. Download and install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+# 2. Load NVM environment
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# 3. Install Node 24
+nvm install 24
+nvm use 24
+nvm alias default 24
+
+# Verify Node
+NODE_VER=$(node -v)
+echo -e "${GREEN}   > Node.js installed: ${NODE_VER}${NC}"
+
+# 4. Enable Yarn
+corepack enable yarn
+YARN_VER=$(yarn -v)
+echo -e "${GREEN}   > Yarn installed: ${YARN_VER}${NC}"
+
+# 5. Create symlinks so standard root shell can find it without sourcing nvm
+$SUDO ln -sf $(which node) /usr/local/bin/node
+$SUDO ln -sf $(which npm) /usr/local/bin/npm
+$SUDO ln -sf $(which yarn) /usr/local/bin/yarn
 
 # Apply NPM Registry settings (Runflare/Iran Check)
 if [[ "$ROLE" == "iran" ]]; then
