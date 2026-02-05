@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.4 (pnpm legacy-peer-deps fix)
+# Version 2.1.5 (pnpm registry fix for Iran)
 # Author: EHSANKiNG
 
 set -e
@@ -81,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.4 (pnpm legacy-peer-deps fix)"
+echo "   Version 2.1.5 (pnpm registry fix for Iran)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -213,6 +213,12 @@ fi
 echo -e "   > Installing pnpm package manager for faster installs..."
 $SUDO npm install -g pnpm --loglevel error # Use npm once to get pnpm
 echo -e "${GREEN}   > pnpm installed successfully.${NC}"
+
+if [[ "$ROLE" == "iran" ]]; then
+    echo -e "   > Configuring pnpm to use Iran-friendly mirror..."
+    # This is critical because pnpm doesn't always inherit npm's global registry.
+    $SUDO pnpm config set registry https://registry.npmmirror.com --global
+fi
 
 echo -e "   > Configuring pnpm global location..."
 # Use --global to set the system-wide config, not just for the root user.
