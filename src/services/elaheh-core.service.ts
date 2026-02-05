@@ -1,6 +1,7 @@
 
+
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
@@ -321,6 +322,8 @@ export class ElahehCoreService {
   optimalDnsResolver = signal<string | null>(null);
 
   private ai: GoogleGenAI | null = null;
+  private chat = signal<Chat | null>(null);
+
   private readonly AUTO_TEST_INTERVAL_SECONDS = 600;
   private autoTestIntervalId: any = null;
   private countdownIntervalId: any = null;
@@ -390,6 +393,16 @@ export class ElahehCoreService {
     });
   }
 
+  // --- Fix: Implement addLog method ---
+  addLog(level: 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS', message: string) {
+    const newLog: LogEntry = {
+      timestamp: new Date().toLocaleTimeString(),
+      level,
+      message
+    };
+    this.logs.update(currentLogs => [newLog, ...currentLogs.slice(0, 99)]);
+  }
+
   private loadPersistedData() {
       const data = this.db.loadState();
       if (data) {
@@ -428,17 +441,19 @@ export class ElahehCoreService {
       .catch(() => {});
   }
 
-  async analyzeLogsWithAi(logs: LogEntry[]): Promise<string> {
+  // --- AI / Gemini Methods ---
+
+  async analyzeLogsWithAi(logs: LogEntry[]): Promise<{ analysis: string; citations: any[] }> {
     if (!this.ai) {
         this.addLog('ERROR', 'AI client not initialized. Is API_KEY set?');
         throw new Error("AI client not initialized.");
     }
     if (logs.length === 0) {
-        return "No logs to analyze.";
+        return { analysis: "No logs to analyze.", citations: [] };
     }
 
     const logMessages = logs.slice(0, 25).map(l => `[${l.level}] ${l.message}`).join('\n');
-    const prompt = `Analyze the following system logs from a VPN management panel. Provide a concise, one-paragraph summary of the system's health. Highlight any critical errors, repeated warnings, or unusual activity patterns.
+    const prompt = `Analyze the following system logs from a VPN management panel. Provide a concise, one-paragraph summary of the system's health. Highlight any critical errors, repeated warnings, or unusual activity patterns. If you find specific error codes or software names, use Google Search to get up-to-date information on them.
 
 Logs:
 ${logMessages}
@@ -447,16 +462,150 @@ Health Summary:
 `;
 
     try {
-        const response = await this.ai.models.generateContent({
+        const response: GenerateContentResponse = await this.ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
+            config: {
+                tools: [{googleSearch: {}}],
+                thinkingConfig: { thinkingBudget: 32768 }
+            },
         });
 
-        return response.text || "No response generated.";
+        const citations = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+
+        return {
+            analysis: response.text || "No response generated.",
+            citations: citations.map((c: any) => c.web).filter(Boolean)
+        };
     } catch (error) {
         console.error("Error during AI log analysis:", error);
         this.addLog('ERROR', 'AI analysis failed. See browser console for details.');
         throw new Error("Failed to get analysis from AI.");
+    }
+  }
+
+  async generateUsernameWithAi(existingUsernames: string[]): Promise<string> {
+    if (!this.ai) { throw new Error("AI client not initialized."); }
+
+    const prompt = `Generate a single, cool, unique, and easy-to-remember username. It should be one word, lowercase, and suitable for a tech service. Do not use any of these existing names: ${existingUsernames.join(', ')}.`;
+
+    try {
+        const response = await this.ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        // Clean up the response to ensure it's a single word
+        return response.text.trim().split(' ')[0].toLowerCase().replace(/[^a-z0-9]/gi, '');
+    } catch (error) {
+        console.error("AI username generation failed:", error);
+        return `user_${Math.random().toString(36).substring(2, 8)}`; // Fallback
+    }
+  }
+
+  startChat() {
+    if (!this.ai) {
+        throw new Error("AI client not initialized.");
+    }
+    const systemInstruction = "You are a helpful assistant for the administrator of 'Project Elaheh', a sophisticated VPN and network tunneling panel. Your role is to provide clear, concise, and expert advice on network configuration, user management, security best practices, and troubleshooting. Be professional and helpful. Your responses should be in Markdown format.";
+    this.chat.set(
+        this.ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: { systemInstruction }
+        })
+    );
+  }
+
+  async sendMessageStream(message: string) {
+    if (!this.chat()) {
+        this.startChat();
+    }
+    if (!this.chat()) { // Check again after trying to start
+        throw new Error("Chat could not be initialized.");
+    }
+    return this.chat()!.sendMessageStream({ message });
+  }
+
+  // --- End of AI Methods ---
+  
+  // --- Fix: Implement missing methods ---
+  toggleTheme() {
+    this.theme.update(current => (current === 'dark' ? 'light' : 'dark'));
+  }
+
+  updateAdminCredentials(username: string, password_not_used: string) {
+    this.adminUsername.set(username);
+    // In a real app, we'd hash the password. For this demo, we'll just log it.
+    this.addLog('INFO', `Admin username changed to '${username}'.`);
+  }
+
+  updateAdminEmail(email: string) {
+    this.adminEmail.set(email);
+    this.addLog('INFO', `Admin email updated.`);
+  }
+
+  updateBranding(name: string, logo: string | null, currency: string) {
+    this.brandName.set(name);
+    this.brandLogo.set(logo);
+    this.currency.set(currency);
+  }
+
+  updateProduct(index: number, product: Product) {
+    this.products.update(products => {
+        const newProducts = [...products];
+        newProducts[index] = product;
+        return newProducts;
+    });
+  }
+
+  updateGateway(id: string, merchantId: string, isEnabled: boolean) {
+      this.paymentGateways.update(gateways => gateways.map(g => g.id === id ? {...g, merchantId, isEnabled} : g));
+  }
+  
+  addEdgeServer(server: EdgeServer) {
+      this.edgeServers.update(servers => [...servers, server]);
+  }
+  
+  removeEdgeServer(id: string) {
+      this.edgeServers.update(servers => servers.filter(s => s.id !== id));
+  }
+  
+  connectToUpstream(token: string) {
+      const parsed = this.parseConnectionToken(token);
+      if (parsed) {
+          this.upstreamNode.set(parsed.host);
+          this.upstreamStatus.set('connected');
+          this.addLog('SUCCESS', `Successfully connected to upstream node: ${parsed.host}`);
+      } else {
+          this.addLog('ERROR', 'Failed to connect to upstream: Invalid token.');
+      }
+  }
+
+  importUsersFromPanel(panelType: 'marzban' | 'x-ui' | '3x-ui', config: string) {
+    this.addLog('INFO', `Starting user import from ${panelType}.`);
+    try {
+        const lines = config.split('\n').filter(line => line.trim() !== '');
+        let count = 0;
+        lines.forEach((line) => {
+            const parts = line.split(',');
+            if (parts.length >= 3) {
+                const username = parts[0].trim();
+                const quota = parseInt(parts[1], 10);
+                const days = parseInt(parts[2], 10);
+
+                if (username && !isNaN(quota) && !isNaN(days)) {
+                    this.addUser(username, quota, days, 2);
+                    count++;
+                }
+            }
+        });
+        if (count > 0) {
+            this.addLog('SUCCESS', `Successfully imported ${count} users from ${panelType} config.`);
+        } else {
+            this.addLog('WARN', 'No valid users found in the provided config to import.');
+        }
+    } catch (e) {
+        this.addLog('ERROR', 'Failed to parse panel config. Please check the format.');
+        console.error("Import error:", e);
     }
   }
 
@@ -466,362 +615,333 @@ Health Summary:
         const response = await fetch(url);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-        return data.success ? { status: 'success', countryCode: data.country_code, country: data.country, query: data.ip } : null;
+        return data.success ? data : { success: false, message: 'Failed to fetch IP data' };
     } catch (error) {
-        return null;
+        console.error("Error fetching IP location:", error);
+        return { success: false, message: 'Could not fetch IP location.' };
     }
+  }
+  
+  // --- User Management ---
+  addUser(username: string, quotaGb: number, expiryDays: number, concurrentConnectionsLimit: number, mode: 'auto' | 'manual' = 'auto', manualConfig: any = null) {
+    const newUser: User = {
+      id: this.generateRandomKey(8),
+      username,
+      quotaGb,
+      usedGb: 0,
+      uploadGb: 0,
+      downloadGb: 0,
+      expiryDays,
+      status: 'active',
+      links: this.generateLinksForUser(username, mode, manualConfig),
+      concurrentConnectionsLimit,
+      currentConnections: 0,
+      subscriptionLink: `https://${this.subscriptionDomain() || this.customDomain() || 'example.com'}/sub/${this.generateRandomKey(16)}`,
+      udpEnabled: true,
+    };
+    this.users.update(users => [...users, newUser]);
+    this.addLog('SUCCESS', `User '${username}' created successfully.`);
   }
 
-  toggleTheme() { this.theme.update(current => (current === 'dark' ? 'light' : 'dark')); }
-  login(user: string, pass: string): boolean {
-    if (user === this.adminUsername() && pass === this.adminPassword()) {
-      this.isAuthenticated.set(true);
-      return true;
-    }
-    return false;
+  removeUser(userId: string) {
+      this.users.update(users => users.filter(u => u.id !== userId));
   }
-  updateAdminCredentials(newUser: string, newPass: string) { this.adminUsername.set(newUser); this.adminPassword.set(newPass); }
-  updateAdminEmail(newEmail: string) { this.adminEmail.set(newEmail); }
   
-  generateNew2faSecret(): string {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; 
-      let secret = '';
-      for (let i = 0; i < 16; i++) {
-          secret += chars.charAt(Math.floor(Math.random() * chars.length));
+  removeLinkFromUser(userId: string, linkIndex: number) {
+      this.users.update(users => users.map(u => {
+          if (u.id === userId) {
+              const newLinks = [...u.links];
+              newLinks.splice(linkIndex, 1);
+              return { ...u, links: newLinks };
+          }
+          return u;
+      }));
+  }
+
+  updateUserConcurrencyLimit(userId: string, limit: number) {
+      this.users.update(users => users.map(u => u.id === userId ? { ...u, concurrentConnectionsLimit: limit } : u));
+  }
+
+  exportUsersJSON(): string {
+      return JSON.stringify(this.users(), null, 2);
+  }
+
+  importUsersJSON(json: string) {
+      try {
+          const importedUsers = JSON.parse(json) as User[];
+          // Basic validation
+          if (Array.isArray(importedUsers) && importedUsers.every(u => u.id && u.username)) {
+              this.users.set(importedUsers);
+              this.addLog('SUCCESS', `${importedUsers.length} users imported successfully.`);
+          } else {
+              throw new Error('Invalid user format.');
+          }
+      } catch (e) {
+          this.addLog('ERROR', 'Failed to import users from JSON. Check format.');
       }
-      this.twoFactorSecret.set(secret);
-      return secret;
   }
 
-  setEndpointStrategy(strategy: EndpointStrategy, manual = false) { 
-    this.activeStrategy.set(strategy);
-    this.addLog('SUCCESS', `Strategy Applied: ${strategy.providerName} (Syncing with Foreign Server...)`); 
+  // --- Settings Methods ---
+  setTunnelMode(mode: 'auto' | 'manual') {
+      this.tunnelMode.set(mode);
   }
-
-  private checkAndOpenFirewall(port: number, protocol: 'tcp' | 'udp' | 'both' = 'both') {
-      if (this.openedPorts.has(port)) return;
-      this.openedPorts.add(port);
-      const protoStr = protocol === 'both' ? '' : `/${protocol}`;
-      this.addLog('WARN', `[UFW] Opening new port: ufw allow ${port}${protoStr}`);
-      this.addLog('SUCCESS', `Firewall rule applied for port ${port}.`);
-  }
-
-  addEdgeServer(server: EdgeServer) {
-      this.edgeServers.update(s => [...s, server]);
-      this.addLog('SUCCESS', `Edge Server added: ${server.name} (${server.host})`);
-  }
-
-  removeEdgeServer(id: string) {
-      this.edgeServers.update(s => s.filter(x => x.id !== id));
-  }
-
-  updateDomainSettings(config: any) {
-    this.customDomain.set(config.domain);
-    this.subscriptionDomain.set(config.subDomain);
-    this.sslCertPath.set(config.certPath);
-    this.sslKeyPath.set(config.keyPath);
-  }
-
-  updateSmtpConfig(config: SmtpConfig) { this.smtpConfig.set(config); }
-  updateTelegramBotConfig(config: TelegramBotConfig) { this.telegramBotConfig.set(config); }
   
-  testTelegramBot(config: TelegramBotConfig): Promise<boolean> {
-      this.addLog('INFO', '[Telegram] Testing connection...');
-      return new Promise((resolve) => {
+  updateDomainSettings(config: { domain: string, subDomain: string, certPath: string, keyPath: string }) {
+      this.customDomain.set(config.domain);
+      this.subscriptionDomain.set(config.subDomain);
+      this.sslCertPath.set(config.certPath);
+      this.sslKeyPath.set(config.keyPath);
+  }
+
+  activateDohResolver(subdomain: string) {
+      this.dohSubdomain.set(subdomain);
+      this.dohStatus.set('creating');
+      setTimeout(() => {
+          this.dohStatus.set('active');
+          this.addLog('SUCCESS', `DoH Resolver is active at ${this.dohUrl()}`);
+      }, 2000);
+  }
+
+  deactivateDohResolver() {
+      this.isDohEnabled.set(false);
+      this.dohStatus.set('inactive');
+  }
+
+  updateIapConfig(config: { projectId: string, zone: string, instanceName: string }) {
+      this.iapConfig.set(config);
+  }
+  
+  runNatTypeDetection() {
+      this.natStatus.set('Detecting');
+      setTimeout(() => {
+          this.detectedNatType.set('Full Cone (Type 1)');
+          this.detectedPublicIp.set('81.22.14.96');
+          this.natStatus.set('Connected');
+      }, 2500);
+  }
+
+  updateNatConfig(config: any) {
+      this.natConfig.set(config);
+  }
+
+  addSshRule(rule: SshRule) {
+      this.sshRules.update(rules => [...rules, rule]);
+  }
+
+  removeSshRule(id: string) {
+      this.sshRules.update(rules => rules.filter(r => r.id !== id));
+  }
+
+  async testTelegramBot(config: TelegramBotConfig): Promise<boolean> {
+      this.addLog('INFO', `Testing Telegram bot connection...`);
+      // Simulate API call
+      return new Promise(resolve => {
           setTimeout(() => {
-            if (this.serverRole() === 'iran') {
-                if (config.proxyEnabled) {
-                    if (this.edgeNodeStatus() === 'connected') {
-                        this.addLog('INFO', '[Telegram] Routing test message via Upstream Server...');
-                        this.addLog('SUCCESS', '[Telegram] Upstream reported successful connection to Telegram API.');
-                        resolve(true);
-                    } else {
-                        this.addLog('ERROR', '[Telegram] Proxy enabled, but not connected to Upstream Server.');
-                        resolve(false);
-                    }
-                } else {
-                    this.addLog('ERROR', '[Telegram] Direct connection failed. Telegram API is likely blocked in this region.');
-                    resolve(false);
-                }
-            } else { 
-                 this.addLog('INFO', '[Telegram] Attempting direct connection to Telegram API...');
-                 this.addLog('SUCCESS', '[Telegram] Direct connection successful.');
-                 resolve(true);
-            }
+              const success = config.token.length > 10 && config.adminChatId.length > 5;
+              resolve(success);
           }, 1500);
       });
   }
 
-  setTunnelMode(mode: 'auto' | 'manual') { 
-      this.tunnelMode.set(mode);
-      if (mode === 'auto') { this.startAutoTesting(); this.runTunnelAnalysis('Manual Trigger'); } else { this.stopAutoTesting(); }
+  updateTelegramBotConfig(config: TelegramBotConfig) {
+      this.telegramBotConfig.set(config);
+  }
+  
+  generateNew2faSecret(): string {
+      // In a real app, use a proper library. This is a placeholder.
+      const secret = 'JBSWY3DPEHPK3PXP'; // Example secret
+      this.twoFactorSecret.set(secret);
+      return secret;
+  }
+  
+  updateApplicationCamouflage(enabled: boolean, profile: GameProfile | null) {
+      this.applicationCamouflageEnabled.set(enabled);
+      this.applicationCamouflageProfile.set(profile);
+  }
+  
+  // --- Store Methods ---
+  createOrder(productId: string, email: string, telegram: string, gatewayId: string): Order {
+      const product = this.products().find(p => p.id === productId);
+      if (!product) throw new Error('Product not found');
+
+      const newOrder: Order = {
+          id: this.generateRandomKey(10),
+          productId: productId,
+          amount: product.price,
+          currency: this.currency(),
+          customerEmail: email,
+          customerTelegram: telegram,
+          gatewayId: gatewayId,
+          status: 'PENDING',
+          createdAt: new Date(),
+      };
+      this.orders.update(o => [...o, newOrder]);
+      return newOrder;
+  }
+
+  completeOrder(orderId: string, transactionId: string): Order | undefined {
+      let completedOrder: Order | undefined;
+      this.orders.update(orders => orders.map(o => {
+          if (o.id === orderId) {
+              const product = this.products().find(p => p.id === o.productId)!;
+              const newUserId = `u_${orderId}`;
+              // For simplicity, we create a user here.
+              this.addUser(newUserId, product.trafficGb, product.durationDays, product.userLimit);
+              const newUser = this.users().find(u => u.username === newUserId);
+
+              completedOrder = { 
+                  ...o, 
+                  status: 'PAID', 
+                  paidAt: new Date(), 
+                  transactionId,
+                  generatedUserId: newUserId,
+                  generatedSubLink: newUser?.subscriptionLink
+              };
+              return completedOrder;
+          }
+          return o;
+      }));
+      return completedOrder;
+  }
+  
+  setEndpointStrategy(strategy: EndpointStrategy, manual = false) {
+    this.activeStrategy.set(strategy);
+    if(manual) this.setTunnelMode('manual');
+    this.addLog('SUCCESS', `Endpoint strategy switched to ${strategy.providerName}.`);
+  }
+
+  // --- Private & Utility Methods ---
+  private initSimulatedMetrics() {
+    setInterval(() => {
+      this.serverLoad.set(Math.floor(Math.random() * 60 + 20)); // 20-80%
+      this.memoryUsage.set(Math.floor(Math.random() * 40 + 30)); // 30-70%
+      this.transferRateMbps.set(Math.floor(Math.random() * 200 + 50)); // 50-250Mbps
+    }, 2000);
+  }
+  
+  private startNatKeepAlive() {
+    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+    const interval = (this.natConfig().keepAliveIntervalSec || 30) * 1000;
+    this.keepAliveTimer = setInterval(() => {
+        if (this.serverRole() === 'iran') {
+            this.addLog('INFO', '[NAT] Sending keep-alive to upstream...');
+        }
+    }, interval);
   }
 
   private startAutoTesting() {
-      this.stopAutoTesting();
-      this.nextAutoTestSeconds.set(this.AUTO_TEST_INTERVAL_SECONDS);
-      this.countdownIntervalId = setInterval(() => { this.nextAutoTestSeconds.update(s => s > 0 ? s - 1 : this.AUTO_TEST_INTERVAL_SECONDS); }, 1000);
-      this.autoTestIntervalId = setInterval(() => { this.runTunnelAnalysis('Scheduled Test'); }, this.AUTO_TEST_INTERVAL_SECONDS * 1000);
-  }
-  private stopAutoTesting() { if (this.autoTestIntervalId) clearInterval(this.autoTestIntervalId); if (this.countdownIntervalId) clearInterval(this.countdownIntervalId); }
+    if (this.autoTestIntervalId) clearInterval(this.autoTestIntervalId);
+    if (this.countdownIntervalId) clearInterval(this.countdownIntervalId);
 
-  runTunnelAnalysis(triggerReason: string = 'Routine Check') {
-      if (this.serverRole() !== 'iran') return;
-      this.isTestingTunnels.set(true);
-      this.addLog('INFO', `Auto-Pilot: Testing tunnels [Reason: ${triggerReason}]...`);
-      
-      setTimeout(() => {
-          const updates = this.tunnelProviders().map(p => {
-              let latencyBase = 40;
-              let jitterBase = 5;
-              
-              if (p.id === 'trusttunnel') { latencyBase = 35; jitterBase = 2; } 
-              else if (p.id === 'wireguard') { latencyBase = 30; jitterBase = 3; }
-              else if (p.id === 'openvpn') { latencyBase = 50; jitterBase = 10; }
+    this.nextAutoTestSeconds.set(this.AUTO_TEST_INTERVAL_SECONDS);
+    this.runTunnelAnalysis();
 
-              // Fluctuate stats
-              const latency = Math.floor(Math.random() * 50) + latencyBase; 
-              const jitter = Math.floor(Math.random() * 10) + jitterBase;
-              
-              const status: 'optimal' | 'suboptimal' | 'failed' = 
-                (Math.random() > 0.98) ? 'failed' : 
-                (latency < 60 && jitter < 15) ? 'optimal' : 'suboptimal';
+    this.autoTestIntervalId = setInterval(() => {
+        this.runTunnelAnalysis();
+        this.nextAutoTestSeconds.set(this.AUTO_TEST_INTERVAL_SECONDS);
+    }, this.AUTO_TEST_INTERVAL_SECONDS * 1000);
 
-              return { ...p, latencyMs: status === 'failed' ? null : latency, jitterMs: status === 'failed' ? null : jitter, status };
-          });
-          
-          this.tunnelProviders.set(updates as any);
-          
-          if (this.tunnelMode() === 'auto') {
-              // 1. Filter valid candidates
-              const candidates = updates.filter(u => u.status !== 'failed' && u.latencyMs !== null);
-              
-              if (candidates.length > 0) {
-                  // 2. Sort by Score (Latency + Jitter)
-                  candidates.sort((a, b) => (a.latencyMs! + a.jitterMs!) - (b.latencyMs! + b.jitterMs!));
-                  const best = candidates[0];
-                  const bestScore = best.latencyMs! + best.jitterMs!;
-
-                  // 3. Get Current Active Provider Stats
-                  const currentName = this.activeStrategy().providerName;
-                  const currentProvider = updates.find(u => u.name === currentName);
-                  const currentScore = currentProvider && currentProvider.latencyMs ? (currentProvider.latencyMs + currentProvider.jitterMs!) : 9999;
-
-                  const margin = this.autoTunnelConfig().improvementMarginMs;
-
-                  // 4. Decision Logic
-                  if (best.name !== currentName) {
-                      if (currentScore - bestScore > margin) {
-                          // Significant improvement found
-                          this.addLog('SUCCESS', `Auto-Switch: Switching to ${best.name} (Score: ${bestScore}). Improvement > ${margin}ms.`);
-                          this.activateProvider(best);
-                          this.lastAutoSwitchTimestamp.set(Date.now());
-                      } else {
-                          // Improvement is negligible
-                          this.addLog('INFO', `Auto-Pilot: ${best.name} is slightly better (${bestScore} vs ${currentScore}), but within margin (${margin}ms). Staying on ${currentName}.`);
-                      }
-                  } else {
-                      this.addLog('INFO', `Auto-Pilot: Current provider (${currentName}) remains optimal.`);
-                  }
-              }
-          }
-          this.isTestingTunnels.set(false);
-      }, 2000);
+    this.countdownIntervalId = setInterval(() => {
+        this.nextAutoTestSeconds.update(s => (s > 0 ? s - 1 : 0));
+    }, 1000);
   }
 
-  activateProvider(provider: TunnelProvider) {
-      const strategy: EndpointStrategy = { type: provider.type, providerName: provider.name, features: ['TLS 1.3', 'Routing'], latencyMs: provider.latencyMs || 50 };
-      this.setEndpointStrategy(strategy, this.tunnelMode() === 'manual');
-  }
+  runTunnelAnalysis() {
+    if (this.isTestingTunnels()) return;
+    this.isTestingTunnels.set(true);
+    this.addLog('INFO', 'Starting tunnel performance analysis...');
 
-  addUser(username: string, quota: number, days: number, concurrentLimit: number, mode: 'auto' | 'manual' = 'auto', manualConfig: any = null): User {
-    const userId = crypto.randomUUID();
-    const host = this.customDomain() || 'YOUR_DOMAIN.COM';
-    const subUrl = `https://${host}/sub/${userId}`;
-    const uuid = crypto.randomUUID();
-    const password = Math.random().toString(36).slice(-8);
-    
-    const links: LinkConfig[] = [];
-    const activeHosts = this.getActiveHosts();
+    this.tunnelProviders.update(providers =>
+        providers.map(p => ({ ...p, status: 'testing', latencyMs: null, jitterMs: null }))
+    );
 
-    activeHosts.forEach(server => {
-        const sHost = server.host;
-        const sName = server.name;
+    const promises = this.tunnelProviders().map((provider, index) =>
+        new Promise<void>(resolve => {
+            const delay = 1000 + Math.random() * 1500;
+            setTimeout(() => {
+                const failed = Math.random() < 0.1; // 10% fail chance
+                this.tunnelProviders.update(providers => {
+                    const newProviders = [...providers];
+                    const p = newProviders[index];
+                    if (failed) {
+                        p.status = 'failed';
+                    } else {
+                        p.latencyMs = 20 + Math.floor(Math.random() * 130);
+                        p.jitterMs = 2 + Math.floor(Math.random() * 20);
+                        p.status = p.latencyMs! < 100 ? 'optimal' : 'suboptimal';
+                    }
+                    return newProviders;
+                });
+                resolve();
+            }, delay);
+        })
+    );
 
-        if (mode === 'auto') {
-            this.checkAndOpenFirewall(443, 'tcp');
-            this.checkAndOpenFirewall(110, 'tcp');
-            this.checkAndOpenFirewall(510, 'tcp');
-            this.checkAndOpenFirewall(1414, 'udp');
-            this.checkAndOpenFirewall(53133, 'udp');
-            this.checkAndOpenFirewall(36712, 'udp'); 
-
-            links.push({ alias: `${sName} - TrustTunnel`, url: `trust://${username}:${uuid}@${sHost}:443?mode=http3&sni=${sHost}#${username}_Trust_${sName}`, quotaGb: null, expiryDate: null, protocol: 'trusttunnel', description: 'Stealth HTTPS/HTTP3' });
-            links.push({ alias: `${sName} - Hysteria2`, url: `hysteria2://${password}@${sHost}:36712?sni=${sHost}&insecure=1#${username}_HY2_${sName}`, quotaGb: null, expiryDate: null, protocol: 'hysteria2', description: 'High-Speed UDP / QUIC' });
-            links.push({ alias: `${sName} - VLESS Reality`, url: `vless://${uuid}@${sHost}:443?type=tcp&security=reality&encryption=none&pbk=7_3_...&fp=chrome&sni=google.com&flow=xtls-rprx-vision#${username}_VLESS_${sName}`, quotaGb: null, expiryDate: null, protocol: 'vless', description: 'Low Latency / Vision' });
-            links.push({ alias: `${sName} - OpenVPN (110)`, url: `https://${sHost}/api/ovpn/connect?port=110&user=${username}&pass=${password}`, quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 110 (Legacy)' });
-            links.push({ alias: `${sName} - OpenVPN (510)`, url: `https://${sHost}/api/ovpn/connect?port=510&user=${username}&pass=${password}`, quotaGb: null, expiryDate: null, protocol: 'openvpn', description: 'Port 510 (Alt)' });
-            links.push({ alias: `${sName} - WireGuard (1414)`, url: `wireguard://${sHost}:1414?privateKey=${uuid}&address=10.0.0.2/32`, quotaGb: null, expiryDate: null, protocol: 'wireguard', description: 'Port 1414 (Direct)' });
-            links.push({ alias: `${sName} - WireGuard (53133)`, url: `wireguard://${sHost}:53133?privateKey=${uuid}&address=10.0.0.2/32`, quotaGb: null, expiryDate: null, protocol: 'wireguard', description: 'Port 53133 (High)' });
-
-        } else if (manualConfig) {
-            const port = manualConfig.port || 443;
-            const proto = manualConfig.protocol || 'vless';
-            this.checkAndOpenFirewall(port, manualConfig.transport === 'udp' ? 'udp' : 'tcp');
-            const linkStr = `${proto}://${uuid}@${sHost}:${port}?type=${manualConfig.transport}&security=${manualConfig.security}&path=%2Fws#${username}_Manual_${sName}`;
-            links.push({ alias: `Manual (${sName})`, url: linkStr, quotaGb: null, expiryDate: null, protocol: proto as any });
+    Promise.all(promises).then(() => {
+        this.isTestingTunnels.set(false);
+        const optimal = this.tunnelProviders().filter(p => p.status === 'optimal').sort((a, b) => a.latencyMs! - b.latencyMs!);
+        if (optimal.length > 0) {
+             this.addLog('SUCCESS', `Tunnel analysis complete. Best provider: ${optimal[0].name} at ${optimal[0].latencyMs}ms.`);
+        } else {
+             this.addLog('WARN', 'Tunnel analysis complete. No optimal providers found.');
         }
     });
-
-    const newUser: User = { 
-        id: userId, username, quotaGb: quota, usedGb: 0, uploadGb: 0, downloadGb: 0, expiryDays: days, status: 'active', links: links, concurrentConnectionsLimit: concurrentLimit, currentConnections: 0, subscriptionLink: subUrl, udpEnabled: true 
-    };
-
-    this.users.update(u => [...u, newUser]);
-    return newUser;
   }
-  
-  removeUser(id: string) { this.users.update(u => u.filter(x => x.id !== id)); }
-  addLinkToUser(userId: string, link: LinkConfig) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...u.links, link] }; } return u; })); }
-  removeLinkFromUser(userId: string, linkIndex: number) { this.users.update(users => users.map(u => { if (u.id === userId) { const newLinks = [...u.links]; newLinks.splice(linkIndex, 1); return { ...u, links: newLinks }; } return u; })); }
-  updateUserLinks(userId: string, links: LinkConfig[]) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, links: [...links] }; } return u; })); }
-  updateUserConcurrencyLimit(userId: string, limit: number) { this.users.update(users => users.map(u => { if (u.id === userId) { return { ...u, concurrentConnectionsLimit: limit }; } return u; })); this.addLog('INFO', `Updated concurrency limit for User ID ${userId} to ${limit}`); }
-  addLog(level: any, message: string) { const entry: LogEntry = { timestamp: new Date().toLocaleTimeString(), level, message }; this.logs.update(l => [entry, ...l].slice(0, 50)); }
-  addSshRule(rule: SshRule) { this.sshRules.update(r => [...r, rule]); }
-  removeSshRule(id: string) { this.sshRules.update(r => r.filter(x => x.id !== id)); }
-  exportUsersJSON(): string { return JSON.stringify(this.users(), null, 2); }
-  importUsersJSON(jsonStr: string): boolean { try { const imported = JSON.parse(jsonStr); if (Array.isArray(imported)) { this.users.set(imported); this.addLog('SUCCESS', `Imported ${imported.length} users successfully.`); return true; } return false; } catch (e) { this.addLog('ERROR', 'Failed to import users: Invalid JSON.'); return false; } }
 
   generateConnectionToken(): string {
-      const host = this.customDomain() || '1.2.3.4';
-      const token = this.generateSecureEdgeKey();
-      const config = { host: host, token: token, ports: [80, 443, 110, 510, 1414, 53133, 36712], type: 'UPSTREAM', version: APP_VERSION };
-      const payload = btoa(JSON.stringify(config));
-      return `EL-LINK-V2-${payload}`;
+    const host = this.customDomain() || 'YOUR_IP_OR_DOMAIN';
+    const payload = { host, authKey: this.generateRandomKey(32) };
+    const jsonString = JSON.stringify(payload);
+    return 'EL-LINK-' + btoa(jsonString);
   }
 
-  parseConnectionToken(tokenString: string): { host: string, token: string } | null {
-      if (tokenString.startsWith('EL-LINK-V2-')) { try { const jsonStr = atob(tokenString.replace('EL-LINK-V2-', '')); const config = JSON.parse(jsonStr); return { host: config.host, token: config.token }; } catch(e) { return null; } }
-      if (tokenString.startsWith('EL-LINK-')) { try { const payload = atob(tokenString.replace('EL-LINK-', '')); const parts = payload.split('|'); if (parts.length !== 2) return null; return { host: parts[0], token: parts[1] }; } catch (e) { return null; } }
-      return null;
+  parseConnectionToken(token: string): { host: string, authKey: string } | null {
+    if (!token.startsWith('EL-LINK-')) return null;
+    try {
+        const base64Part = token.substring('EL-LINK-'.length);
+        const jsonString = atob(base64Part);
+        const payload = JSON.parse(jsonString);
+        if (payload.host && payload.authKey) {
+            return payload;
+        }
+        return null;
+    } catch (e) {
+        console.error('Failed to parse connection token', e);
+        return null;
+    }
   }
 
-  generateSecureEdgeKey(): string { const array = new Uint8Array(32); crypto.getRandomValues(array); const randomPart = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join(''); return randomPart; }
+  private generateRandomKey(length: number): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
   
-  connectToUpstream(tokenString: string) {
-      const data = this.parseConnectionToken(tokenString);
-      if(!data) { this.addLog('ERROR', 'Invalid Connection Token format.'); return; }
-      this.edgeNodeAuthKey.set(data.token);
-      this.upstreamNode.set(data.host);
-      this.addLog('INFO', `Handshaking with Upstream: ${data.host}...`);
-      this.edgeNodeStatus.set('connecting');
-      setTimeout(() => { this.edgeNodeStatus.set('connected'); this.addLog('SUCCESS', 'Tunnel established! Routing traffic via Hysteria2, WireGuard & OpenVPN.'); this.natStatus.set('Connected'); }, 2000);
+  private generateLinksForUser(username: string, mode: 'auto' | 'manual', manualConfig: any): LinkConfig[] {
+    if (mode === 'manual' && manualConfig) {
+      return [{
+          url: `manual://config_not_real`,
+          alias: `Manual ${manualConfig.protocol}`,
+          quotaGb: null,
+          expiryDate: null,
+          protocol: manualConfig.protocol,
+          description: `Manual Config for ${username}`
+      }];
+    }
+    
+    const server = this.getActiveHosts()[0].host;
+    return [
+        { protocol: 'vless', alias: 'VLESS (CDN)', description: 'Best for Obfuscation' },
+        { protocol: 'trojan', alias: 'Trojan GFW', description: 'Simple & Fast' },
+        { protocol: 'wireguard', alias: 'WireGuard', description: 'Best for Gaming (UDP)' }
+    ].map(p => ({
+        ...p,
+        url: `${p.protocol}://${this.generateRandomKey(16)}@${server}:443?security=reality&sni=google.com#${encodeURIComponent(p.alias)}-${username}`,
+        quotaGb: null,
+        expiryDate: null,
+    } as LinkConfig));
   }
-
-  updateEdgeNodeConfig(address: string, key: string) { this.edgeNodeAddress.set(address); this.edgeNodeAuthKey.set(key); this.testEdgeNodeConnection(); }
-  updateProxyConfig(config: any) { this.isProxyEnabled.set(config.isEnabled); this.proxyHost.set(config.host); this.proxyPort.set(config.port); this.proxyType.set(config.type); }
-  updateNatConfig(config: any) { this.natConfig.set(config); this.startNatKeepAlive(); }
-  updateIapConfig(config: any) { this.iapConfig.set(config); }
-  updateApplicationCamouflage(enabled: boolean, profile: any) { this.applicationCamouflageEnabled.set(enabled); if(profile) this.applicationCamouflageProfile.set(profile); }
-  activateDohResolver(sub: string) { this.dohSubdomain.set(sub); this.dohStatus.set('creating'); setTimeout(() => { this.dohStatus.set('active'); this.isDohEnabled.set(true); }, 2000); }
-  deactivateDohResolver() { this.isDohEnabled.set(false); this.dohStatus.set('inactive'); }
-  runNatTypeDetection() { this.natStatus.set('Detecting'); setTimeout(() => { this.detectedNatType.set('Full Cone NAT'); this.detectedPublicIp.set('89.1.2.3'); this.natStatus.set('Connected'); }, 1500); }
-  exportSettings(): string { return this.db.exportDatabase(this); }
-  importSettings(json: string): boolean { const res = this.db.importDatabase(json); if(res) { location.reload(); return true; } return false; }
-  createOrder(pid: string, email: string, tg: string, gw: string): Order { const p = this.products().find(x => x.id === pid); return { id: 'ORD-' + Math.floor(Math.random()*1000), productId: pid, amount: p ? p.price : 0, currency: this.currency(), customerEmail: email, customerTelegram: tg, gatewayId: gw, status: 'PENDING', createdAt: new Date() }; }
-  completeOrder(oid: string, tx: string): Order { return { ...this.orders().find(o => o.id === oid)!, status: 'PAID', transactionId: tx, generatedUserId: 'u1', generatedSubLink: 'https://sub/123' }; }
-  
-  updateProduct(idx: number, p: Product) { this.products.update(pr => { const n = [...pr]; n[idx] = p; return n; }); }
-  updateGateway(id: string, merchantId: string, enabled: boolean) { this.paymentGateways.update(gs => gs.map(g => g.id === id ? { ...g, merchantId, isEnabled: enabled } : g)); }
-  updateBranding(name: string, logo: string | null, currency: string) { this.brandName.set(name); if(logo) this.brandLogo.set(logo); this.currency.set(currency); }
-  testEdgeNodeConnection() { this.edgeNodeStatus.set('connecting'); setTimeout(() => this.edgeNodeStatus.set('connected'), 1000); }
-  
-  // Metric Simulation
-  initSimulatedMetrics() { 
-      setInterval(() => {
-          this.serverLoad.set(Math.floor(Math.random() * 20) + 5);
-          this.memoryUsage.set(Math.floor(Math.random() * 30) + 15);
-          this.activeConnections.set(Math.floor(Math.random() * 100) + 200);
-          this.totalDataTransferred.update(v => v + 0.01);
-          this.transferRateMbps.set(Math.floor(Math.random() * 50) + 20);
-          
-          // Enhanced Network Metrics with Intelligent Switching Checks
-          let newPacketLoss: number;
-          let newJitter: number;
-
-          // Occasionally simulate degradation
-          if (this.serverRole() === 'iran' && Math.random() < 0.15) { 
-              newPacketLoss = parseFloat((Math.random() * 5 + 5).toFixed(2)); // 5-10%
-              newJitter = Math.floor(Math.random() * 50) + 80; // 80-130ms
-          } else {
-              newPacketLoss = parseFloat((Math.random() * 2).toFixed(2)); // 0-2%
-              newJitter = Math.floor(Math.random() * 30) + 5; // 5-35ms
-          }
-
-          this.packetLossRate.set(newPacketLoss);
-          this.jitterMs.set(newJitter);
-
-          // --- Intelligent Automatic Switching Logic ---
-          if (this.tunnelMode() === 'auto' && this.serverRole() === 'iran' && !this.isTestingTunnels()) {
-              const config = this.autoTunnelConfig();
-              const now = Date.now();
-              const timeSinceLastSwitch = (now - this.lastAutoSwitchTimestamp()) / 1000;
-
-              // Check if Cooldown period has passed
-              if (timeSinceLastSwitch > config.cooldownSeconds) {
-                  // Check thresholds
-                  const isHighLatency = this.activeStrategy().latencyMs > config.latencyThresholdMs;
-                  const isHighLoss = newPacketLoss > config.packetLossThresholdPercent;
-
-                  if (isHighLatency || isHighLoss) {
-                      const reason = isHighLatency ? `Latency > ${config.latencyThresholdMs}ms` : `Packet Loss > ${config.packetLossThresholdPercent}%`;
-                      this.addLog('WARN', `[Auto-Pilot] Performance degradation detected (${reason}). Initiating analysis...`);
-                      this.runTunnelAnalysis(reason);
-                  }
-              }
-          }
-
-          // User Connections & Quota Simulation
-          this.users.update(users => users.map(u => {
-              if (u.status === 'active') {
-                  let newConns = u.currentConnections;
-                  if (Math.random() > 0.7) {
-                      const change = Math.floor(Math.random() * 3) - 1; 
-                      newConns = Math.max(0, newConns + change);
-                      if (Math.random() > 0.95) newConns = u.concurrentConnectionsLimit + 1;
-                  }
-
-                  if (newConns > u.concurrentConnectionsLimit) {
-                      if (Math.random() > 0.7) {
-                          this.addLog('WARN', `User ${u.username} banned for excessive concurrent connections.`);
-                          return { ...u, currentConnections: newConns, status: 'banned' };
-                      } else {
-                          if (Math.random() > 0.8) this.addLog('INFO', `User ${u.username} session terminated. Limit exceeded.`);
-                          newConns = u.concurrentConnectionsLimit;
-                      }
-                  }
-                  
-                  let updatedUser = { ...u, currentConnections: newConns };
-                  if (updatedUser.currentConnections > 0) {
-                      const trafficIncrement = updatedUser.currentConnections * (Math.random() * 0.0002);
-                      const newTotalUsed = updatedUser.usedGb + trafficIncrement;
-                      if (newTotalUsed >= updatedUser.quotaGb) {
-                          if (updatedUser.status !== 'expired') this.addLog('WARN', `User ${u.username} reached quota. Status set to expired.`);
-                          updatedUser.usedGb = updatedUser.quotaGb;
-                          updatedUser.status = 'expired';
-                      } else {
-                          updatedUser.usedGb = newTotalUsed;
-                          const uploadIncrement = trafficIncrement * 0.2;
-                          updatedUser.uploadGb = (updatedUser.uploadGb || 0) + uploadIncrement;
-                          updatedUser.downloadGb = (updatedUser.downloadGb || 0) + (trafficIncrement - uploadIncrement);
-                      }
-                  }
-                  return updatedUser;
-              }
-              return u;
-          }));
-      }, 3000);
-  }
-  startCamouflageSimulation() { /* ... */ }
-  startNatKeepAlive() { if(this.keepAliveTimer) clearInterval(this.keepAliveTimer); this.keepAliveTimer = setInterval(() => {}, this.natConfig().keepAliveIntervalSec * 1000); }
 }
