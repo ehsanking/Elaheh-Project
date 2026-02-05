@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.0.1 (Installer Dependency Fix)
+# Version 2.1.0 (pnpm Migration)
 # Author: EHSANKiNG
 
 set -e
@@ -81,7 +81,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.0.1 (Installer Dependency Fix)"
+echo "   Version 2.1.0 (pnpm Migration)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -180,7 +180,7 @@ if [ "$TOTAL_MEM" -lt 3000000 ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Node.js Installation (Iran Standard Strategy)
+# Node.js & PNPM Installation
 # -----------------------------------------------------------------------------
 
 install_node_iran_standard() {
@@ -210,10 +210,15 @@ if [[ "$ROLE" == "iran" ]]; then
     configure_iran_npm_environment
 fi
 
-$SUDO npm install -g pm2 @angular/cli >/dev/null 2>&1
+echo -e "   > Installing pnpm package manager for faster installs..."
+$SUDO npm install -g pnpm --loglevel error # Use npm once to get pnpm
+echo -e "${GREEN}   > pnpm installed successfully.${NC}"
+
+echo -e "   > Installing global tools (pm2, @angular/cli) using pnpm..."
+$SUDO pnpm add -g pm2 @angular/cli
 
 # -----------------------------------------------------------------------------
-# Project Setup & NPM Install (The Critical Part)
+# Project Setup & Dependency Install (The Critical Part)
 # -----------------------------------------------------------------------------
 
 INSTALL_DIR="/opt/elaheh-project"
@@ -246,33 +251,30 @@ else
     echo -e "${GREEN}   > ZIP download successful.${NC}"
 fi
 
-echo -e "   > Installing NPM Packages..."
+echo -e "   > Installing Project Dependencies with pnpm..."
 export NODE_OPTIONS="--max-old-space-size=4096"
 
 # Cleanup any previous artifacts
 rm -rf node_modules package-lock.json
 
-# CRITICAL: Re-export variables here to ensure they persist in this shell context for npm install
+# CRITICAL: Re-export variables here to ensure they persist in this shell context for pnpm install
 export SASS_BINARY_SITE=https://npmmirror.com/mirrors/node-sass
 export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 export SHARP_BINARY_HOST=https://npmmirror.com/mirrors/sharp
 export SHARP_LIBVIPS_BINARY_HOST=https://npmmirror.com/mirrors/sharp-libvips
 
-echo -e "   > Running npm install with Iran-Proof configuration..."
-# Using --legacy-peer-deps to ignore conflicts, --no-audit to skip checks, --loglevel error to reduce noise but show critical fails
-if npm install --legacy-peer-deps --no-audit --no-fund --loglevel warn; then
-    echo -e "${GREEN}   > NPM Install Successful.${NC}"
+if pnpm install --legacy-peer-deps; then
+    echo -e "${GREEN}   > pnpm install successful.${NC}"
 else
-    echo -e "${YELLOW}   > Standard install failed. Retrying with network timeout adjustments...${NC}"
-    npm config set fetch-timeout 600000
-    npm install --legacy-peer-deps --no-audit --no-fund
+    echo -e "${RED}   > pnpm install failed. Please check network connection and logs.${NC}"
+    exit 1
 fi
 
-# Explicitly install GenAI if missed
-npm install @google/genai@latest --legacy-peer-deps --save --no-audit
+echo -e "   > Verifying @google/genai installation..."
+pnpm add @google/genai@latest --legacy-peer-deps
 
 echo -e "   > Building Application..."
-npm run build
+pnpm run build
 
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
 if [ ! -d "$DIST_PATH" ]; then
