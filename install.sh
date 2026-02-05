@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.5.0 (Anti-Sanction Edition)
+# Version 1.6.0 (Anti-Sanction & Fast NPM)
 # Author: EHSANKiNG
 
 set -e
@@ -67,7 +67,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.5.0"
+echo "   Version 1.6.0"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -231,6 +231,11 @@ if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
     $SUDO tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
 fi
+
+# CRITICAL: Set NPM Mirror for Iran to bypass sanctions
+echo -e "   > Configuring NPM Registry..."
+npm config set registry https://registry.npmmirror.com
+
 $SUDO npm install -g pm2 @angular/cli >/dev/null 2>&1
 
 # -----------------------------------------------------------------------------
@@ -269,6 +274,8 @@ fi
 
 echo -e "   > Installing NPM Packages..."
 export NODE_OPTIONS="--max-old-space-size=4096"
+# Ensure registry is set for project install as well
+npm config set registry https://registry.npmmirror.com
 npm install --legacy-peer-deps --loglevel error
 npm install @google/genai@latest --legacy-peer-deps --save
 
