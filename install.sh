@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.6.0 (Anti-Sanction & Fast NPM)
+# Version 1.8.0 (Runflare Mirrors Only)
 # Author: EHSANKiNG
 
 set -e
@@ -18,45 +18,46 @@ NC='\033[0m'
 # Helper Functions
 # -----------------------------------------------------------------------------
 
-switch_to_iran_mirrors() {
-    echo -e "${YELLOW}[!] Network error detected. Switching to Iranian Mirrors...${NC}"
+configure_runflare_mirrors() {
+    echo -e "${YELLOW}[!] Configuring Runflare Mirrors (Iran)...${NC}"
     
-    if [ -f /etc/apt/sources.list ]; then
-        # Backup original
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS_ID=$ID
+        CODENAME=$VERSION_CODENAME
+    else
+        OS_ID="ubuntu"
+        CODENAME="noble"
+    fi
+
+    # 1. APT Configuration for Ubuntu/Debian
+    if [[ "$OS_ID" == "ubuntu" ]]; then
+        echo -e "   > Setting up Ubuntu mirrors..."
         cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
         
-        # Replace with ir.archive.ubuntu.com
-        # Using a comprehensive regex to catch archive.ubuntu.com, security.ubuntu.com, nova.clouds..., etc.
-        sed -i 's|http://[a-z0-9.-]*ubuntu.com/ubuntu|http://ir.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-        sed -i 's|https://[a-z0-9.-]*ubuntu.com/ubuntu|http://ir.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+        cat <<EOF | $SUDO tee /etc/apt/sources.list > /dev/null
+deb http://mirror.runflare.com/ubuntu/ ${CODENAME} main restricted universe multiverse
+deb http://mirror.runflare.com/ubuntu/ ${CODENAME}-updates main restricted universe multiverse
+deb http://mirror.runflare.com/ubuntu/ ${CODENAME}-backports main restricted universe multiverse
+deb http://mirror.runflare.com/ubuntu/ ${CODENAME}-security main restricted universe multiverse
+EOF
+    elif [[ "$OS_ID" == "debian" ]]; then
+        echo -e "   > Setting up Debian mirrors..."
+        cp /etc/apt/sources.list /etc/apt/sources.list.backup_$(date +%s)
         
-        echo -e "${GREEN}[+] Mirrors switched to ir.archive.ubuntu.com${NC}"
+        cat <<EOF | $SUDO tee /etc/apt/sources.list > /dev/null
+deb http://mirror.runflare.com/debian/ ${CODENAME} main contrib non-free
+deb http://mirror.runflare.com/debian/ ${CODENAME}-updates main contrib non-free
+deb http://mirror.runflare.com/debian-security ${CODENAME}-security main
+EOF
     fi
-}
 
-run_apt_robust() {
-    local cmd="$1"
+    # 2. NPM Configuration
+    echo -e "   > Setting up NPM mirror..."
+    # Set global registry to Runflare
+    npm config set registry https://npm.runflare.com --global 2>/dev/null || true
     
-    # Try running directly first
-    set +e
-    eval "$cmd"
-    local status=$?
-    set -e
-    
-    if [ $status -ne 0 ]; then
-        echo -e "${RED}[!] APT command failed (Code: $status).${NC}"
-        
-        # Switch mirrors
-        switch_to_iran_mirrors
-        
-        echo -e "${CYAN}>> Retrying update with new mirrors...${NC}"
-        # Update cache first after switch
-        $SUDO apt-get update -y -qq || echo -e "${YELLOW}[!] Update warning (ignoring)...${NC}"
-        
-        # Retry the original install command
-        echo -e "${CYAN}>> Retrying installation...${NC}"
-        eval "$cmd"
-    fi
+    echo -e "${GREEN}[+] Mirrors configured successfully.${NC}"
 }
 
 # -----------------------------------------------------------------------------
@@ -67,7 +68,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.6.0"
+echo "   Version 1.8.0 (Runflare Edition)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -103,6 +104,9 @@ ROLE="external"
 if [ "$ROLE_CHOICE" -eq 2 ]; then
     ROLE="iran"
     echo -e "${GREEN}>> Configuring as IRAN Server...${NC}"
+    
+    # Apply Runflare Mirrors specifically for Iran server
+    configure_runflare_mirrors
 else
     echo -e "${GREEN}>> Configuring as FOREIGN Server...${NC}"
 fi
@@ -136,15 +140,14 @@ export DEBIAN_FRONTEND=noninteractive
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     $SUDO rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
     
-    # Try standard update, fallback to Iran mirrors if failed
-    UPDATE_CMD="$SUDO apt-get update -y -qq"
-    run_apt_robust "$UPDATE_CMD"
+    # Update using the new Runflare mirrors
+    echo -e "   > Updating repository lists..."
+    $SUDO apt-get update -y -qq
     
-    INSTALL_CMD="$SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server"
-    run_apt_robust "$INSTALL_CMD"
+    echo -e "   > Installing base packages..."
+    $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server
     
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-    # DNF usually handles mirrors better, but we can add retry logic if needed
     $SUDO dnf upgrade -y --refresh
     if ! rpm -q epel-release >/dev/null 2>&1; then
          $SUDO dnf install -y epel-release
@@ -181,7 +184,8 @@ done
 # SSL
 if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     echo -e "   > Requesting SSL Certificate..."
-    $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || echo -e "${YELLOW}Warning: SSL request failed. You can retry later via dashboard.${NC}"
+    # Attempt certbot. If DNS is totally broken, this might fail, but we proceed anyway.
+    $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || echo -e "${YELLOW}Warning: SSL request failed (likely DNS/Network issue). You can retry later via dashboard.${NC}"
 fi
 
 # Nginx
@@ -232,9 +236,8 @@ if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
     $SUDO tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
 fi
 
-# CRITICAL: Set NPM Mirror for Iran to bypass sanctions
-echo -e "   > Configuring NPM Registry..."
-npm config set registry https://registry.npmmirror.com
+# Ensure NPM uses Runflare again (just in case Node reinstall reset it)
+npm config set registry https://npm.runflare.com
 
 $SUDO npm install -g pm2 @angular/cli >/dev/null 2>&1
 
@@ -275,7 +278,7 @@ fi
 echo -e "   > Installing NPM Packages..."
 export NODE_OPTIONS="--max-old-space-size=4096"
 # Ensure registry is set for project install as well
-npm config set registry https://registry.npmmirror.com
+npm config set registry https://npm.runflare.com
 npm install --legacy-peer-deps --loglevel error
 npm install @google/genai@latest --legacy-peer-deps --save
 
