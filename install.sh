@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.0.0 (Sanction Bypass Edition)
+# Version 2.1.0 (Sanction Bypass Refined)
 # Author: EHSANKiNG
 
 set -e
@@ -48,74 +48,91 @@ FOREIGN_PASS=""
 PROXY_PORT="10800"
 PROXY_URL="socks5h://127.0.0.1:${PROXY_PORT}"
 
+# Installs sshpass utility BEFORE tunnel creation
+install_sshpass() {
+    (
+        # No proxy is active here. This is a prerequisite.
+        if command -v apt-get >/dev/null; then
+            $SUDO apt-get update -y -qq && $SUDO apt-get install -y -qq sshpass
+        elif command -v dnf >/dev/null; then
+            $SUDO dnf install -y -q sshpass
+        else
+            echo -e "${RED}Error: Could not install sshpass. Unsupported OS package manager.${NC}"
+            exit 1
+        fi
+    ) &
+    spinner $! "   > Installing tunnel dependency (sshpass)..."
+}
+
+# Asks for creds, creates tunnel, and configures proxies for all tools
 start_tunnel() {
-    echo -e "${YELLOW}[!] Sanction Bypass Mode Activated.${NC}"
+    echo -e "${YELLOW}[!] Sanction Bypass Mode Activated. Please provide Foreign Server credentials.${NC}"
     
-    # Get Foreign Server Credentials
     read -p "Enter Foreign Server IP Address: " FOREIGN_IP
     read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
     read -s -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
     echo
     
     if [ -z "$FOREIGN_IP" ] || [ -z "$FOREIGN_USER" ] || [ -z "$FOREIGN_PASS" ]; then
-        echo -e "${RED}Error: Foreign server credentials are required for installation in Iran.${NC}"
-        exit 1
-    fi
-    
-    # Install sshpass
-    echo -e "${CYAN}   > Installing 'sshpass' utility...${NC}"
-    if command -v apt-get >/dev/null; then
-        $SUDO apt-get update -y -qq && $SUDO apt-get install -y -qq sshpass
-    elif command -v dnf >/dev/null; then
-        $SUDO dnf install -y -q sshpass
-    else
-        echo -e "${RED}Error: Could not install sshpass. Unsupported OS package manager.${NC}"
+        echo -e "${RED}Error: Foreign server credentials are required.${NC}"
         exit 1
     fi
 
-    # Establish SSH Tunnel
+    # Establish Tunnel
     (
-    export SSHPASS="$FOREIGN_PASS"
-    sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        -fN -D ${PROXY_PORT} "${FOREIGN_USER}@${FOREIGN_IP}"
+        export SSHPASS="$FOREIGN_PASS"
+        sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            -fN -D ${PROXY_PORT} "${FOREIGN_USER}@${FOREIGN_IP}"
     ) &> /dev/null
     
-    # Give it a moment to establish
-    sleep 5
+    sleep 5 # Give it a moment to establish
     TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}")
 
     if [ -z "$TUNNEL_PID" ]; then
-        echo -e "${RED}Error: Failed to establish SSH tunnel. Check credentials and server connectivity.${NC}"
+        echo -e "${RED}Error: Failed to establish SSH tunnel. Check credentials/connectivity.${NC}"
         exit 1
     fi
     
     echo -e "${GREEN}[+] SSH tunnel established successfully (PID: $TUNNEL_PID).${NC}"
     
-    # Configure system tools to use the proxy
-    echo -e "${CYAN}   > Routing installation traffic through the tunnel...${NC}"
+    # Configure ALL tools to use the proxy
+    echo -e "${CYAN}   > Routing all subsequent installation traffic through the tunnel...${NC}"
     export HTTPS_PROXY="${PROXY_URL}"
     export HTTP_PROXY="${PROXY_URL}"
     export ALL_PROXY="${PROXY_URL}"
-    $SUDO npm config set proxy "${PROXY_URL}"
-    $SUDO npm config set https-proxy "${PROXY_URL}"
-    # Git automatically respects HTTPS_PROXY
+    
+    $SUDO npm config set proxy "${PROXY_URL}" >/dev/null 2>&1 || true
+    $SUDO npm config set https-proxy "${PROXY_URL}" >/dev/null 2>&1 || true
+    
+    if command -v apt-get >/dev/null; then
+        echo "Acquire::http::Proxy \"${PROXY_URL}\";" | $SUDO tee /etc/apt/apt.conf.d/99proxy > /dev/null
+        echo "Acquire::https::Proxy \"${PROXY_URL}\";" | $SUDO tee -a /etc/apt/apt.conf.d/99proxy > /dev/null
+        echo "Acquire::SOCKS::Proxy \"${PROXY_URL}\";" | $SUDO tee -a /etc/apt/apt.conf.d/99proxy > /dev/null
+    fi
+    if command -v dnf >/dev/null; then
+        echo "proxy=${PROXY_URL}" | $SUDO tee -a /etc/dnf/dnf.conf > /dev/null
+    fi
 }
 
 cleanup() {
-    # This function is called on script exit to clean up
     if [ -n "$TUNNEL_PID" ]; then
         echo -e "\n${CYAN}[i] Terminating SSH tunnel (PID: $TUNNEL_PID)...${NC}"
         kill "$TUNNEL_PID" || true
     fi
     
     if [[ "$ROLE" == "iran" ]]; then
-        echo -e "${CYAN}[i] Cleaning up proxy configurations...${NC}"
+        echo -e "${CYAN}[i] Cleaning up proxy configurations and temporary files...${NC}"
         unset HTTPS_PROXY HTTP_PROXY ALL_PROXY
+        
         $SUDO npm config delete proxy >/dev/null 2>&1 || true
         $SUDO npm config delete https-proxy >/dev/null 2>&1 || true
+        
         if command -v apt-get >/dev/null; then
+             $SUDO rm -f /etc/apt/apt.conf.d/99proxy
              $SUDO apt-get remove --purge -y -qq sshpass >/dev/null 2>&1 || true
-        elif command -v dnf >/dev/null; then
+        fi
+        if command -v dnf >/dev/null; then
+             $SUDO sed -i '/^proxy=/d' /etc/dnf/dnf.conf
              $SUDO dnf remove -y -q sshpass >/dev/null 2>&1 || true
         fi
         echo -e "${GREEN}[+] Cleanup complete.${NC}"
@@ -131,12 +148,11 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.0.0 (Sanction Bypass Edition)"
+echo "   Version 2.1.0 (Sanction Bypass Refined)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
 
-# 1. Check for root privileges or sudo
 SUDO=""
 if [ "$EUID" -ne 0 ]; then
   if command -v sudo >/dev/null 2>&1; then
@@ -147,22 +163,21 @@ if [ "$EUID" -ne 0 ]; then
   fi
 fi
 
-# 2. Role Selection
 echo -e "${YELLOW}Select Server Location/Role:${NC}"
 echo "1) Foreign Server (Upstream - Germany, Finland, etc.)"
 echo "2) Iran Server (Edge - User Access)"
 read -p "Select [1 or 2]: " ROLE_CHOICE
 
-ROLE="external"
 if [[ "$ROLE_CHOICE" == *"2"* || "$ROLE_CHOICE" == *"۲"* ]]; then
     ROLE="iran"
     echo -e "${GREEN}>> Role Selected: IRAN Server (Edge).${NC}"
+    install_sshpass
     start_tunnel
 else
+    ROLE="external"
     echo -e "${GREEN}>> Role Selected: FOREIGN Server (Upstream).${NC}"
 fi
 
-# 3. System Preparation
 echo -e "\n${GREEN}--- STEP 1: PREPARING SYSTEM & DEPENDENCIES ---${NC}"
 if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
 export DEBIAN_FRONTEND=noninteractive
@@ -175,11 +190,10 @@ install_deps() {
     fi
 }
 (install_deps) &
-spinner $! "   > Updating and installing base packages..."
+spinner $! "   > Updating and installing base packages (via tunnel)..."
 
 $SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
 
-# 4. Node.js & PNPM Installation
 echo -e "\n${GREEN}--- STEP 2: INSTALLING NODE.JS & PNPM ---${NC}"
 NODE_VERSION="v22.12.0"
 NODE_DIST="node-${NODE_VERSION}-linux-x64"
@@ -198,9 +212,9 @@ spinner $! "   > Installing pnpm package manager..."
 ($SUDO pnpm add -g pm2 @angular/cli) &
 spinner $! "   > Installing global tools (pm2, @angular/cli)..."
 
-# 5. Project Setup
 echo -e "\n${GREEN}--- STEP 3: SETTING UP PROJECT ---${NC}"
 INSTALL_DIR="/opt/elaheh-project"
+$SUDO rm -rf "$INSTALL_DIR"
 $SUDO mkdir -p "$INSTALL_DIR" && $SUDO chown -R $USER:$USER "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
@@ -209,7 +223,7 @@ spinner $! "   > Cloning repository from GitHub..."
 
 echo "legacy-peer-deps=true" > .npmrc
 (pnpm install) &
-spinner $! "   > Installing dependencies with pnpm (this may take a moment)..."
+spinner $! "   > Installing dependencies with pnpm..."
 
 (pnpm run build) &
 spinner $! "   > Compiling production-ready application..."
@@ -220,7 +234,6 @@ if [ ! -d "$DIST_PATH" ]; then
     exit 1
 fi
 
-# 6. Domain & Nginx Configuration
 echo -e "\n${GREEN}--- STEP 4: CONFIGURING DOMAIN & NGINX ---${NC}"
 PUBLIC_IP=$(curl -s --max-time 10 ifconfig.me || curl -s --max-time 10 ipinfo.io/ip)
 echo -e "${YELLOW}Please ensure your domain's A record points to: ${CYAN}${PUBLIC_IP}${NC}\n"
@@ -258,7 +271,6 @@ $SUDO ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 ($SUDO systemctl restart nginx) &
 spinner $! "   > Configuring Nginx for HTTPS..."
 
-# 7. Finalize
 echo -e "\n${GREEN}--- STEP 5: FINALIZING INSTALLATION ---${NC}"
 if command -v ufw &> /dev/null; then
     ($SUDO ufw allow 22/tcp >/dev/null 2>&1 && $SUDO ufw allow 80/tcp >/dev/null 2>&1 && $SUDO ufw allow 443/tcp >/dev/null 2>&1 && echo "y" | $SUDO ufw enable >/dev/null 2>&1) &
@@ -275,5 +287,4 @@ echo -e "      Role: ${ROLE^^}"
 echo -e "      Panel URL: https://${DOMAIN}"
 echo -e "${YELLOW}      Default Login: admin / admin${NC}"
 echo -e "${GREEN}=========================================${NC}"
-# The 'trap' will call the cleanup function automatically on exit.
 exit 0
