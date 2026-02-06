@@ -205,7 +205,7 @@ spinner $! "   > Checking/Installing global tools..."
 echo -e "\n${GREEN}--- STEP 3: BUILDING APPLICATION ---${NC}"
 INSTALL_DIR="/opt/elaheh-project"
 
-setup_project() {
+download_source() {
     log "INFO" "Cleaning install directory $INSTALL_DIR"
     rm -rf "$INSTALL_DIR"
     mkdir -p "$INSTALL_DIR"
@@ -213,42 +213,54 @@ setup_project() {
     
     log "INFO" "Cloning repository from GitHub (https://github.com/ehsanking/Elaheh-Project.git)..."
     
-    # Retry mechanism for Git Clone (Iran Internet Stability)
     local count=0
     local retries=3
-    local cloned=0
     
     while [ $count -lt $retries ]; do
         if git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .; then
-            cloned=1
             log "INFO" "Clone successful."
-            break
+            return 0
         fi
         count=$((count + 1))
         log "WARN" "Clone failed, retrying ($count/$retries)..."
         sleep 3
     done
 
-    if [ $cloned -ne 1 ] || [ ! -f "package.json" ]; then
-        log "ERROR" "Failed to clone repository from GitHub."
-        echo -e "${RED}Error: Failed to download source code from GitHub.${NC}"
-        echo -e "${YELLOW}Check your internet connection or proxy settings.${NC}"
-        exit 1
-    fi
-    
+    log "ERROR" "Failed to clone repository from GitHub after $retries retries."
+    return 1
+}
+
+install_dependencies() {
+    cd "$INSTALL_DIR"
     log "INFO" "Installing dependencies (npm install)"
     npm install --legacy-peer-deps --loglevel=error >> "$LOG_FILE" 2>&1
-    if [ $? -ne 0 ]; then return 1; fi
-    
+}
+
+compile_app() {
+    cd "$INSTALL_DIR"
     log "INFO" "Building Angular app (npm run build)"
-    # Increase memory limit for node to prevent OOM
     export NODE_OPTIONS="--max-old-space-size=2048"
     npm run build >> "$LOG_FILE" 2>&1
-    if [ $? -ne 0 ]; then return 1; fi
 }
-(setup_project) &
-spinner $! "   > Downloading Source and Compiling..."
 
+(download_source) &
+spinner $! "   > Downloading Source from GitHub..."
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to download source code from GitHub.${NC}"
+    echo -e "${YELLOW}Check your internet connection or proxy settings.${NC}"
+    exit 1
+fi
+
+(install_dependencies) &
+spinner $! "   > Installing Dependencies (npm)..."
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Critical Error: Dependency installation failed.${NC}"
+    echo -e "${YELLOW}Please check the log file: ${LOG_FILE}${NC}"
+    exit 1
+fi
+
+(compile_app) &
+spinner $! "   > Compiling Application (ng build)..."
 if [ $? -ne 0 ]; then
     echo -e "${RED}Critical Error: Build failed.${NC}"
     echo -e "${YELLOW}Please check the log file: ${LOG_FILE}${NC}"
