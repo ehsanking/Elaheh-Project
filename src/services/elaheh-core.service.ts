@@ -129,6 +129,8 @@ export interface EdgeNodeInfo {
 export class ElahehCoreService {
   private db = inject(DatabaseService);
 
+  readonly appVersion = APP_VERSION;
+
   // Theme & Branding
   theme = signal<'light' | 'dark'>('dark');
   brandName = signal<string>('Project Elaheh');
