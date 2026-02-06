@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy, AfterViewInit, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, AfterViewInit, ViewChild, ElementRef, Output, EventEmitter, Input } from '@angular/core';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { FormsModule } from '@angular/forms';
 import { LanguageService } from '../services/language.service';
@@ -10,10 +10,12 @@ import { LogoComponent } from './logo.component';
   imports: [FormsModule, LogoComponent],
   template: `
     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 z-10 relative">
-      <!-- Close button -->
-      <button (click)="closeLogin.emit()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
+      @if (showClose) {
+        <!-- Close button -->
+        <button (click)="closeLogin.emit()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      }
 
       @switch (view()) {
         @case ('login') {
@@ -26,6 +28,11 @@ import { LogoComponent } from './logo.component';
               <p class="text-teal-600 dark:text-teal-400 text-sm font-mono">{{ languageService.translate('login.title') }}</p>
             </div>
             <div class="space-y-4">
+              @if (core.isDefaultAdminCredentials()) {
+                <div class="text-amber-700 dark:text-amber-300 text-xs text-center bg-amber-100 dark:bg-amber-900/30 p-2 rounded border border-amber-200 dark:border-amber-800">
+                  Default admin credentials are in use. Please change them after logging in.
+                </div>
+              }
               <div>
                 <label class="block text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-2">{{ languageService.translate('login.adminUser') }}</label>
                 <input type="text" [(ngModel)]="username" 
@@ -126,6 +133,7 @@ export class LoginComponent implements AfterViewInit {
   view = signal<'login' | 'reset' | 'reset_sent'>('login');
 
   @Output() closeLogin = new EventEmitter<void>();
+  @Input() showClose = false;
 
   @ViewChild('captchaCanvas') captchaCanvas!: ElementRef<HTMLCanvasElement>;
   private captchaText = '';

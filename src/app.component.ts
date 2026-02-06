@@ -44,7 +44,7 @@ export class AppComponent {
   constructor() {
     effect(() => {
       // Check URL for sub link (Simulation)
-      if (window.location.href.includes('/sub/')) {
+      if (typeof window !== 'undefined' && window.location.href.includes('/sub/')) {
           this.isSubscriptionView.set(true);
       }
 

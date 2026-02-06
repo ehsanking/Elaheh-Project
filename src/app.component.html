@@ -31,7 +31,7 @@
               }
               @case('login') {
                 <div class="min-h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0 z-50">
-                   <app-login (closeLogin)="iranView.set('public')"></app-login>
+                   <app-login [showClose]="true" (closeLogin)="iranView.set('public')"></app-login>
                 </div>
                 <app-storefront></app-storefront>
               }

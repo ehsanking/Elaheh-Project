@@ -38,6 +38,11 @@ export class DatabaseService {
   }
 
   exportDatabase(coreData: any): string {
+    const smtp = coreData.smtpConfig();
+    const safeSmtp = {
+      ...smtp,
+      pass: smtp.pass ? '********' : '',
+    };
     const backup: AppBackup = {
       version: '1.0.0',
       timestamp: new Date().toISOString(),
@@ -46,7 +51,7 @@ export class DatabaseService {
         // We do not export passwords in plain text in a real app, keeping it simple for now
         theme: coreData.theme(),
         domain: coreData.customDomain(),
-        smtp: coreData.smtpConfig()
+        smtp: safeSmtp
       },
       users: coreData.users(),
       products: coreData.products()

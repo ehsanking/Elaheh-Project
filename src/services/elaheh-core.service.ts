@@ -141,6 +141,7 @@ export class ElahehCoreService {
   isAuthenticated = signal<boolean>(false);
   adminUsername = signal<string>('admin');
   adminPassword = signal<string>('admin');
+  isDefaultAdminCredentials = computed(() => this.adminUsername() === 'admin' && this.adminPassword() === 'admin');
   
   // Dashboard State (Shared)
   serverLoad = signal<number>(0);
@@ -286,6 +287,7 @@ export class ElahehCoreService {
 
   // Track opened firewall ports
   private openedPorts = new Set<number>([80, 443, 22]);
+  private demoUserInitialized = false;
 
   constructor() {
     this.initSimulatedMetrics();
@@ -304,6 +306,12 @@ export class ElahehCoreService {
       } else {
         document.documentElement.classList.remove('dark');
         localStorage.setItem('theme', 'light');
+      }
+    });
+
+    effect(() => {
+      if (this.isDefaultAdminCredentials()) {
+        this.addLog('WARN', 'Default admin credentials are in use. Please change them after login.');
       }
     });
 
@@ -336,6 +344,7 @@ export class ElahehCoreService {
         }
       } else if (this.isConfigured() && this.serverRole() === 'iran') {
         // IRAN MODE: Full logic
+        this.ensureDemoUser();
         this.addLog('INFO', 'Role: EDGE SERVER (Iran). Panel Active.');
         this.startNatKeepAlive();
         if (this.tunnelMode() === 'auto') {
@@ -358,11 +367,6 @@ export class ElahehCoreService {
               if(data.settings.brandName) this.brandName.set(data.settings.brandName);
               if(data.settings.currency) this.currency.set(data.settings.currency);
           }
-      } else {
-          // If Iran server and no users, add demo
-          if (this.serverRole() === 'iran' && this.users().length === 0) {
-              this.addUser('demo', 10, 30, 2);
-          }
       }
   }
 
@@ -374,9 +378,19 @@ export class ElahehCoreService {
         if (config.role) {
             this.serverRole.set(config.role);
             this.isConfigured.set(true);
+            this.ensureDemoUser();
         }
       })
       .catch(() => {});
+  }
+
+  private ensureDemoUser() {
+    if (this.demoUserInitialized) return;
+    if (this.serverRole() !== 'iran') return;
+    if (this.users().length === 0) {
+      this.addUser('demo', 10, 30, 2);
+    }
+    this.demoUserInitialized = true;
   }
 
   async fetchIpLocation(ip?: string): Promise<any> {
