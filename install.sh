@@ -234,9 +234,33 @@ else
     echo -e "${YELLOW}Please ensure your domain's A record points to: ${CYAN}${PUBLIC_IP}${NC}\n"
 fi
 
-while [ -z "$DOMAIN" ]; do
+DOMAIN=""
+DEFAULT_DOMAIN=""
+if [ -n "$PUBLIC_IP" ]; then
+    DEFAULT_DOMAIN="${PUBLIC_IP}.sslip.io"
+fi
+
+if [ -n "$DEFAULT_DOMAIN" ]; then
+    read -p "Enter your Domain (or press Enter to use ${DEFAULT_DOMAIN}): " DOMAIN
+else
     read -p "Enter your Domain (e.g., panel.example.com): " DOMAIN
-done
+fi
+
+if [ -z "$DOMAIN" ]; then
+    if [ -n "$DEFAULT_DOMAIN" ]; then
+        DOMAIN="$DEFAULT_DOMAIN"
+        echo -e "${CYAN}   > No domain entered. Using default: ${DOMAIN}${NC}"
+    else
+        echo -e "${RED}   > Error: A domain is required. Please re-run the script and provide a domain.${NC}"
+        exit 1
+    fi
+fi
+
+# A simple validation
+if ! [[ "$DOMAIN" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+    echo -e "${RED}Error: Invalid domain format: '${DOMAIN}'${NC}"
+    exit 1
+fi
 EMAIL="admin@${DOMAIN}"
 
 mkdir -p "$DIST_PATH/assets"
@@ -300,6 +324,12 @@ sleep 2
 echo -e "\n${GREEN}=========================================${NC}"
 echo -e "${GREEN}      INSTALLATION COMPLETE!${NC}"
 echo -e "      Role: ${ROLE^^}"
-echo -e "      Panel URL: https://${DOMAIN}"
+if [ -n "$DOMAIN" ]; then
+    echo -e "      Panel URL: https://${DOMAIN}"
+else
+    echo -e "${RED}      WARNING: Domain was not set. Panel URL is unknown.${NC}"
+    echo -e "${YELLOW}      Please check /etc/nginx/sites-available/elaheh to configure manually.${NC}"
+fi
 echo -e "${YELLOW}      Default Login: admin / admin${NC}"
 echo -e "${GREEN}=========================================${NC}"
+
