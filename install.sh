@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.5.1 (Visible Password Entry)
+# Version 2.6.0 (Intelligent SSH Troubleshooting)
 # Author: EHSANKiNG
 
 set -e
@@ -98,9 +98,24 @@ start_tunnel() {
             fi
         else
             echo -e "${RED}Error: Authentication failed!${NC}"
-            echo -e "${YELLOW}Please double-check your IP, username, port, and especially your password.${NC}"
             SANITIZED_OUTPUT=$(cat "$SSH_LOG_FILE" | sed "s/$FOREIGN_PASS/********/g")
             echo -e "${YELLOW}Server response: $SANITIZED_OUTPUT${NC}"
+
+            if grep -q "Permission denied" "$SSH_LOG_FILE"; then
+                echo -e "\n${CYAN}--- راهنمای عیب‌یابی ---${NC}"
+                echo -e "${YELLOW}خطای 'Permission denied' به این معناست که سرور خارجی شما (آلمان) برای جلوگیری از حملات، ورود با رمز عبور را مسدود کرده است.${NC}"
+                echo -e "این یک اقدام امنیتی رایج، به خصوص برای کاربر root است."
+                echo -e "\n${GREEN}برای حل مشکل، وارد سرور خارجی (آلمان) خود شوید و مراحل زیر را انجام دهید:${NC}"
+                echo -e "۱. فایل تنظیمات SSH را باز کنید: ${CYAN}sudo nano /etc/ssh/sshd_config${NC}"
+                echo -e "۲. خط ${CYAN}PasswordAuthentication no${NC} را پیدا کنید."
+                echo -e "۳. آن را به ${GREEN}PasswordAuthentication yes${NC} تغییر دهید (اگر # در ابتدای آن بود، حذف کنید)."
+                echo -e "۴. سرویس SSH را ری‌استارت کنید: ${CYAN}sudo systemctl restart sshd${NC}"
+                echo -e "\n${YELLOW}پس از انجام این مراحل، اینجا دوباره تلاش کنید.${NC}"
+                echo -e "${CYAN}---------------------------${NC}\n"
+            else
+                 echo -e "${YELLOW}Please double-check your IP, username, port, and especially your password.${NC}"
+            fi
+
             rm -f "$SSH_LOG_FILE"
             read -p "Try again? (y/n): " choice
             [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
@@ -185,7 +200,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.5.1 (Visible Password Entry)"
+echo "   Version 2.6.0 (Intelligent SSH Troubleshooting)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
