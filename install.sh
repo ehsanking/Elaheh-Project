@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.4.1 (Tunnel Race Condition Fix)
+# Version 2.5.0 (SSH Pre-flight Check)
 # Author: EHSANKiNG
 
 set -e
@@ -70,7 +70,7 @@ start_tunnel() {
         read -p "Enter Foreign Server IP Address: " FOREIGN_IP
         read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
         read -p "Enter Foreign Server SSH Port [22]: " FOREIGN_PORT
-        FOREIGN_PORT=${FOREIGN_PORT:-22} # Default to 22 if empty
+        FOREIGN_PORT=${FOREIGN_PORT:-22}
         read -s -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
         echo
 
@@ -78,6 +78,36 @@ start_tunnel() {
             echo -e "${RED}Error: All fields are required.${NC}"
             continue
         fi
+
+        # --- Pre-flight check for credentials ---
+        echo -e "${CYAN}   > Testing credentials for ${FOREIGN_USER}@${FOREIGN_IP}...${NC}"
+        
+        SSH_LOG_FILE=$(mktemp)
+        
+        if SSHPASS="$FOREIGN_PASS" sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o BatchMode=yes -p "${FOREIGN_PORT}" "${FOREIGN_USER}@${FOREIGN_IP}" "echo -n TunnelAuthOK" > "$SSH_LOG_FILE" 2>&1; then
+            if grep -q "TunnelAuthOK" "$SSH_LOG_FILE"; then
+                echo -e "${GREEN}[✔] Credentials are correct.${NC}"
+                rm -f "$SSH_LOG_FILE"
+            else
+                echo -e "${RED}Error: Connection test was inconclusive (likely a server-side issue).${NC}"
+                echo -e "${YELLOW}Server response: $(cat "$SSH_LOG_FILE")${NC}"
+                rm -f "$SSH_LOG_FILE"
+                read -p "Try again? (y/n): " choice
+                [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
+                continue
+            fi
+        else
+            echo -e "${RED}Error: Authentication failed!${NC}"
+            echo -e "${YELLOW}Please double-check your IP, username, port, and especially your password.${NC}"
+            SANITIZED_OUTPUT=$(cat "$SSH_LOG_FILE" | sed "s/$FOREIGN_PASS/********/g")
+            echo -e "${YELLOW}Server response: $SANITIZED_OUTPUT${NC}"
+            rm -f "$SSH_LOG_FILE"
+            read -p "Try again? (y/n): " choice
+            [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
+            continue
+        fi
+        
+        # --- End of Pre-flight check ---
 
         (
             export SSHPASS="$FOREIGN_PASS"
@@ -88,12 +118,12 @@ start_tunnel() {
         
         spinner $! "   > Establishing secure tunnel to ${FOREIGN_IP}:${FOREIGN_PORT}..."
         
-        sleep 1 # Add a small delay to prevent a race condition with pgrep
+        sleep 1
 
-        TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}" || true) # Make pgrep non-fatal
+        TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}" || true)
         if [ -z "$TUNNEL_PID" ]; then
-            echo -e "${RED}Error: Failed to start or find the SSH tunnel process.${NC}"
-            echo -e "${YELLOW}This can happen with a wrong password or if the server is unreachable.${NC}"
+            echo -e "${RED}Error: Failed to establish the tunnel process even with correct credentials.${NC}"
+            echo -e "${YELLOW}This could be a server-side configuration issue preventing tunnels.${NC}"
             echo -e "${YELLOW}Details: $(cat /tmp/elaheh-tunnel.log)${NC}"
             rm -f /tmp/elaheh-tunnel.log
             read -p "Try again? (y/n): " choice
@@ -107,7 +137,6 @@ start_tunnel() {
             break
         else
             echo -e "${RED}Error: Tunnel connection test failed. Proxy is not responding.${NC}"
-            echo -e "${YELLOW}This could be due to incorrect credentials or a firewall on the foreign server.${NC}"
             kill "$TUNNEL_PID" >/dev/null 2>&1 || true
             read -p "Try again? (y/n): " choice
             [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
@@ -156,7 +185,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.4.1 (Tunnel Race Condition Fix)"
+echo "   Version 2.5.0 (SSH Pre-flight Check)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
