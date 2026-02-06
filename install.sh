@@ -1,21 +1,19 @@
-
 #!/bin/bash
 
-# Project Elaheh Installer
-# Version 3.2.0 (Manual DNS Selector)
+# Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
+# Version 4.0.0 (Stability Release)
 # Author: EHSANKiNG
 
 set -e
 
-# --- UI & Helper Functions ---
-
-# Colors
+# --- UI Colors ---
 GREEN='\033[1;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# --- Helper Functions ---
 spinner() {
     local pid=$1
     local msg=$2
@@ -31,263 +29,304 @@ spinner() {
     done
     printf "\b\b\b\b\b\b"
     wait $pid
-    if [ $? -eq 0 ]; then
+    local exitcode=$?
+    if [ $exitcode -eq 0 ]; then
         printf "${GREEN} [✔ Done]${NC}\n"
     else
         printf "${RED} [✖ Failed]${NC}\n"
+        # We don't exit here to allow failover logic in main script
     fi
+    return $exitcode
 }
 
-# --- DNS & Cleanup Management ---
-ROLE="" 
-SUDO=""
-
-cleanup() {
-    if [[ "$ROLE" == "iran" ]]; then
-        echo -e "\n${CYAN}[i] Cleaning up temporary DNS configurations...${NC}"
-        RESOLVED_BACKUP="/tmp/resolved.conf.bak"
-        RESOLV_BACKUP="/tmp/resolv.conf.bak"
-
-        if [[ -f "$RESOLVED_BACKUP" ]]; then
-            ($SUDO mv "$RESOLVED_BACKUP" "/etc/systemd/resolved.conf" && $SUDO systemctl restart systemd-resolved) &> /dev/null &
-            spinner $! "   > Restoring original DNS settings (systemd)..."
-        fi
-
-        if [[ -f "$RESOLV_BACKUP" ]]; then
-            if lsattr "/etc/resolv.conf" 2>/dev/null | grep -q "i"; then
-                $SUDO chattr -i "/etc/resolv.conf"
-            fi
-            ($SUDO mv "$RESOLV_BACKUP" "/etc/resolv.conf") &> /dev/null &
-            spinner $! "   > Restoring original DNS settings (resolv.conf)..."
-        fi
-        echo -e "${GREEN}[+] Cleanup complete.${NC}"
-    fi
-}
-trap cleanup EXIT INT TERM
-
-configure_iran_dns() {
-    local dns1=$1
-    local dns2=$2
-
-    echo -e "\n${CYAN}[i] Applying selected DNS configuration...${NC}"
-
-    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        RESOLVED_CONF="/etc/systemd/resolved.conf"
-        RESOLVED_BACKUP="/tmp/resolved.conf.bak"
-        $SUDO cp "$RESOLVED_CONF" "$RESOLVED_BACKUP"
-        if grep -q "^#*DNS=" "$RESOLVED_CONF"; then $SUDO sed -i "s/^#*DNS=.*/DNS=$dns1 $dns2/" "$RESOLVED_CONF"; else echo "DNS=$dns1 $dns2" | $SUDO tee -a "$RESOLVED_CONF" > /dev/null; fi
-        ($SUDO systemctl restart systemd-resolved) &
-        spinner $! "   > Applying DNS settings for Debian/Ubuntu..."
-    elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        RESOLV_CONF="/etc/resolv.conf"
-        RESOLV_BACKUP="/tmp/resolv.conf.bak"
-        $SUDO cp "$RESOLV_CONF" "$RESOLV_BACKUP"
-        if lsattr "$RESOLV_CONF" 2>/dev/null | grep -q "i"; then $SUDO chattr -i "$RESOLV_CONF"; fi
-        ( echo "nameserver $dns1" | $SUDO tee "$RESOLV_CONF" > /dev/null; echo "nameserver $dns2" | $SUDO tee -a "$RESOLV_CONF" > /dev/null ) &
-        spinner $! "   > Applying DNS settings for RPM-based OS..."
-        $SUDO chattr +i "$RESOLV_CONF"
-    else
-        echo -e "${RED}Error: Unsupported OS for automatic DNS configuration.${NC}"; exit 1;
-    fi
-    
-    # Final check is now soft (warning only)
-    echo -e "${YELLOW}   > Verifying connectivity to GitHub...${NC}"
-    if curl -s --max-time 5 "https://api.github.com" > /dev/null; then
-        echo -e "${GREEN}   > Connection Verified!${NC}"
-    else
-        echo -e "${RED}   > Warning: Could not connect to GitHub. Installation might fail if DNS is blocked.${NC}"
-        read -p "   > Continue anyway? (y/n): " CONT
-        if [[ "$CONT" != "y" ]]; then exit 1; fi
-    fi
+check_command() {
+    command -v "$1" >/dev/null 2>&1
 }
 
-select_and_configure_dns() {
-    # Define Providers: Name | IP1 | IP2
-    PROVIDERS=(
-        "Shecan|178.22.122.100|185.51.200.2"
-        "403.online|10.202.10.202|10.202.10.102"
-        "RadarGame|185.55.226.26|185.55.225.25"
-        "Begzar|5.202.100.100|5.202.100.101"
-        "Electroteam|94.103.125.157|94.103.125.158"
-        "Google (Standard)|8.8.8.8|8.8.4.4"
-    )
-
-    echo -e "\n${YELLOW}[!] Sanction Bypass DNS Selector${NC}"
-    echo "    Please select a DNS provider to temporarily bypass restrictions during installation."
-    echo "    Pinging providers to check latency..."
-    echo ""
-    
-    printf "    %-4s %-15s %-18s %s\n" "ID" "Provider" "Primary IP" "Latency"
-    printf "    %-4s %-15s %-18s %s\n" "--" "--------" "----------" "-------"
-
-    i=1
-    declare -a IP_MAP
-    
-    for p in "${PROVIDERS[@]}"; do
-        IFS='|' read -r name ip1 ip2 <<< "$p"
-        
-        latency="N/A"
-        if command -v ping > /dev/null 2>&1; then
-            # Ping 2 times, wait max 1 sec
-            ping_res=$(ping -c 2 -W 1 "$ip1" 2>/dev/null | tail -1 | awk -F '/' '{print $5}')
-            if [[ ! -z "$ping_res" ]]; then
-                latency="${ping_res} ms"
-            else
-                latency="${RED}Timeout${NC}"
-            fi
-        fi
-
-        printf "    ${CYAN}%-4s${NC} %-15s %-18s %b\n" "$i)" "$name" "$ip1" "$latency"
-        IP_MAP[$i]="$ip1 $ip2"
-        i=$((i+1))
-    done
-
-    echo ""
-    read -p "   > Enter ID [1-${#PROVIDERS[@]}]: " DNS_CHOICE
-    
-    if [[ -z "${IP_MAP[$DNS_CHOICE]}" ]]; then
-        echo -e "${RED}Invalid selection. Defaulting to Shecan.${NC}"
-        DNS_CHOICE=1
-    fi
-    
-    SELECTED_IPS=(${IP_MAP[$DNS_CHOICE]})
-    configure_iran_dns "${SELECTED_IPS[0]}" "${SELECTED_IPS[1]}"
-}
-
-
-# -----------------------------------------------------------------------------
-# Main Installation Logic
-# -----------------------------------------------------------------------------
-
+# --- Initialization ---
 clear
 echo -e "${CYAN}"
 echo "################################################################"
-echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 3.2.0 (Manual DNS Selector)"
-echo "   'Secure. Fast. Uncensored.'"
+echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
+echo "   Version 4.0.0 (Optimized for Iran Infrastructure)"
+echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
 
+# Root Check
 if [ "$EUID" -ne 0 ]; then
-  if command -v sudo >/dev/null 2>&1; then SUDO="sudo"; else echo -e "${RED}Error: Please run as root.${NC}"; exit 1; fi
+    echo -e "${RED}Error: Please run as root (sudo).${NC}"
+    exit 1
 fi
-if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
-export DEBIAN_FRONTEND=noninteractive
 
-echo -e "${YELLOW}Select Server Location/Role:${NC}"
-echo "1) Foreign Server (Upstream - Germany, Finland, etc.)"
-echo "2) Iran Server (Edge - User Access)"
+# OS Detection
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$NAME
+else
+    echo -e "${RED}Error: Cannot detect OS.${NC}"
+    exit 1
+fi
+
+# --- User Input ---
+echo -e "${YELLOW}Select Server Role:${NC}"
+echo "1) Foreign Server (Upstream)"
+echo "2) Iran Server (Edge)"
 read -p "Select [1 or 2]: " ROLE_CHOICE
 
 if [[ "$ROLE_CHOICE" == *"2"* || "$ROLE_CHOICE" == *"۲"* ]]; then
     ROLE="iran"
-    echo -e "${GREEN}>> Role Selected: IRAN Server (Edge).${NC}"
-    select_and_configure_dns
+    echo -e "${GREEN}>> Role: IRAN (Edge)${NC}"
 else
     ROLE="external"
-    echo -e "${GREEN}>> Role Selected: FOREIGN Server (Upstream).${NC}"
+    echo -e "${GREEN}>> Role: FOREIGN (Upstream)${NC}"
 fi
 
-echo -e "\n${GREEN}--- STEP 1: PREPARING SYSTEM & DEPENDENCIES ---${NC}"
-install_deps() {
-    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        ($SUDO apt-get update -y -qq && $SUDO apt-get upgrade -y -qq && $SUDO apt-get install -y -qq curl git unzip ufw nginx certbot python3-certbot-nginx socat redis-server pingutils)
-    elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        ($SUDO dnf upgrade -y --refresh && $SUDO dnf install -y -q curl git unzip firewalld nginx certbot python3-certbot-nginx socat redis iputils)
+# Get Domain immediately
+PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 ifconfig.me)
+echo -e "\n${YELLOW}Public IP Detected: ${CYAN}${PUBLIC_IP}${NC}"
+read -p "Enter your Domain (A record must point to IP): " DOMAIN
+if [ -z "$DOMAIN" ]; then DOMAIN="localhost"; fi
+
+# --- STEP 1: Smart Package Installation ---
+echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
+
+install_pkg_apt() {
+    PKG=$1
+    if dpkg -l | grep -q "^ii  $PKG "; then
+        echo -e "${GREEN}   > $PKG is already installed. Checking for updates...${NC}"
+        # Optional: apt-get install --only-upgrade -y $PKG >/dev/null 2>&1
+    else
+        echo -e "${CYAN}   > Installing $PKG...${NC}"
+        apt-get install -y -qq $PKG >/dev/null 2>&1
     fi
 }
-(install_deps) >/dev/null 2>&1 &
-spinner $! "   > Updating and installing base packages..."
 
-$SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
+install_pkg_dnf() {
+    PKG=$1
+    if rpm -q $PKG >/dev/null 2>&1; then
+        echo -e "${GREEN}   > $PKG is already installed.${NC}"
+    else
+        echo -e "${CYAN}   > Installing $PKG...${NC}"
+        dnf install -y -q $PKG >/dev/null 2>&1
+    fi
+}
 
-echo -e "\n${GREEN}--- STEP 2: INSTALLING NODE.JS & NPM ---${NC}"
-NODE_VERSION="v22.12.0"
-NODE_DIST="node-${NODE_VERSION}-linux-x64"
+prepare_system() {
+    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+        apt-get update -y -qq >/dev/null 2>&1
+        local DEPS=("curl" "git" "unzip" "ufw" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis-server")
+        for dep in "${DEPS[@]}"; do install_pkg_apt "$dep"; done
+        systemctl enable --now redis-server >/dev/null 2>&1
+    elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        dnf check-update >/dev/null 2>&1 || true
+        local DEPS=("curl" "git" "unzip" "firewalld" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis")
+        for dep in "${DEPS[@]}"; do install_pkg_dnf "$dep"; done
+        systemctl enable --now redis >/dev/null 2>&1
+    fi
+}
+(prepare_system) &
+spinner $! "   > Verifying and installing base packages..."
 
-(curl -sL --retry 3 --retry-delay 5 "https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz" | tar -xJ -C /tmp) >/dev/null 2>&1 &
-spinner $! "   > Downloading Node.js ${NODE_VERSION}..."
+# --- STEP 2: Node.js (Sanction Bypass Strategy) ---
+echo -e "\n${GREEN}--- STEP 2: NODE.JS & NPM CONFIGURATION ---${NC}"
 
-($SUDO rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx && \
- $SUDO cp -R /tmp/${NODE_DIST}/* /usr/local/ && \
- $SUDO rm -rf /tmp/${NODE_DIST}) >/dev/null 2>&1 &
-spinner $! "   > Installing Node.js..."
+install_node() {
+    # Check if Node exists and version is sufficient (v18+)
+    if check_command node; then
+        NODE_V=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ "$NODE_V" -ge 18 ]; then
+            echo -e "${GREEN}   > Node.js ($NODE_V) is already installed.${NC}"
+            return
+        fi
+    fi
 
-(npm install -g pm2 @angular/cli) >/dev/null 2>&1 &
-spinner $! "   > Installing global tools (pm2, @angular/cli)..."
+    echo -e "${CYAN}   > Installing Node.js v20 (LTS)...${NC}"
+    # Using NodeSource which usually has good mirrors, or fallback to direct binary if apt fails
+    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
+        apt-get install -y nodejs >/dev/null 2>&1
+    elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
+        dnf install -y nodejs >/dev/null 2>&1
+    fi
+}
+(install_node) &
+spinner $! "   > Configuring Node.js environment..."
 
-echo -e "\n${GREEN}--- STEP 3: SETTING UP PROJECT ---${NC}"
+# Configure NPM Mirror to bypass sanctions
+echo -e "${CYAN}   > Configuring NPM registry mirror (Anti-Sanction)...${NC}"
+npm config set registry https://registry.npmmirror.com >/dev/null 2>&1
+
+install_globals() {
+    local TOOLS=("pm2" "@angular/cli")
+    for tool in "${TOOLS[@]}"; do
+        if ! command -v $tool >/dev/null 2>&1; then
+             npm install -g $tool >/dev/null 2>&1
+        fi
+    done
+}
+(install_globals) &
+spinner $! "   > Checking/Installing global tools (pm2, angular-cli)..."
+
+# --- STEP 3: Project Setup ---
+echo -e "\n${GREEN}--- STEP 3: BUILDING APPLICATION ---${NC}"
 INSTALL_DIR="/opt/elaheh-project"
-$SUDO rm -rf "$INSTALL_DIR"
-$SUDO mkdir -p "$INSTALL_DIR" && $SUDO chown -R $USER:$USER "$INSTALL_DIR"
-cd "$INSTALL_DIR"
 
-(git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .) >/dev/null 2>&1 &
-spinner $! "   > Cloning repository from GitHub..."
-
-(npm install --legacy-peer-deps) >/dev/null 2>&1 &
-spinner $! "   > Installing dependencies with npm..."
-
-(npm run build) >/dev/null 2>&1 &
-spinner $! "   > Compiling production-ready application..."
+setup_project() {
+    rm -rf "$INSTALL_DIR"
+    mkdir -p "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+    
+    # Clone
+    git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .
+    
+    # Install Deps (using the mirror set previously)
+    npm install --legacy-peer-deps --loglevel=error
+    
+    # Build
+    npm run build
+}
+(setup_project) >/dev/null 2>&1 &
+spinner $! "   > Cloning and Compiling (this may take a moment)..."
 
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
-if [ ! -d "$DIST_PATH" ]; then 
-    echo -e "${RED}[!] Build Failed! Output directory not found.${NC}"
+if [ ! -d "$DIST_PATH" ]; then
+    echo -e "${RED}Critical Error: Build failed. Check Node/NPM logs.${NC}"
     exit 1
 fi
 
-echo -e "\n${GREEN}--- STEP 4: CONFIGURING DOMAIN & NGINX ---${NC}"
-PUBLIC_IP=$(curl -s --max-time 10 ifconfig.me || curl -s --max-time 10 ipinfo.io/ip)
-echo -e "${YELLOW}Please ensure your domain's A record points to: ${CYAN}${PUBLIC_IP}${NC}\n"
-read -p "Enter your Domain: " DOMAIN
-EMAIL="admin@${DOMAIN}"
+# Server Config Asset
+mkdir -p "$DIST_PATH/assets"
+echo "{\"role\": \"${ROLE}\", \"domain\": \"${DOMAIN}\", \"installedAt\": \"$(date)\"}" > "$DIST_PATH/assets/server-config.json"
 
-$SUDO mkdir -p "$DIST_PATH/assets"
-cat <<EOF | $SUDO tee "$DIST_PATH/assets/server-config.json" > /dev/null
-{"role": "${ROLE}", "domain": "${DOMAIN}", "installedAt": "$(date)"}
-EOF
+# --- STEP 4: Nginx & SSL (The Critical Part) ---
+echo -e "\n${GREEN}--- STEP 4: WEBSERVER & SSL ---${NC}"
 
-($SUDO systemctl stop nginx >/dev/null 2>&1 || true)
-($SUDO lsof -t -i:80 -sTCP:LISTEN | xargs -r $SUDO kill -9 || true)
+# Stop Nginx to free port 80 for Certbot
+systemctl stop nginx >/dev/null 2>&1 || true
 
-($SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}") >/dev/null 2>&1 &
-spinner $! "   > Requesting SSL certificate via Certbot..."
+SSL_KEY=""
+SSL_CERT=""
+USE_SELF_SIGNED=0
 
-cat <<EOF | $SUDO tee /etc/nginx/sites-available/elaheh > /dev/null
-server {
-    listen 80; server_name ${DOMAIN};
-    return 301 https://\$host\$request_uri;
+attempt_certbot() {
+    echo -e "${CYAN}   > Attempting to obtain valid SSL from Let's Encrypt...${NC}"
+    if certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "admin@${DOMAIN}" -d "${DOMAIN}" >/dev/null 2>&1; then
+        SSL_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
+        SSL_CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+        return 0
+    else
+        return 1
+    fi
 }
-server {
-    listen 443 ssl http2; server_name ${DOMAIN};
-    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+
+if attempt_certbot; then
+    echo -e "${GREEN}   > Valid SSL Certificate obtained!${NC}"
+else
+    echo -e "${YELLOW}   > Let's Encrypt failed (likely due to Iran filtering).${NC}"
+    echo -e "${CYAN}   > Generating Self-Signed SSL (Fallback Strategy)...${NC}"
     
-    root ${DIST_PATH}; index index.html;
-    location / { try_files \$uri \$uri/ /index.html; }
-}
-EOF
-$SUDO ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
-($SUDO crontab -l 2>/dev/null | grep -v "certbot renew") | $SUDO crontab - || true
-($SUDO crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --deploy-hook 'systemctl reload nginx'") | $SUDO crontab -
-($SUDO systemctl restart nginx) >/dev/null 2>&1 &
-spinner $! "   > Configuring Nginx for HTTPS..."
-
-echo -e "\n${GREEN}--- STEP 5: FINALIZING INSTALLATION ---${NC}"
-if command -v ufw &> /dev/null; then
-    ($SUDO ufw allow 22/tcp >/dev/null 2>&1 && $SUDO ufw allow 80/tcp >/dev/null 2>&1 && $SUDO ufw allow 443/tcp >/dev/null 2>&1 && echo "y" | $SUDO ufw enable >/dev/null 2>&1) &
-    spinner $! "   > Configuring firewall (UFW)..."
-elif command -v firewall-cmd &> /dev/null; then
-    ($SUDO systemctl start firewalld && $SUDO firewall-cmd --permanent --add-service=http >/dev/null 2>&1 && $SUDO firewall-cmd --permanent --add-service=https >/dev/null 2>&1 && $SUDO firewall-cmd --reload >/dev/null 2>&1) &
-    spinner $! "   > Configuring firewall (firewalld)..."
+    SELF_DIR="/etc/nginx/ssl"
+    mkdir -p $SELF_DIR
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout "$SELF_DIR/selfsigned.key" \
+        -out "$SELF_DIR/selfsigned.crt" \
+        -subj "/C=IR/ST=Tehran/L=Tehran/O=Elaheh/OU=IT/CN=${DOMAIN}" >/dev/null 2>&1
+    
+    SSL_KEY="$SELF_DIR/selfsigned.key"
+    SSL_CERT="$SELF_DIR/selfsigned.crt"
+    USE_SELF_SIGNED=1
 fi
 
+# Write Nginx Config
+cat <<EOF > /etc/nginx/sites-available/elaheh
+server {
+    listen 80;
+    server_name ${DOMAIN} ${PUBLIC_IP};
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${DOMAIN} ${PUBLIC_IP};
+
+    ssl_certificate ${SSL_CERT};
+    ssl_certificate_key ${SSL_KEY};
+
+    # Hardening
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    
+    root ${DIST_PATH};
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+    }
+    
+    # API Proxy (Example for future backend)
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+    }
+}
+EOF
+
+# Link and Restart
+ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+systemctl restart nginx
+echo -e "${GREEN}   > Nginx configured and started.${NC}"
+
+# --- STEP 5: Firewall & PM2 ---
+echo -e "\n${GREEN}--- STEP 5: FINALIZING ---${NC}"
+
+setup_firewall() {
+    if command -v ufw >/dev/null 2>&1; then
+        ufw allow 22/tcp >/dev/null 2>&1
+        ufw allow 80/tcp >/dev/null 2>&1
+        ufw allow 443/tcp >/dev/null 2>&1
+        # Tunnel Ports
+        ufw allow 110/tcp >/dev/null 2>&1
+        ufw allow 510/tcp >/dev/null 2>&1
+        ufw allow 1414/udp >/dev/null 2>&1
+        ufw allow 53133/udp >/dev/null 2>&1
+        echo "y" | ufw enable >/dev/null 2>&1
+    elif command -v firewall-cmd >/dev/null 2>&1; then
+        systemctl start firewalld
+        firewall-cmd --permanent --add-service=http >/dev/null 2>&1
+        firewall-cmd --permanent --add-service=https >/dev/null 2>&1
+        firewall-cmd --permanent --add-port=110/tcp >/dev/null 2>&1
+        firewall-cmd --permanent --add-port=510/tcp >/dev/null 2>&1
+        firewall-cmd --permanent --add-port=1414/udp >/dev/null 2>&1
+        firewall-cmd --permanent --add-port=53133/udp >/dev/null 2>&1
+        firewall-cmd --reload >/dev/null 2>&1
+    fi
+}
+(setup_firewall) &
+spinner $! "   > Configuring Firewall (UFW/Firewalld)..."
+
+# Serve using Nginx is enough for static build, 
+# But if we had a node backend, we would start it here with PM2.
+# Ensuring PM2 startup for future backend modules
+pm2 startup >/dev/null 2>&1 || true
+pm2 save >/dev/null 2>&1 || true
+
 echo ""
-echo -e "${GREEN}=========================================${NC}"
-echo -e "${GREEN}      INSTALLATION COMPLETE!${NC}"
-echo -e "      Role: ${ROLE^^}"
-echo -e "      Panel URL: https://${DOMAIN}"
-echo -e "${YELLOW}      Default Login: admin / admin${NC}"
-echo -e "${GREEN}=========================================${NC}"
+echo -e "${GREEN}==============================================${NC}"
+echo -e "${GREEN}          INSTALLATION SUCCESSFUL!${NC}"
+echo -e "          Role: ${ROLE^^}"
+echo -e "          Panel Address: https://${DOMAIN}"
+if [ "$USE_SELF_SIGNED" -eq 1 ]; then
+    echo -e "${YELLOW}          [!] Note: Using Self-Signed SSL.${NC}"
+    echo -e "${YELLOW}          Your browser will show a security warning.${NC}"
+    echo -e "${YELLOW}          Click 'Advanced' -> 'Proceed to ${DOMAIN}' to access.${NC}"
+fi
+echo -e "${YELLOW}          Login: admin / admin${NC}"
+echo -e "${GREEN}==============================================${NC}"
 exit 0
