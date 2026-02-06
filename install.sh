@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.5.0 (SSH Pre-flight Check)
+# Version 2.5.1 (Visible Password Entry)
 # Author: EHSANKiNG
 
 set -e
@@ -71,7 +71,7 @@ start_tunnel() {
         read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
         read -p "Enter Foreign Server SSH Port [22]: " FOREIGN_PORT
         FOREIGN_PORT=${FOREIGN_PORT:-22}
-        read -s -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
+        read -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
         echo
 
         if [ -z "$FOREIGN_IP" ] || [ -z "$FOREIGN_USER" ] || [ -z "$FOREIGN_PASS" ]; then
@@ -185,7 +185,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.5.0 (SSH Pre-flight Check)"
+echo "   Version 2.5.1 (Visible Password Entry)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
