@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 3.1.0 (Dynamic DNS Selector)
+# Version 3.2.0 (Manual DNS Selector)
 # Author: EHSANKiNG
 
 set -e
@@ -90,64 +90,67 @@ configure_iran_dns() {
         echo -e "${RED}Error: Unsupported OS for automatic DNS configuration.${NC}"; exit 1;
     fi
     
-    ( if ! curl -s --max-time 15 "https://api.github.com" > /dev/null; then
-            echo -e "\n${RED}Error: Final verification failed. The selected DNS may be unstable.${NC}"; exit 1;
-      fi ) &
-    spinner $! "   > Verifying final configuration..."
-    echo -e "${GREEN}[✔] DNS configured and connectivity verified.${NC}"
+    # Final check is now soft (warning only)
+    echo -e "${YELLOW}   > Verifying connectivity to GitHub...${NC}"
+    if curl -s --max-time 5 "https://api.github.com" > /dev/null; then
+        echo -e "${GREEN}   > Connection Verified!${NC}"
+    else
+        echo -e "${RED}   > Warning: Could not connect to GitHub. Installation might fail if DNS is blocked.${NC}"
+        read -p "   > Continue anyway? (y/n): " CONT
+        if [[ "$CONT" != "y" ]]; then exit 1; fi
+    fi
 }
 
 select_and_configure_dns() {
-    declare -A DNS_PROVIDERS
-    DNS_PROVIDERS["Shecan"]="178.22.122.100 185.51.200.2"
-    DNS_PROVIDERS["403.online"]="10.202.10.202 10.202.10.102"
-    DNS_PROVIDERS["RadarGame"]="185.55.226.26 185.55.225.25"
-    DNS_PROVIDERS["Beshkan"]="181.41.194.177 181.41.194.186"
-    DNS_PROVIDERS["Begzar"]="5.202.100.100 5.202.100.101"
-    DNS_PROVIDERS["Electroteam"]="94.103.125.157 94.103.125.158"
+    # Define Providers: Name | IP1 | IP2
+    PROVIDERS=(
+        "Shecan|178.22.122.100|185.51.200.2"
+        "403.online|10.202.10.202|10.202.10.102"
+        "RadarGame|185.55.226.26|185.55.225.25"
+        "Begzar|5.202.100.100|5.202.100.101"
+        "Electroteam|94.103.125.157|94.103.125.158"
+        "Google (Standard)|8.8.8.8|8.8.4.4"
+    )
 
-    echo -e "\n${YELLOW}[!] Finding the best DNS to bypass sanctions...${NC}"
-    VALID_PROVIDERS=()
+    echo -e "\n${YELLOW}[!] Sanction Bypass DNS Selector${NC}"
+    echo "    Please select a DNS provider to temporarily bypass restrictions during installation."
+    echo "    Pinging providers to check latency..."
+    echo ""
     
-    for name in "${!DNS_PROVIDERS[@]}"; do
-        ips=(${DNS_PROVIDERS[$name]})
-        primary_ip=${ips[0]}
-        
-        # Test connectivity in the background, suppressing output
-        if curl -s --max-time 10 --dns-servers "$primary_ip" "https://api.github.com" > /dev/null 2>&1; then
-            latency=$(ping -c 2 -W 2 "$primary_ip" | awk -F'/' 'END{print $5}' | sed 's/\..*//' || echo "N/A")
-            if [ -z "$latency" ]; then latency="N/A"; fi
-            VALID_PROVIDERS+=("$name|$primary_ip|${ips[1]}|$latency")
-        fi &
-    done
+    printf "    %-4s %-15s %-18s %s\n" "ID" "Provider" "Primary IP" "Latency"
+    printf "    %-4s %-15s %-18s %s\n" "--" "--------" "----------" "-------"
 
-    spinner $! "   > Testing all DNS providers for GitHub access..."
-    wait # Wait for all background tests to complete
-
-    if [ ${#VALID_PROVIDERS[@]} -eq 0 ]; then
-        echo -e "${RED}Error: No working DNS provider found that can access GitHub.${NC}"
-        echo -e "${YELLOW}Please check your server's network or try again later.${NC}"
-        exit 1
-    fi
-
-    echo -e "\n${GREEN}The following DNS providers passed the connectivity test:${NC}"
-    declare -a OPTIONS_MAP
-    
     i=1
-    for provider_data in "${VALID_PROVIDERS[@]}"; do
-        IFS='|' read -r name ip1 ip2 latency <<< "$provider_data"
-        printf "   ${CYAN}%s)${NC} %-15s (Latency: %s ms)\n" "$i" "$name" "$latency"
-        OPTIONS_MAP+=("$ip1 $ip2")
+    declare -a IP_MAP
+    
+    for p in "${PROVIDERS[@]}"; do
+        IFS='|' read -r name ip1 ip2 <<< "$p"
+        
+        latency="N/A"
+        if command -v ping > /dev/null 2>&1; then
+            # Ping 2 times, wait max 1 sec
+            ping_res=$(ping -c 2 -W 1 "$ip1" 2>/dev/null | tail -1 | awk -F '/' '{print $5}')
+            if [[ ! -z "$ping_res" ]]; then
+                latency="${ping_res} ms"
+            else
+                latency="${RED}Timeout${NC}"
+            fi
+        fi
+
+        printf "    ${CYAN}%-4s${NC} %-15s %-18s %b\n" "$i)" "$name" "$ip1" "$latency"
+        IP_MAP[$i]="$ip1 $ip2"
         i=$((i+1))
     done
 
-    read -p "   > Please select the best provider for your network [1-${#VALID_PROVIDERS[@]}]: " DNS_CHOICE
+    echo ""
+    read -p "   > Enter ID [1-${#PROVIDERS[@]}]: " DNS_CHOICE
     
-    if ! [[ "$DNS_CHOICE" =~ ^[0-9]+$ ]] || [ "$DNS_CHOICE" -lt 1 ] || [ "$DNS_CHOICE" -gt "${#VALID_PROVIDERS[@]}" ]; then
-        echo -e "${RED}Invalid selection.${NC}"; exit 1;
+    if [[ -z "${IP_MAP[$DNS_CHOICE]}" ]]; then
+        echo -e "${RED}Invalid selection. Defaulting to Shecan.${NC}"
+        DNS_CHOICE=1
     fi
     
-    SELECTED_IPS=(${OPTIONS_MAP[$((DNS_CHOICE-1))]})
+    SELECTED_IPS=(${IP_MAP[$DNS_CHOICE]})
     configure_iran_dns "${SELECTED_IPS[0]}" "${SELECTED_IPS[1]}"
 }
 
@@ -160,7 +163,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 3.1.0 (Dynamic DNS Selector)"
+echo "   Version 3.2.0 (Manual DNS Selector)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
