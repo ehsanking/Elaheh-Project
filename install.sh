@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.9.0 (Shecan DNS for Iran)
+# Version 3.0.0 (Silent Background Tasks)
 # Author: EHSANKiNG
 
 set -e
@@ -127,7 +127,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.9.0 (Shecan DNS for Iran)"
+echo "   Version 3.0.0 (Silent Background Tasks)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -165,7 +165,7 @@ install_deps() {
         ($SUDO dnf upgrade -y --refresh && $SUDO dnf install -y -q curl git unzip firewalld nginx certbot python3-certbot-nginx socat redis)
     fi
 }
-(install_deps) &
+(install_deps) >/dev/null 2>&1 &
 spinner $! "   > Updating and installing base packages..."
 
 $SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
@@ -174,15 +174,15 @@ echo -e "\n${GREEN}--- STEP 2: INSTALLING NODE.JS & NPM ---${NC}"
 NODE_VERSION="v22.12.0"
 NODE_DIST="node-${NODE_VERSION}-linux-x64"
 
-(curl -L --retry 3 --retry-delay 5 "https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz" | tar -xJ -C /tmp) &
+(curl -sL --retry 3 --retry-delay 5 "https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz" | tar -xJ -C /tmp) >/dev/null 2>&1 &
 spinner $! "   > Downloading Node.js ${NODE_VERSION}..."
 
 ($SUDO rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx && \
  $SUDO cp -R /tmp/${NODE_DIST}/* /usr/local/ && \
- $SUDO rm -rf /tmp/${NODE_DIST}) &
+ $SUDO rm -rf /tmp/${NODE_DIST}) >/dev/null 2>&1 &
 spinner $! "   > Installing Node.js..."
 
-(npm install -g pm2 @angular/cli) &
+(npm install -g pm2 @angular/cli) >/dev/null 2>&1 &
 spinner $! "   > Installing global tools (pm2, @angular/cli)..."
 
 echo -e "\n${GREEN}--- STEP 3: SETTING UP PROJECT ---${NC}"
@@ -191,13 +191,13 @@ $SUDO rm -rf "$INSTALL_DIR"
 $SUDO mkdir -p "$INSTALL_DIR" && $SUDO chown -R $USER:$USER "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-(git clone --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .) &
+(git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .) >/dev/null 2>&1 &
 spinner $! "   > Cloning repository from GitHub..."
 
-(npm install --legacy-peer-deps) &
+(npm install --legacy-peer-deps) >/dev/null 2>&1 &
 spinner $! "   > Installing dependencies with npm..."
 
-(npm run build) &
+(npm run build) >/dev/null 2>&1 &
 spinner $! "   > Compiling production-ready application..."
 
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
@@ -220,7 +220,7 @@ EOF
 ($SUDO systemctl stop nginx >/dev/null 2>&1 || true)
 ($SUDO lsof -t -i:80 -sTCP:LISTEN | xargs -r $SUDO kill -9 || true)
 
-($SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}") &
+($SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}") >/dev/null 2>&1 &
 spinner $! "   > Requesting SSL certificate via Certbot..."
 
 cat <<EOF | $SUDO tee /etc/nginx/sites-available/elaheh > /dev/null
@@ -240,7 +240,7 @@ EOF
 $SUDO ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 ($SUDO crontab -l 2>/dev/null | grep -v "certbot renew") | $SUDO crontab - || true
 ($SUDO crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --deploy-hook 'systemctl reload nginx'") | $SUDO crontab -
-($SUDO systemctl restart nginx) &
+($SUDO systemctl restart nginx) >/dev/null 2>&1 &
 spinner $! "   > Configuring Nginx for HTTPS..."
 
 echo -e "\n${GREEN}--- STEP 5: FINALIZING INSTALLATION ---${NC}"
