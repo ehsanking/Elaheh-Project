@@ -211,13 +211,13 @@ download_source() {
     mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    log "INFO" "Cloning repository from GitHub (https://github.com/ehsanking/Elaheh-Project.git)..."
+    log "INFO" "Cloning repository from GitHub mirror (https://ghfast.top/https://github.com/ehsanking/Elaheh-Project.git)..."
     
     local count=0
     local retries=3
     
     while [ $count -lt $retries ]; do
-        if git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .; then
+        if git clone --quiet --depth 1 "https://ghfast.top/https://github.com/ehsanking/Elaheh-Project.git" .; then
             log "INFO" "Clone successful."
             return 0
         fi
@@ -226,7 +226,7 @@ download_source() {
         sleep 3
     done
 
-    log "ERROR" "Failed to clone repository from GitHub after $retries retries."
+    log "ERROR" "Failed to clone repository from GitHub mirror after $retries retries."
     return 1
 }
 
