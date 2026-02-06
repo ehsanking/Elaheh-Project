@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.4.0 (SSH Port Customization)
+# Version 2.4.1 (Tunnel Race Condition Fix)
 # Author: EHSANKiNG
 
 set -e
@@ -88,9 +88,12 @@ start_tunnel() {
         
         spinner $! "   > Establishing secure tunnel to ${FOREIGN_IP}:${FOREIGN_PORT}..."
         
-        TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}")
+        sleep 1 # Add a small delay to prevent a race condition with pgrep
+
+        TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}" || true) # Make pgrep non-fatal
         if [ -z "$TUNNEL_PID" ]; then
-            echo -e "${RED}Error: Failed to start SSH process.${NC}"
+            echo -e "${RED}Error: Failed to start or find the SSH tunnel process.${NC}"
+            echo -e "${YELLOW}This can happen with a wrong password or if the server is unreachable.${NC}"
             echo -e "${YELLOW}Details: $(cat /tmp/elaheh-tunnel.log)${NC}"
             rm -f /tmp/elaheh-tunnel.log
             read -p "Try again? (y/n): " choice
@@ -153,7 +156,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.4.0 (SSH Port Customization)"
+echo "   Version 2.4.1 (Tunnel Race Condition Fix)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
