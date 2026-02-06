@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.7.0 (User-Provided VPN Method)
+# Version 2.8.0 (NPM as Package Manager)
 # Author: EHSANKiNG
 
 set -e
@@ -48,7 +48,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.7.0 (User-Provided VPN Method)"
+echo "   Version 2.8.0 (NPM as Package Manager)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -107,7 +107,7 @@ spinner $! "   > Updating and installing base packages..."
 
 $SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
 
-echo -e "\n${GREEN}--- STEP 2: INSTALLING NODE.JS & PNPM ---${NC}"
+echo -e "\n${GREEN}--- STEP 2: INSTALLING NODE.JS & NPM ---${NC}"
 NODE_VERSION="v22.12.0"
 NODE_DIST="node-${NODE_VERSION}-linux-x64"
 
@@ -119,13 +119,8 @@ spinner $! "   > Downloading Node.js ${NODE_VERSION}..."
  $SUDO rm -rf /tmp/${NODE_DIST}) &
 spinner $! "   > Installing Node.js..."
 
-# Install pnpm using its official script
-(curl -fsSL https://get.pnpm.io/install.sh | sh -) &
-spinner $! "   > Installing pnpm package manager..."
-export PNPM_HOME="/root/.local/share/pnpm"
-export PATH="$PNPM_HOME:$PATH"
-
-(pnpm add -g pm2 @angular/cli) &
+# NPM comes with Node.js, so no separate installation is needed.
+(npm install -g pm2 @angular/cli) &
 spinner $! "   > Installing global tools (pm2, @angular/cli)..."
 
 echo -e "\n${GREEN}--- STEP 3: SETTING UP PROJECT ---${NC}"
@@ -137,11 +132,10 @@ cd "$INSTALL_DIR"
 (git clone --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .) &
 spinner $! "   > Cloning repository from GitHub..."
 
-echo "legacy-peer-deps=true" > .npmrc
-(pnpm install) &
-spinner $! "   > Installing dependencies with pnpm..."
+(npm install --legacy-peer-deps) &
+spinner $! "   > Installing dependencies with npm..."
 
-(pnpm run build) &
+(npm run build) &
 spinner $! "   > Compiling production-ready application..."
 
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
