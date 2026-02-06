@@ -21,7 +21,9 @@ export const translations: any = {
           title: 'Brand Identity',
           description: 'Configure the look and feel of your panel.',
           siteTitle: 'Site Title',
-          logoUrl: 'Logo URL (Optional)'
+          logoUrl: 'Logo URL / Upload',
+          upload: 'Upload Image',
+          preview: 'Preview'
       },
       role: { title: 'Server Role', description: 'Select the role of this server.', germany: 'Upstream (Foreign)', germanyDesc: 'Located outside Iran. Generates connection keys.', iran: 'Edge (Iran)', iranDesc: 'Located inside Iran. Connects to Upstream.', next: 'Next Step' },
       external: {
@@ -38,7 +40,21 @@ export const translations: any = {
          verifyBtn: 'Verify Connection',
          verified: 'Upstream Verified'
       },
-      finish: { doneButton: 'Finish Installation' }
+      finish: { doneButton: 'Finish Installation' },
+      endpoint: {
+          cdn: 'CDN',
+          cdnTag: 'Recommended',
+          cdnDesc: 'Best for hiding server IP and DDoS protection.',
+          cloud: 'Cloud',
+          cloudTag: 'Balanced',
+          cloudDesc: 'Reliable with high bandwidth (e.g., AWS, Google).',
+          vps: 'VPS',
+          vpsTag: 'Low Latency',
+          vpsDesc: 'Direct control, best for low-latency applications.',
+          edge: 'Edge',
+          edgeTag: 'Fastest',
+          edgeDesc: 'Lowest latency for geo-located users.',
+      }
     },
     store: {
       title: 'Service Plans',
@@ -204,7 +220,38 @@ export const translations: any = {
     camouflageSite: { title: 'AI Research Lab', navHome: 'Home', navApi: 'API', navContact: 'Contact', login: 'Portal', signup: 'Request Access', status: 'System Status', statusIdle: 'Operational', statusRunningAI: 'Training Models', statusRunningData: 'Syncing Data', statusRunningMedia: 'Fetching Assets', getStarted: 'Start Research', footer: '© 2024 AI Research Institute. All rights reserved.' },
     signup: { title: 'Request Access', description: 'Submit your details for review.', successTitle: 'Received', successMessage: 'Your request is under review.', backButton: 'Back', form: { name: 'Full Name', email: 'Email Address', reason: 'Usage Reason', submit: 'Submit Request' } },
     header: { systemSecure: 'Secured', edgeNode: { connected: 'Connected', connecting: 'Connecting', failed: 'Failed', notConfigured: 'No Config' } },
-    view: { dashboard: 'Dashboard', users: 'Users', settings: 'Settings' }
+    view: { dashboard: 'Dashboard', users: 'Users', settings: 'Settings' },
+    tooltips: {
+        dashboard: {
+            userCard: 'Displays a summary of total, active, expired, and banned users.',
+            connectionsCard: 'Shows the number of currently active user connections to the server.',
+            dataCard: 'Tracks the total data transferred through the system and the current transfer rate.',
+            trafficChart: 'A real-time graph showing incoming and outgoing traffic throughput.'
+        },
+        settings: {
+            camouflageProfile: 'Choose a traffic pattern to mimic. "AI Training" uses large, infrequent bursts. "Data Sync" uses small, constant packets. "Media Fetch" simulates video streaming.',
+            camouflageFrequency: 'How often the camouflage pattern changes. "Stable" is predictable. "Dynamic" is more random but may consume more resources.',
+            appCamoEnable: 'When enabled, the system will attempt to shape traffic to resemble popular online games to further evade detection.',
+            appCamoProfile: 'Select a specific game protocol to emulate. Each profile uses different port and packet size signatures.',
+            dohEnable: 'Activates a DNS over HTTPS resolver on your domain. This encrypts DNS queries, preventing them from being monitored or hijacked.',
+            dohSubdomain: 'The subdomain that will host the DoH resolver (e.g., dns.yourdomain.com).',
+            endpointStrategy: 'Defines the primary method for routing traffic. CDN is best for hiding your IP, while VPS offers the lowest latency.',
+            tunnelOptimization: 'Configure how the system tests and selects the best tunnel. Auto-Pilot will periodically test and switch to the optimal provider automatically.',
+            autoPilot: 'The system will automatically test and switch to the best performing tunnel based on latency and jitter.',
+            manualMode: 'You must manually test and activate the desired tunnel. The system will not switch automatically.',
+            domainName: 'The primary domain name for your panel and services. An A record must point to this server\'s IP.',
+            subscriptionDomain: 'An optional, separate domain or subdomain used exclusively for user subscription links. This can help protect your main domain.',
+            healthCheck: 'Tests generated subdomains against common blocklists to see if they are filtered or accessible.',
+            getCert: 'Automatically requests and installs a free SSL certificate from Let\'s Encrypt for your configured domain.',
+            iap: 'Google Cloud\'s Identity-Aware Proxy allows tunneling TCP traffic over HTTPS without exposing a public IP on your server, enhancing security.'
+        },
+        wizard: {
+            endpointCDN: 'Use a Content Delivery Network. Best for obfuscation and DDoS protection.',
+            endpointCloud: 'Use a major cloud provider like AWS or Google Cloud. Good for high bandwidth.',
+            endpointVPS: 'Use a standard Virtual Private Server. Best for low latency and direct control.',
+            endpointEdge: 'Use a distributed edge computing node. Provides the fastest response times for geo-located users.'
+        }
+    }
   },
   fa: {
     common: {
@@ -252,7 +299,9 @@ export const translations: any = {
           title: 'هویت بصری',
           description: 'عنوان و لوگوی پنل را تنظیم کنید.',
           siteTitle: 'عنوان سایت',
-          logoUrl: 'آدرس لوگو (اختیاری)'
+          logoUrl: 'آدرس لوگو / آپلود',
+          upload: 'آپلود تصویر',
+          preview: 'پیش‌نمایش'
       },
       role: { title: 'نقش سرور', description: 'نقش این سرور را مشخص کنید.', germany: 'سرور خارج (Upstream)', germanyDesc: 'دیتاسنتر خارجی. تولید کننده کلید اتصال.', iran: 'سرور ایران (Edge)', iranDesc: 'دیتاسنتر داخلی. مصرف کننده کلید.', next: 'مرحله بعد' },
       external: {
@@ -269,7 +318,21 @@ export const translations: any = {
          verifyBtn: 'بررسی اتصال',
          verified: 'ارتباط با سرور خارج برقرار شد'
       },
-      finish: { doneButton: 'اتمام نصب' }
+      finish: { doneButton: 'اتمام نصب' },
+      endpoint: {
+          cdn: 'CDN',
+          cdnTag: 'پیشنهادی',
+          cdnDesc: 'بهترین گزینه برای مخفی‌سازی IP و محافظت DDoS.',
+          cloud: 'ابری',
+          cloudTag: 'متعادل',
+          cloudDesc: 'اتصال پایدار با پهنای باند بالا (مانند AWS، گوگل).',
+          vps: 'سرور مجازی',
+          vpsTag: 'پینگ پایین',
+          vpsDesc: 'کنترل مستقیم، مناسب برای اپلیکیشن‌های حساس به پینگ.',
+          edge: 'پردازش لبه',
+          edgeTag: 'سریع‌ترین',
+          edgeDesc: 'کمترین تأخیر برای کاربران نزدیک به سرور.',
+      }
     },
     // ... existing translations ...
     store: {
@@ -295,7 +358,7 @@ export const translations: any = {
       title: 'تنظیمات سیستم',
       tabs: { general: 'عمومی', store: 'فروشگاه', branding: 'برندینگ', network: 'شبکه', security: 'امنیت', installer: 'نصاب' },
       credentials: { title: 'اطلاعات مدیر', newUser: 'نام کاربری جدید', newPass: 'رمز عبور جدید', success: 'ذخیره شد.' },
-      branding: { title: 'شخصی‌سازی', name: 'نام برند', logo: 'آدرس لوگو', preview: 'پیش‌نمایش', saveSuccess: 'برندینگ ذخیره شد.' },
+      branding: { title: 'شخصی‌سازی', name: 'نام برند', logo: 'آدرس لوگو / آپلود', preview: 'پیش‌نمایش', saveSuccess: 'برندینگ ذخیره شد.' },
       storeMgmt: { title: 'مدیریت فروشگاه', currency: 'واحد پول', gateways: 'درگاه‌های بانکی', merchant: 'مرچنت کد', packages: 'پکیج‌ها', edit: 'ویرایش', save: 'ذخیره' },
       domain: { 
           title: 'دامنه و SSL', 
@@ -435,6 +498,37 @@ export const translations: any = {
     camouflageSite: { title: 'پژوهشکده هوش مصنوعی', navHome: 'خانه', navApi: 'API', navContact: 'تماس', login: 'پرتال', signup: 'درخواست', status: 'وضعیت', statusIdle: 'عملیاتی', statusRunningAI: 'آموزش مدل', statusRunningData: 'همگام‌سازی', statusRunningMedia: 'دریافت مدیا', getStarted: 'شروع پژوهش', footer: '© ۱۴۰۳ تمامی حقوق محفوظ است.' },
     signup: { title: 'ثبت‌نام', description: 'اطلاعات خود را وارد کنید.', successTitle: 'دریافت شد', successMessage: 'درخواست شما بررسی می‌شود.', backButton: 'بازگشت', form: { name: 'نام و نام خانوادگی', email: 'ایمیل', reason: 'مورد مصرف', submit: 'ارسال درخواست' } },
     header: { systemSecure: 'ایمن', edgeNode: { connected: 'متصل', connecting: 'در حال اتصال', failed: 'قطع', notConfigured: 'تنظیم نشده' } },
-    view: { dashboard: 'داشبورد', users: 'کاربران', settings: 'تنظیمات' }
+    view: { dashboard: 'داشبورد', users: 'کاربران', settings: 'تنظیمات' },
+    tooltips: {
+        dashboard: {
+            userCard: 'خلاصه‌ای از تعداد کاربران کل، فعال، منقضی شده و مسدود شده را نمایش می‌دهد.',
+            connectionsCard: 'تعداد اتصالات فعال کاربران به سرور در لحظه را نشان می‌دهد.',
+            dataCard: 'حجم کل داده منتقل شده و نرخ انتقال لحظه‌ای را نمایش می‌دهد.',
+            trafficChart: 'نمودار زنده از نرخ ترافیک ورودی و خروجی سیستم.'
+        },
+        settings: {
+            camouflageProfile: 'یک الگوی ترافیکی برای شبیه‌سازی انتخاب کنید. "آموزش هوش مصنوعی" از بسته‌های بزرگ و نامنظم استفاده می‌کند. "همگام‌سازی داده" از بسته‌های کوچک و ثابت استفاده می‌کند. "دریافت مدیا" ترافیک استریم ویدیو را شبیه‌سازی می‌کند.',
+            camouflageFrequency: 'هر چند وقت یکبار الگوی استتار تغییر کند. "پایدار" قابل پیش‌بینی است. "پویا" تصادفی‌تر است اما ممکن است منابع بیشتری مصرف کند.',
+            appCamoEnable: 'با فعال‌سازی، سیستم تلاش می‌کند ترافیک را شبیه به بازی‌های آنلاین محبوب شکل دهد تا شناسایی آن دشوارتر شود.',
+            appCamoProfile: 'پروتکل بازی خاصی را برای شبیه‌سازی انتخاب کنید. هر پروفایل از پورت و اندازه بسته‌های متفاوتی استفاده می‌کند.',
+            dohEnable: 'یک حل‌کننده DNS over HTTPS روی دامنه شما فعال می‌کند. این کار کوئری‌های DNS را رمزنگاری کرده و از شنود یا دستکاری آن‌ها جلوگیری می‌کند.',
+            dohSubdomain: 'زیردامنه‌ای که میزبان حل‌کننده DoH خواهد بود (مثال: dns.yourdomain.com).',
+            endpointStrategy: 'روش اصلی مسیریابی ترافیک را مشخص می‌کند. CDN برای مخفی کردن IP و VPS برای کمترین تأخیر مناسب است.',
+            tunnelOptimization: 'نحوه تست و انتخاب بهترین تونل را تنظیم کنید. حالت خلبان خودکار به صورت دوره‌ای تونل‌ها را تست کرده و بهینه‌ترین گزینه را انتخاب می‌کند.',
+            autoPilot: 'سیستم به طور خودکار بهترین تونل را بر اساس پینگ و جیتر تست کرده و انتخاب می‌کند.',
+            manualMode: 'شما باید به صورت دستی تونل مورد نظر را تست و فعال کنید. سیستم به طور خودکار تونل را تغییر نخواهد داد.',
+            domainName: 'دامنه اصلی پنل و سرویس‌ها. رکورد A این دامنه باید به IP این سرور اشاره کند.',
+            subscriptionDomain: 'یک دامنه یا زیردامنه جداگانه برای لینک‌های اشتراک کاربران. این کار به محافظت از دامنه اصلی کمک می‌کند.',
+            healthCheck: 'زیردامنه‌های تولید شده را در لیست‌های مسدودی رایج بررسی می‌کند تا از دسترس‌پذیری آن‌ها اطمینان حاصل شود.',
+            getCert: 'به طور خودکار یک گواهی SSL رایگان از Let\'s Encrypt برای دامنه شما درخواست و نصب می‌کند.',
+            iap: 'پروکسی هویت‌محور گوگل (IAP) امکان تونل کردن ترافیک TCP را بر بستر HTTPS بدون نیاز به IP عمومی فراهم می‌کند که امنیت را افزایش می‌دهد.'
+        },
+        wizard: {
+            endpointCDN: 'استفاده از شبکه توزیع محتوا. بهترین گزینه برای استتار و مقابله با حملات DDoS.',
+            endpointCloud: 'استفاده از ارائه‌دهندگان بزرگ ابری مانند AWS یا Google Cloud. مناسب برای پهنای باند بالا.',
+            endpointVPS: 'استفاده از سرور مجازی خصوصی استاندارد. بهترین گزینه برای تأخیر کم و کنترل مستقیم.',
+            endpointEdge: 'استفاده از نودهای پردازش لبه. سریع‌ترین پاسخ را برای کاربران نزدیک به نود فراهم می‌کند.'
+        }
+    }
   }
 };

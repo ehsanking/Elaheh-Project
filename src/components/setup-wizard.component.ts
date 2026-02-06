@@ -66,13 +66,36 @@ import { FormsModule } from '@angular/forms';
                 <p class="text-gray-400 mb-8">{{ languageService.translate('wizard.branding.description') }}</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div>
-                        <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.siteTitle') }}</label>
-                        <input type="text" [(ngModel)]="siteTitle" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="My VPN Service">
+                    <!-- Left side: inputs -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.siteTitle') }}</label>
+                            <input type="text" [(ngModel)]="siteTitle" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="My VPN Service">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.logoUrl') }}</label>
+                            <input type="text" [(ngModel)]="logoUrl" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="https://example.com/logo.png">
+                            <span class="text-xs text-gray-500 text-center block my-2">OR</span>
+                            <label for="logo-upload" class="w-full text-center cursor-pointer bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors block">
+                                {{ languageService.translate('wizard.branding.upload') }}
+                            </label>
+                            <input id="logo-upload" type="file" (change)="onLogoSelected($event)" class="hidden" accept=".png,.jpg,.jpeg,.svg,.webp,.gif">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.logoUrl') }}</label>
-                        <input type="text" [(ngModel)]="logoUrl" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="https://example.com/logo.png">
+
+                    <!-- Right side: preview -->
+                    <div class="flex flex-col items-center justify-center bg-gray-900/50 p-6 rounded-lg border-2 border-dashed border-gray-700 h-full">
+                        <span class="text-xs text-gray-500 mb-4">{{ languageService.translate('wizard.branding.preview') }}</span>
+                        <div class="flex items-center gap-4 bg-gray-800 p-4 rounded-lg border border-gray-600 min-w-[250px] justify-center">
+                            @if (logoUrl()) {
+                                <img [src]="logoUrl()" alt="Logo Preview" class="w-12 h-12 rounded-full object-contain bg-white/10 p-1 flex-shrink-0">
+                            } @else {
+                                <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-gray-500 flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                            }
+                            <span class="text-lg font-bold text-white truncate">{{ siteTitle() || 'Brand Name' }}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -248,6 +271,26 @@ export class SetupWizardComponent implements OnInit {
   selectLanguage(lang: 'en' | 'fa' | 'zh' | 'ru') {
       this.languageService.setLanguage(lang);
       this.currentStep.set(2);
+  }
+
+  onLogoSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+        const allowedExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif'];
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        
+        if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+            alert('Invalid file type. Please upload a valid image (PNG, JPG, SVG, WEBP, GIF).');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target?.result as string;
+            this.logoUrl.set(base64);
+        };
+        reader.readAsDataURL(file);
+    }
   }
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }

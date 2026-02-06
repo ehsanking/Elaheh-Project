@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 3.0.0 (Silent Background Tasks)
+# Version 3.1.0 (Dynamic DNS Selector)
 # Author: EHSANKiNG
 
 set -e
@@ -16,7 +16,6 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Spinner function for background tasks
 spinner() {
     local pid=$1
     local msg=$2
@@ -36,12 +35,11 @@ spinner() {
         printf "${GREEN} [✔ Done]${NC}\n"
     else
         printf "${RED} [✖ Failed]${NC}\n"
-        exit 1
     fi
 }
 
 # --- DNS & Cleanup Management ---
-ROLE="" # Define ROLE globally for cleanup trap
+ROLE="" 
 SUDO=""
 
 cleanup() {
@@ -68,56 +66,91 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 configure_iran_dns() {
-    echo -e "\n${YELLOW}[!] Configuring Sanction Bypass via Shecan DNS...${NC}"
-    echo -e "${CYAN}   > Setting DNS to 178.22.122.100 and 185.51.200.2 for this session.${NC}"
+    local dns1=$1
+    local dns2=$2
+
+    echo -e "\n${CYAN}[i] Applying selected DNS configuration...${NC}"
 
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        # Debian/Ubuntu with systemd-resolved
         RESOLVED_CONF="/etc/systemd/resolved.conf"
         RESOLVED_BACKUP="/tmp/resolved.conf.bak"
         $SUDO cp "$RESOLVED_CONF" "$RESOLVED_BACKUP"
-        
-        if grep -q "^#*DNS=" "$RESOLVED_CONF"; then
-            $SUDO sed -i 's/^#*DNS=.*/DNS=178.22.122.100 185.51.200.2/' "$RESOLVED_CONF"
-        else
-            echo "DNS=178.22.122.100 185.51.200.2" | $SUDO tee -a "$RESOLVED_CONF" > /dev/null
-        fi
-        
+        if grep -q "^#*DNS=" "$RESOLVED_CONF"; then $SUDO sed -i "s/^#*DNS=.*/DNS=$dns1 $dns2/" "$RESOLVED_CONF"; else echo "DNS=$dns1 $dns2" | $SUDO tee -a "$RESOLVED_CONF" > /dev/null; fi
         ($SUDO systemctl restart systemd-resolved) &
         spinner $! "   > Applying DNS settings for Debian/Ubuntu..."
-
     elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        # RPM-based systems, direct resolv.conf modification
         RESOLV_CONF="/etc/resolv.conf"
         RESOLV_BACKUP="/tmp/resolv.conf.bak"
         $SUDO cp "$RESOLV_CONF" "$RESOLV_BACKUP"
-        
-        if lsattr "$RESOLV_CONF" 2>/dev/null | grep -q "i"; then
-            $SUDO chattr -i "$RESOLV_CONF"
-        fi
-        
-        (
-            echo "nameserver 178.22.122.100" | $SUDO tee "$RESOLV_CONF" > /dev/null
-            echo "nameserver 185.51.200.2" | $SUDO tee -a "$RESOLV_CONF" > /dev/null
-        ) &
+        if lsattr "$RESOLV_CONF" 2>/dev/null | grep -q "i"; then $SUDO chattr -i "$RESOLV_CONF"; fi
+        ( echo "nameserver $dns1" | $SUDO tee "$RESOLV_CONF" > /dev/null; echo "nameserver $dns2" | $SUDO tee -a "$RESOLV_CONF" > /dev/null ) &
         spinner $! "   > Applying DNS settings for RPM-based OS..."
-        
         $SUDO chattr +i "$RESOLV_CONF"
     else
-        echo -e "${RED}Error: Unsupported OS for automatic DNS configuration.${NC}"
-        exit 1
+        echo -e "${RED}Error: Unsupported OS for automatic DNS configuration.${NC}"; exit 1;
     fi
     
-    (
-        if ! curl -s --max-time 15 "https://api.github.com" > /dev/null; then
-            echo -e "\n${RED}Error: DNS configuration failed. Could not connect to GitHub.${NC}"
-            echo -e "${YELLOW}Please check your network settings and run the script again.${NC}"
-            exit 1
-        fi
-    ) &
-    spinner $! "   > Verifying sanction bypass..."
+    ( if ! curl -s --max-time 15 "https://api.github.com" > /dev/null; then
+            echo -e "\n${RED}Error: Final verification failed. The selected DNS may be unstable.${NC}"; exit 1;
+      fi ) &
+    spinner $! "   > Verifying final configuration..."
     echo -e "${GREEN}[✔] DNS configured and connectivity verified.${NC}"
 }
+
+select_and_configure_dns() {
+    declare -A DNS_PROVIDERS
+    DNS_PROVIDERS["Shecan"]="178.22.122.100 185.51.200.2"
+    DNS_PROVIDERS["403.online"]="10.202.10.202 10.202.10.102"
+    DNS_PROVIDERS["RadarGame"]="185.55.226.26 185.55.225.25"
+    DNS_PROVIDERS["Beshkan"]="181.41.194.177 181.41.194.186"
+    DNS_PROVIDERS["Begzar"]="5.202.100.100 5.202.100.101"
+    DNS_PROVIDERS["Electroteam"]="94.103.125.157 94.103.125.158"
+
+    echo -e "\n${YELLOW}[!] Finding the best DNS to bypass sanctions...${NC}"
+    VALID_PROVIDERS=()
+    
+    for name in "${!DNS_PROVIDERS[@]}"; do
+        ips=(${DNS_PROVIDERS[$name]})
+        primary_ip=${ips[0]}
+        
+        # Test connectivity in the background, suppressing output
+        if curl -s --max-time 10 --dns-servers "$primary_ip" "https://api.github.com" > /dev/null 2>&1; then
+            latency=$(ping -c 2 -W 2 "$primary_ip" | awk -F'/' 'END{print $5}' | sed 's/\..*//' || echo "N/A")
+            if [ -z "$latency" ]; then latency="N/A"; fi
+            VALID_PROVIDERS+=("$name|$primary_ip|${ips[1]}|$latency")
+        fi &
+    done
+
+    spinner $! "   > Testing all DNS providers for GitHub access..."
+    wait # Wait for all background tests to complete
+
+    if [ ${#VALID_PROVIDERS[@]} -eq 0 ]; then
+        echo -e "${RED}Error: No working DNS provider found that can access GitHub.${NC}"
+        echo -e "${YELLOW}Please check your server's network or try again later.${NC}"
+        exit 1
+    fi
+
+    echo -e "\n${GREEN}The following DNS providers passed the connectivity test:${NC}"
+    declare -a OPTIONS_MAP
+    
+    i=1
+    for provider_data in "${VALID_PROVIDERS[@]}"; do
+        IFS='|' read -r name ip1 ip2 latency <<< "$provider_data"
+        printf "   ${CYAN}%s)${NC} %-15s (Latency: %s ms)\n" "$i" "$name" "$latency"
+        OPTIONS_MAP+=("$ip1 $ip2")
+        i=$((i+1))
+    done
+
+    read -p "   > Please select the best provider for your network [1-${#VALID_PROVIDERS[@]}]: " DNS_CHOICE
+    
+    if ! [[ "$DNS_CHOICE" =~ ^[0-9]+$ ]] || [ "$DNS_CHOICE" -lt 1 ] || [ "$DNS_CHOICE" -gt "${#VALID_PROVIDERS[@]}" ]; then
+        echo -e "${RED}Invalid selection.${NC}"; exit 1;
+    fi
+    
+    SELECTED_IPS=(${OPTIONS_MAP[$((DNS_CHOICE-1))]})
+    configure_iran_dns "${SELECTED_IPS[0]}" "${SELECTED_IPS[1]}"
+}
+
 
 # -----------------------------------------------------------------------------
 # Main Installation Logic
@@ -127,18 +160,13 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 3.0.0 (Silent Background Tasks)"
+echo "   Version 3.1.0 (Dynamic DNS Selector)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
 
 if [ "$EUID" -ne 0 ]; then
-  if command -v sudo >/dev/null 2>&1; then
-    SUDO="sudo"
-  else
-    echo -e "${RED}Error: Please run as root.${NC}"
-    exit 1
-  fi
+  if command -v sudo >/dev/null 2>&1; then SUDO="sudo"; else echo -e "${RED}Error: Please run as root.${NC}"; exit 1; fi
 fi
 if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
 export DEBIAN_FRONTEND=noninteractive
@@ -151,7 +179,7 @@ read -p "Select [1 or 2]: " ROLE_CHOICE
 if [[ "$ROLE_CHOICE" == *"2"* || "$ROLE_CHOICE" == *"۲"* ]]; then
     ROLE="iran"
     echo -e "${GREEN}>> Role Selected: IRAN Server (Edge).${NC}"
-    configure_iran_dns
+    select_and_configure_dns
 else
     ROLE="external"
     echo -e "${GREEN}>> Role Selected: FOREIGN Server (Upstream).${NC}"
@@ -160,9 +188,9 @@ fi
 echo -e "\n${GREEN}--- STEP 1: PREPARING SYSTEM & DEPENDENCIES ---${NC}"
 install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        ($SUDO apt-get update -y -qq && $SUDO apt-get upgrade -y -qq && $SUDO apt-get install -y -qq curl git unzip ufw nginx certbot python3-certbot-nginx socat redis-server)
+        ($SUDO apt-get update -y -qq && $SUDO apt-get upgrade -y -qq && $SUDO apt-get install -y -qq curl git unzip ufw nginx certbot python3-certbot-nginx socat redis-server pingutils)
     elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        ($SUDO dnf upgrade -y --refresh && $SUDO dnf install -y -q curl git unzip firewalld nginx certbot python3-certbot-nginx socat redis)
+        ($SUDO dnf upgrade -y --refresh && $SUDO dnf install -y -q curl git unzip firewalld nginx certbot python3-certbot-nginx socat redis iputils)
     fi
 }
 (install_deps) >/dev/null 2>&1 &
