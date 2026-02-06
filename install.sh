@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.6.0 (Intelligent SSH Troubleshooting)
+# Version 2.7.0 (User-Provided VPN Method)
 # Author: EHSANKiNG
 
 set -e
@@ -40,158 +40,6 @@ spinner() {
     fi
 }
 
-# --- Tunnel & Proxy Management ---
-TUNNEL_PID=""
-FOREIGN_IP=""
-FOREIGN_USER=""
-FOREIGN_PASS=""
-FOREIGN_PORT=""
-PROXY_PORT="10800"
-PROXY_URL="socks5h://127.0.0.1:${PROXY_PORT}"
-
-install_sshpass() {
-    (
-        if command -v apt-get >/dev/null; then
-            $SUDO apt-get update -y -qq && $SUDO apt-get install -y -qq sshpass
-        elif command -v dnf >/dev/null; then
-            $SUDO dnf install -y -q sshpass
-        else
-            echo -e "${RED}Error: Could not install sshpass. Unsupported OS.${NC}"
-            exit 1
-        fi
-    ) &
-    spinner $! "   > Installing tunnel dependency (sshpass)..."
-}
-
-start_tunnel() {
-    echo -e "${YELLOW}[!] Sanction Bypass Mode Activated.${NC}"
-    
-    while true; do
-        read -p "Enter Foreign Server IP Address: " FOREIGN_IP
-        read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
-        read -p "Enter Foreign Server SSH Port [22]: " FOREIGN_PORT
-        FOREIGN_PORT=${FOREIGN_PORT:-22}
-        read -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
-        echo
-
-        if [ -z "$FOREIGN_IP" ] || [ -z "$FOREIGN_USER" ] || [ -z "$FOREIGN_PASS" ]; then
-            echo -e "${RED}Error: All fields are required.${NC}"
-            continue
-        fi
-
-        # --- Pre-flight check for credentials ---
-        echo -e "${CYAN}   > Testing credentials for ${FOREIGN_USER}@${FOREIGN_IP}...${NC}"
-        
-        SSH_LOG_FILE=$(mktemp)
-        
-        if SSHPASS="$FOREIGN_PASS" sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o BatchMode=yes -p "${FOREIGN_PORT}" "${FOREIGN_USER}@${FOREIGN_IP}" "echo -n TunnelAuthOK" > "$SSH_LOG_FILE" 2>&1; then
-            if grep -q "TunnelAuthOK" "$SSH_LOG_FILE"; then
-                echo -e "${GREEN}[✔] Credentials are correct.${NC}"
-                rm -f "$SSH_LOG_FILE"
-            else
-                echo -e "${RED}Error: Connection test was inconclusive (likely a server-side issue).${NC}"
-                echo -e "${YELLOW}Server response: $(cat "$SSH_LOG_FILE")${NC}"
-                rm -f "$SSH_LOG_FILE"
-                read -p "Try again? (y/n): " choice
-                [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
-                continue
-            fi
-        else
-            echo -e "${RED}Error: Authentication failed!${NC}"
-            SANITIZED_OUTPUT=$(cat "$SSH_LOG_FILE" | sed "s/$FOREIGN_PASS/********/g")
-            echo -e "${YELLOW}Server response: $SANITIZED_OUTPUT${NC}"
-
-            if grep -q "Permission denied" "$SSH_LOG_FILE"; then
-                echo -e "\n${CYAN}--- راهنمای عیب‌یابی ---${NC}"
-                echo -e "${YELLOW}خطای 'Permission denied' به این معناست که سرور خارجی شما (آلمان) برای جلوگیری از حملات، ورود با رمز عبور را مسدود کرده است.${NC}"
-                echo -e "این یک اقدام امنیتی رایج، به خصوص برای کاربر root است."
-                echo -e "\n${GREEN}برای حل مشکل، وارد سرور خارجی (آلمان) خود شوید و مراحل زیر را انجام دهید:${NC}"
-                echo -e "۱. فایل تنظیمات SSH را باز کنید: ${CYAN}sudo nano /etc/ssh/sshd_config${NC}"
-                echo -e "۲. خط ${CYAN}PasswordAuthentication no${NC} را پیدا کنید."
-                echo -e "۳. آن را به ${GREEN}PasswordAuthentication yes${NC} تغییر دهید (اگر # در ابتدای آن بود، حذف کنید)."
-                echo -e "۴. سرویس SSH را ری‌استارت کنید: ${CYAN}sudo systemctl restart sshd${NC}"
-                echo -e "\n${YELLOW}پس از انجام این مراحل، اینجا دوباره تلاش کنید.${NC}"
-                echo -e "${CYAN}---------------------------${NC}\n"
-            else
-                 echo -e "${YELLOW}Please double-check your IP, username, port, and especially your password.${NC}"
-            fi
-
-            rm -f "$SSH_LOG_FILE"
-            read -p "Try again? (y/n): " choice
-            [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
-            continue
-        fi
-        
-        # --- End of Pre-flight check ---
-
-        (
-            export SSHPASS="$FOREIGN_PASS"
-            sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                -p "${FOREIGN_PORT}" \
-                -o ServerAliveInterval=60 -fN -D ${PROXY_PORT} "${FOREIGN_USER}@${FOREIGN_IP}"
-        ) > /tmp/elaheh-tunnel.log 2>&1 &
-        
-        spinner $! "   > Establishing secure tunnel to ${FOREIGN_IP}:${FOREIGN_PORT}..."
-        
-        sleep 1
-
-        TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}" || true)
-        if [ -z "$TUNNEL_PID" ]; then
-            echo -e "${RED}Error: Failed to establish the tunnel process even with correct credentials.${NC}"
-            echo -e "${YELLOW}This could be a server-side configuration issue preventing tunnels.${NC}"
-            echo -e "${YELLOW}Details: $(cat /tmp/elaheh-tunnel.log)${NC}"
-            rm -f /tmp/elaheh-tunnel.log
-            read -p "Try again? (y/n): " choice
-            [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
-            continue
-        fi
-
-        echo -e "${CYAN}   > Verifying tunnel connectivity...${NC}"
-        if curl --proxy "${PROXY_URL}" --connect-timeout 10 -s "https://api.github.com" > /dev/null; then
-            echo -e "${GREEN}[✔] Tunnel established and verified successfully (PID: $TUNNEL_PID).${NC}"
-            break
-        else
-            echo -e "${RED}Error: Tunnel connection test failed. Proxy is not responding.${NC}"
-            kill "$TUNNEL_PID" >/dev/null 2>&1 || true
-            read -p "Try again? (y/n): " choice
-            [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
-        fi
-    done
-    
-    echo -e "${CYAN}   > Routing installation traffic (curl, git, etc.) through the tunnel...${NC}"
-    export HTTPS_PROXY="${PROXY_URL}"
-    export HTTP_PROXY="${PROXY_URL}"
-    export ALL_PROXY="${PROXY_URL}"
-}
-
-cleanup() {
-    if [ -n "$TUNNEL_PID" ]; then
-        echo -e "\n${CYAN}[i] Terminating SSH tunnel (PID: $TUNNEL_PID)...${NC}"
-        kill "$TUNNEL_PID" >/dev/null 2>&1 || true
-    fi
-    
-    if [[ "$ROLE" == "iran" ]]; then
-        echo -e "${CYAN}[i] Cleaning up proxy configurations and temporary files...${NC}"
-        unset HTTPS_PROXY HTTP_PROXY ALL_PROXY
-        
-        pnpm config delete proxy >/dev/null 2>&1 || true
-        pnpm config delete https-proxy >/dev/null 2>&1 || true
-        pnpm config delete registry >/dev/null 2>&1 || true
-        
-        rm -f /tmp/elaheh-tunnel.log
-
-        if command -v apt-get >/dev/null; then
-             ($SUDO apt-get remove --purge -y -qq sshpass >/dev/null 2>&1) &
-             spinner $! "   > Uninstalling tunnel dependency..."
-        elif command -v dnf >/dev/null; then
-             ($SUDO dnf remove -y -q sshpass >/dev/null 2>&1) &
-             spinner $! "   > Uninstalling tunnel dependency..."
-        fi
-        echo -e "${GREEN}[+] Cleanup complete.${NC}"
-    fi
-}
-trap cleanup EXIT
-
 # -----------------------------------------------------------------------------
 # Main Installation Logic
 # -----------------------------------------------------------------------------
@@ -200,7 +48,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.6.0 (Intelligent SSH Troubleshooting)"
+echo "   Version 2.7.0 (User-Provided VPN Method)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -223,8 +71,21 @@ read -p "Select [1 or 2]: " ROLE_CHOICE
 if [[ "$ROLE_CHOICE" == *"2"* || "$ROLE_CHOICE" == *"۲"* ]]; then
     ROLE="iran"
     echo -e "${GREEN}>> Role Selected: IRAN Server (Edge).${NC}"
-    install_sshpass
-    start_tunnel
+    
+    echo -e "\n${YELLOW}[!] Sanction Bypass Required for Iran Server Installation.${NC}"
+    echo -e "${CYAN}لطفا قبل از ادامه، VPN خود را روی این ترمینال فعال کنید تا تحریم‌ها دور زده شوند.${NC}"
+    echo -e "${CYAN}Please activate your VPN on this terminal before proceeding to bypass sanctions.${NC}"
+    read -p "   > Press [Enter] to continue after activating your VPN..."
+
+    (
+        if ! curl -s --max-time 15 "https://api.github.com" > /dev/null; then
+            echo -e "\n${RED}Error: Could not connect to GitHub.${NC}"
+            echo -e "${YELLOW}Please ensure your VPN is active and working correctly, then run the script again.${NC}"
+            exit 1
+        fi
+    ) &
+    spinner $! "   > Verifying internet connectivity..."
+
 else
     ROLE="external"
     echo -e "${GREEN}>> Role Selected: FOREIGN Server (Upstream).${NC}"
@@ -263,14 +124,6 @@ spinner $! "   > Installing Node.js..."
 spinner $! "   > Installing pnpm package manager..."
 export PNPM_HOME="/root/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
-
-# Configure pnpm AFTER installation, only for Iran servers
-if [[ "$ROLE" == "iran" ]]; then
-    echo -e "${CYAN}   > Configuring pnpm for sanction bypass...${NC}"
-    (pnpm config set proxy "${PROXY_URL}" && \
-     pnpm config set https-proxy "${PROXY_URL}" && \
-     pnpm config set registry "https://registry.npmjs.org/") &> /dev/null
-fi
 
 (pnpm add -g pm2 @angular/cli) &
 spinner $! "   > Installing global tools (pm2, @angular/cli)..."
