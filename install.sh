@@ -121,6 +121,24 @@ setup_swap() {
 (setup_swap) &
 spinner $! "   > Checking/Configuring Swap Memory..."
 
+# --- STEP 0.5: NETWORK OPTIMIZATION (IRAN) ---
+if [ "$ROLE" == "iran" ]; then
+    echo -e "\n${GREEN}--- STEP 0.5: NETWORK OPTIMIZATION (IRAN) ---${NC}"
+    configure_dns() {
+        log "INFO" "Configuring Cloudflare DNS for Iran server"
+        if [ -f /etc/resolv.conf ]; then
+            if [ ! -f /etc/resolv.conf.bak-elaheh ]; then
+                cp /etc/resolv.conf /etc/resolv.conf.bak-elaheh
+            fi
+        fi
+        echo "nameserver 1.1.1.1" > /etc/resolv.conf
+        echo "nameserver 1.0.0.1" >> /etc/resolv.conf
+        log "SUCCESS" "DNS set to Cloudflare (1.1.1.1, 1.0.0.1)"
+    }
+    (configure_dns) &
+    spinner $! "   > Configuring Cloudflare DNS (Anti-Sanction)..."
+fi
+
 # --- STEP 1: Smart Package Installation ---
 echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
 
