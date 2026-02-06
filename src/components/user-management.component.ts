@@ -2,7 +2,7 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ElahehCoreService, User, LinkConfig } from '../services/elaheh-core.service';
-import * as QRCode from 'qrcode';
+import { toDataURL } from 'qrcode';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { LanguageService } from '../services/language.service';
@@ -123,7 +123,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   async showQrCode(link: LinkConfig) {
     try {
-      const dataUrl = await QRCode.toDataURL(link.url, { width: 256, margin: 2 });
+      const dataUrl = await toDataURL(link.url, { width: 256, margin: 2 });
       this.qrCodeDataUrl.set(dataUrl);
       this.qrCodeLinkAlias.set(link.alias);
     } catch (err) { console.error(err); }

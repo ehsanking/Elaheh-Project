@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
-import * as QRCode from 'qrcode';
+import { toDataURL } from 'qrcode';
 
 @Component({
   selector: 'app-two-factor-auth',
@@ -98,7 +98,7 @@ export class TwoFactorAuthComponent implements OnInit {
     const otpAuthUrl = `otpauth://totp/ElahehPanel:${this.core.adminUsername()}?secret=${secret}&issuer=ElahehProject`;
     
     try {
-        this.qrCodeUrl.set(await QRCode.toDataURL(otpAuthUrl));
+        this.qrCodeUrl.set(await toDataURL(otpAuthUrl));
         this.setupStep.set('verify');
     } catch (err) {
         console.error(err);

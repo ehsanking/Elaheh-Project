@@ -62,7 +62,6 @@ export interface LogEntry {
 
 export type EndpointType = 'CDN' | 'CLOUD' | 'VPS' | 'EDGE' | 'BLOCKCHAIN' | 'P2P' | 'TRUST_TUNNEL';
 export type CamouflageProfile = 'AI_TRAINING' | 'DATA_SYNC' | 'MEDIA_FETCH';
-export type GameProfile = 'COD_MOBILE' | 'PUBG' | 'CLASH_ROYALE' | 'MMORPG';
 
 export interface EndpointStrategy {
   type: EndpointType;
@@ -139,6 +138,9 @@ export interface AutoSwitchConfig {
     cooldownSeconds: number; // Minimum time between switches
     improvementMarginMs: number; // New tunnel must be this much better to switch
 }
+
+// FIX: Add GameProfile type for application camouflage
+export type GameProfile = 'COD_MOBILE' | 'PUBG' | 'CLASH_ROYALE' | 'MMORPG';
 
 @Injectable({
   providedIn: 'root'
@@ -271,6 +273,12 @@ export class ElahehCoreService {
   lastCamouflageUpdate = signal<Date | null>(null);
   camouflageFrequency = signal<number>(30);
   
+  // Advanced Obfuscation
+  tlsCamouflageEnabled = signal<boolean>(false);
+  tlsCamouflageSni = signal<string>('www.google.com');
+  tlsCamouflageStatus = signal<'active' | 'inactive' | 'error'>('inactive');
+
+  // FIX: Add signals for Application Camouflage
   applicationCamouflageEnabled = signal<boolean>(false);
   applicationCamouflageProfile = signal<GameProfile | null>(null);
   applicationCamouflageStatus = signal<string>('Idle');
@@ -754,11 +762,39 @@ Health Summary:
       return secret;
   }
   
-  updateApplicationCamouflage(enabled: boolean, profile: GameProfile | null) {
-      this.applicationCamouflageEnabled.set(enabled);
-      this.applicationCamouflageProfile.set(profile);
+  updateTlsCamouflage(enabled: boolean, sni: string) {
+    this.tlsCamouflageEnabled.set(enabled);
+    if (enabled) {
+        if (sni && sni.includes('.')) {
+            this.tlsCamouflageSni.set(sni);
+            this.tlsCamouflageStatus.set('active');
+            this.addLog('SUCCESS', `[TLS Camouflage] Enabled. Mimicking SNI: ${sni}`);
+        } else {
+            this.tlsCamouflageEnabled.set(false);
+            this.tlsCamouflageStatus.set('error');
+            this.addLog('ERROR', `[TLS Camouflage] Invalid SNI provided: ${sni}`);
+        }
+    } else {
+        this.tlsCamouflageStatus.set('inactive');
+        this.addLog('INFO', '[TLS Camouflage] Disabled.');
+    }
   }
   
+  // FIX: Add method for Application Camouflage
+  updateApplicationCamouflage(enabled: boolean, profile: GameProfile | null) {
+    this.applicationCamouflageEnabled.set(enabled);
+    if (enabled && profile) {
+        this.applicationCamouflageProfile.set(profile);
+        this.addLog('SUCCESS', `[App Camouflage] Enabled for ${profile}.`);
+    } else {
+        // if enabled is false, or profile is null
+        this.applicationCamouflageEnabled.set(false); // ensure it's off
+        this.applicationCamouflageProfile.set(null);
+        this.applicationCamouflageStatus.set('Idle');
+        this.addLog('INFO', '[App Camouflage] Disabled.');
+    }
+  }
+
   // --- Store Methods ---
   createOrder(productId: string, email: string, telegram: string, gatewayId: string): Order {
       const product = this.products().find(p => p.id === productId);

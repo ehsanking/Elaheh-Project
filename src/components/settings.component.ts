@@ -10,7 +10,6 @@ import { EndpointSettingsComponent } from './endpoint-settings.component';
 import { TunnelOptimizationComponent } from './tunnel-optimization.component';
 import { DomainSslComponent } from './domain-ssl.component';
 import { Subject } from 'rxjs';
-import { ApplicationCamouflageComponent } from './application-camouflage.component';
 import { DohSettingsComponent } from './doh-settings.component';
 import { IapSettingsComponent } from './iap-settings.component';
 import { NatTraversalComponent } from './nat-traversal.component';
@@ -19,11 +18,12 @@ import { EmailService } from '../services/email.service';
 import { TelegramBotComponent } from './telegram-bot.component';
 import { TwoFactorAuthComponent } from './two-factor-auth.component';
 import { RoadmapComponent } from './roadmap.component';
+import { TlsCamouflageComponent } from './tls-camouflage.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent, RoadmapComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent, RoadmapComponent, TlsCamouflageComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

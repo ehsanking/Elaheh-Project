@@ -2,7 +2,7 @@
 import { Component, inject, OnInit, signal, ChangeDetectionStrategy, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ElahehCoreService, User } from '../services/elaheh-core.service';
-import * as QRCode from 'qrcode';
+import { toDataURL } from 'qrcode';
 
 @Component({
   selector: 'app-subscription-page',
@@ -191,7 +191,7 @@ export class SubscriptionPageComponent implements OnInit, AfterViewInit, OnDestr
 
     async showQr(url: string, title: string) {
         try {
-            const data = await QRCode.toDataURL(url, { width: 300, margin: 2 });
+            const data = await toDataURL(url, { width: 300, margin: 2 });
             this.qrData.set(data);
             this.qrTitle.set(title);
         } catch(e) {
