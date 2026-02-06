@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.1.0 (Sanction Bypass Refined)
+# Version 2.2.0 (Interactive Tunnel Verification)
 # Author: EHSANKiNG
 
 set -e
@@ -48,92 +48,95 @@ FOREIGN_PASS=""
 PROXY_PORT="10800"
 PROXY_URL="socks5h://127.0.0.1:${PROXY_PORT}"
 
-# Installs sshpass utility BEFORE tunnel creation
 install_sshpass() {
     (
-        # No proxy is active here. This is a prerequisite.
         if command -v apt-get >/dev/null; then
             $SUDO apt-get update -y -qq && $SUDO apt-get install -y -qq sshpass
         elif command -v dnf >/dev/null; then
             $SUDO dnf install -y -q sshpass
         else
-            echo -e "${RED}Error: Could not install sshpass. Unsupported OS package manager.${NC}"
+            echo -e "${RED}Error: Could not install sshpass. Unsupported OS.${NC}"
             exit 1
         fi
     ) &
     spinner $! "   > Installing tunnel dependency (sshpass)..."
 }
 
-# Asks for creds, creates tunnel, and configures proxies for all tools
 start_tunnel() {
-    echo -e "${YELLOW}[!] Sanction Bypass Mode Activated. Please provide Foreign Server credentials.${NC}"
+    echo -e "${YELLOW}[!] Sanction Bypass Mode Activated.${NC}"
     
-    read -p "Enter Foreign Server IP Address: " FOREIGN_IP
-    read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
-    read -s -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
-    echo
-    
-    if [ -z "$FOREIGN_IP" ] || [ -z "$FOREIGN_USER" ] || [ -z "$FOREIGN_PASS" ]; then
-        echo -e "${RED}Error: Foreign server credentials are required.${NC}"
-        exit 1
-    fi
+    while true; do
+        read -p "Enter Foreign Server IP Address: " FOREIGN_IP
+        read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
+        read -s -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
+        echo
 
-    # Establish Tunnel
-    (
-        export SSHPASS="$FOREIGN_PASS"
-        sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            -fN -D ${PROXY_PORT} "${FOREIGN_USER}@${FOREIGN_IP}"
-    ) &> /dev/null
-    
-    sleep 5 # Give it a moment to establish
-    TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}")
+        if [ -z "$FOREIGN_IP" ] || [ -z "$FOREIGN_USER" ] || [ -z "$FOREIGN_PASS" ]; then
+            echo -e "${RED}Error: All fields are required.${NC}"
+            continue
+        fi
 
-    if [ -z "$TUNNEL_PID" ]; then
-        echo -e "${RED}Error: Failed to establish SSH tunnel. Check credentials/connectivity.${NC}"
-        exit 1
-    fi
+        (
+            export SSHPASS="$FOREIGN_PASS"
+            sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                -o ServerAliveInterval=60 -fN -D ${PROXY_PORT} "${FOREIGN_USER}@${FOREIGN_IP}"
+        ) > /tmp/elaheh-tunnel.log 2>&1 &
+        
+        spinner $! "   > Establishing secure tunnel to ${FOREIGN_IP}..."
+        
+        TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}")
+        if [ -z "$TUNNEL_PID" ]; then
+            echo -e "${RED}Error: Failed to start SSH process.${NC}"
+            echo -e "${YELLOW}Details: $(cat /tmp/elaheh-tunnel.log)${NC}"
+            rm -f /tmp/elaheh-tunnel.log
+            read -p "Try again? (y/n): " choice
+            [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
+            continue
+        fi
+
+        echo -e "${CYAN}   > Verifying tunnel connectivity...${NC}"
+        if curl --proxy "${PROXY_URL}" --connect-timeout 10 -s "https://api.github.com" > /dev/null; then
+            echo -e "${GREEN}[✔] Tunnel established and verified successfully (PID: $TUNNEL_PID).${NC}"
+            break
+        else
+            echo -e "${RED}Error: Tunnel connection test failed. Proxy is not responding.${NC}"
+            echo -e "${YELLOW}This could be due to incorrect credentials or a firewall on the foreign server.${NC}"
+            kill "$TUNNEL_PID" >/dev/null 2>&1 || true
+            read -p "Try again? (y/n): " choice
+            [[ "$choice" == "y" || "$choice" == "Y" ]] || exit 1
+        fi
+    done
     
-    echo -e "${GREEN}[+] SSH tunnel established successfully (PID: $TUNNEL_PID).${NC}"
-    
-    # Configure ALL tools to use the proxy
-    echo -e "${CYAN}   > Routing all subsequent installation traffic through the tunnel...${NC}"
+    echo -e "${CYAN}   > Routing installation traffic (curl, git, pnpm, etc.) through the tunnel...${NC}"
     export HTTPS_PROXY="${PROXY_URL}"
     export HTTP_PROXY="${PROXY_URL}"
     export ALL_PROXY="${PROXY_URL}"
     
-    $SUDO npm config set proxy "${PROXY_URL}" >/dev/null 2>&1 || true
-    $SUDO npm config set https-proxy "${PROXY_URL}" >/dev/null 2>&1 || true
-    
-    if command -v apt-get >/dev/null; then
-        echo "Acquire::http::Proxy \"${PROXY_URL}\";" | $SUDO tee /etc/apt/apt.conf.d/99proxy > /dev/null
-        echo "Acquire::https::Proxy \"${PROXY_URL}\";" | $SUDO tee -a /etc/apt/apt.conf.d/99proxy > /dev/null
-        echo "Acquire::SOCKS::Proxy \"${PROXY_URL}\";" | $SUDO tee -a /etc/apt/apt.conf.d/99proxy > /dev/null
-    fi
-    if command -v dnf >/dev/null; then
-        echo "proxy=${PROXY_URL}" | $SUDO tee -a /etc/dnf/dnf.conf > /dev/null
-    fi
+    $SUDO pnpm config set proxy "${PROXY_URL}" >/dev/null 2>&1 || true
+    $SUDO pnpm config set https-proxy "${PROXY_URL}" >/dev/null 2>&1 || true
 }
 
 cleanup() {
     if [ -n "$TUNNEL_PID" ]; then
         echo -e "\n${CYAN}[i] Terminating SSH tunnel (PID: $TUNNEL_PID)...${NC}"
-        kill "$TUNNEL_PID" || true
+        kill "$TUNNEL_PID" >/dev/null 2>&1 || true
     fi
     
     if [[ "$ROLE" == "iran" ]]; then
         echo -e "${CYAN}[i] Cleaning up proxy configurations and temporary files...${NC}"
         unset HTTPS_PROXY HTTP_PROXY ALL_PROXY
         
-        $SUDO npm config delete proxy >/dev/null 2>&1 || true
-        $SUDO npm config delete https-proxy >/dev/null 2>&1 || true
+        $SUDO pnpm config delete proxy >/dev/null 2>&1 || true
+        $SUDO pnpm config delete https-proxy >/dev/null 2>&1 || true
         
+        rm -f /tmp/elaheh-tunnel.log
+
         if command -v apt-get >/dev/null; then
-             $SUDO rm -f /etc/apt/apt.conf.d/99proxy
-             $SUDO apt-get remove --purge -y -qq sshpass >/dev/null 2>&1 || true
-        fi
-        if command -v dnf >/dev/null; then
-             $SUDO sed -i '/^proxy=/d' /etc/dnf/dnf.conf
-             $SUDO dnf remove -y -q sshpass >/dev/null 2>&1 || true
+             ($SUDO apt-get remove --purge -y -qq sshpass >/dev/null 2>&1) &
+             spinner $! "   > Uninstalling tunnel dependency..."
+        elif command -v dnf >/dev/null; then
+             ($SUDO dnf remove -y -q sshpass >/dev/null 2>&1) &
+             spinner $! "   > Uninstalling tunnel dependency..."
         fi
         echo -e "${GREEN}[+] Cleanup complete.${NC}"
     fi
@@ -148,7 +151,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.1.0 (Sanction Bypass Refined)"
+echo "   Version 2.2.0 (Interactive Tunnel Verification)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -190,7 +193,7 @@ install_deps() {
     fi
 }
 (install_deps) &
-spinner $! "   > Updating and installing base packages (via tunnel)..."
+spinner $! "   > Updating and installing base packages..."
 
 $SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
 
@@ -206,8 +209,11 @@ spinner $! "   > Downloading Node.js ${NODE_VERSION}..."
  $SUDO rm -rf /tmp/${NODE_DIST}) &
 spinner $! "   > Installing Node.js..."
 
-($SUDO npm install -g pnpm) &
+# Install pnpm using npm which is now installed
+(curl -fsSL https://get.pnpm.io/install.sh | sh -) &
 spinner $! "   > Installing pnpm package manager..."
+export PNPM_HOME="/root/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
 
 ($SUDO pnpm add -g pm2 @angular/cli) &
 spinner $! "   > Installing global tools (pm2, @angular/cli)..."
