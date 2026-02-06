@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.8.0 (NPM as Package Manager)
+# Version 2.9.0 (Shecan DNS for Iran)
 # Author: EHSANKiNG
 
 set -e
@@ -40,6 +40,85 @@ spinner() {
     fi
 }
 
+# --- DNS & Cleanup Management ---
+ROLE="" # Define ROLE globally for cleanup trap
+SUDO=""
+
+cleanup() {
+    if [[ "$ROLE" == "iran" ]]; then
+        echo -e "\n${CYAN}[i] Cleaning up temporary DNS configurations...${NC}"
+        RESOLVED_BACKUP="/tmp/resolved.conf.bak"
+        RESOLV_BACKUP="/tmp/resolv.conf.bak"
+
+        if [[ -f "$RESOLVED_BACKUP" ]]; then
+            ($SUDO mv "$RESOLVED_BACKUP" "/etc/systemd/resolved.conf" && $SUDO systemctl restart systemd-resolved) &> /dev/null &
+            spinner $! "   > Restoring original DNS settings (systemd)..."
+        fi
+
+        if [[ -f "$RESOLV_BACKUP" ]]; then
+            if lsattr "/etc/resolv.conf" 2>/dev/null | grep -q "i"; then
+                $SUDO chattr -i "/etc/resolv.conf"
+            fi
+            ($SUDO mv "$RESOLV_BACKUP" "/etc/resolv.conf") &> /dev/null &
+            spinner $! "   > Restoring original DNS settings (resolv.conf)..."
+        fi
+        echo -e "${GREEN}[+] Cleanup complete.${NC}"
+    fi
+}
+trap cleanup EXIT INT TERM
+
+configure_iran_dns() {
+    echo -e "\n${YELLOW}[!] Configuring Sanction Bypass via Shecan DNS...${NC}"
+    echo -e "${CYAN}   > Setting DNS to 178.22.122.100 and 185.51.200.2 for this session.${NC}"
+
+    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+        # Debian/Ubuntu with systemd-resolved
+        RESOLVED_CONF="/etc/systemd/resolved.conf"
+        RESOLVED_BACKUP="/tmp/resolved.conf.bak"
+        $SUDO cp "$RESOLVED_CONF" "$RESOLVED_BACKUP"
+        
+        if grep -q "^#*DNS=" "$RESOLVED_CONF"; then
+            $SUDO sed -i 's/^#*DNS=.*/DNS=178.22.122.100 185.51.200.2/' "$RESOLVED_CONF"
+        else
+            echo "DNS=178.22.122.100 185.51.200.2" | $SUDO tee -a "$RESOLVED_CONF" > /dev/null
+        fi
+        
+        ($SUDO systemctl restart systemd-resolved) &
+        spinner $! "   > Applying DNS settings for Debian/Ubuntu..."
+
+    elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        # RPM-based systems, direct resolv.conf modification
+        RESOLV_CONF="/etc/resolv.conf"
+        RESOLV_BACKUP="/tmp/resolv.conf.bak"
+        $SUDO cp "$RESOLV_CONF" "$RESOLV_BACKUP"
+        
+        if lsattr "$RESOLV_CONF" 2>/dev/null | grep -q "i"; then
+            $SUDO chattr -i "$RESOLV_CONF"
+        fi
+        
+        (
+            echo "nameserver 178.22.122.100" | $SUDO tee "$RESOLV_CONF" > /dev/null
+            echo "nameserver 185.51.200.2" | $SUDO tee -a "$RESOLV_CONF" > /dev/null
+        ) &
+        spinner $! "   > Applying DNS settings for RPM-based OS..."
+        
+        $SUDO chattr +i "$RESOLV_CONF"
+    else
+        echo -e "${RED}Error: Unsupported OS for automatic DNS configuration.${NC}"
+        exit 1
+    fi
+    
+    (
+        if ! curl -s --max-time 15 "https://api.github.com" > /dev/null; then
+            echo -e "\n${RED}Error: DNS configuration failed. Could not connect to GitHub.${NC}"
+            echo -e "${YELLOW}Please check your network settings and run the script again.${NC}"
+            exit 1
+        fi
+    ) &
+    spinner $! "   > Verifying sanction bypass..."
+    echo -e "${GREEN}[✔] DNS configured and connectivity verified.${NC}"
+}
+
 # -----------------------------------------------------------------------------
 # Main Installation Logic
 # -----------------------------------------------------------------------------
@@ -48,12 +127,11 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.8.0 (NPM as Package Manager)"
+echo "   Version 2.9.0 (Shecan DNS for Iran)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
 
-SUDO=""
 if [ "$EUID" -ne 0 ]; then
   if command -v sudo >/dev/null 2>&1; then
     SUDO="sudo"
@@ -62,6 +140,8 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
   fi
 fi
+if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
+export DEBIAN_FRONTEND=noninteractive
 
 echo -e "${YELLOW}Select Server Location/Role:${NC}"
 echo "1) Foreign Server (Upstream - Germany, Finland, etc.)"
@@ -71,30 +151,13 @@ read -p "Select [1 or 2]: " ROLE_CHOICE
 if [[ "$ROLE_CHOICE" == *"2"* || "$ROLE_CHOICE" == *"۲"* ]]; then
     ROLE="iran"
     echo -e "${GREEN}>> Role Selected: IRAN Server (Edge).${NC}"
-    
-    echo -e "\n${YELLOW}[!] Sanction Bypass Required for Iran Server Installation.${NC}"
-    echo -e "${CYAN}لطفا قبل از ادامه، VPN خود را روی این ترمینال فعال کنید تا تحریم‌ها دور زده شوند.${NC}"
-    echo -e "${CYAN}Please activate your VPN on this terminal before proceeding to bypass sanctions.${NC}"
-    read -p "   > Press [Enter] to continue after activating your VPN..."
-
-    (
-        if ! curl -s --max-time 15 "https://api.github.com" > /dev/null; then
-            echo -e "\n${RED}Error: Could not connect to GitHub.${NC}"
-            echo -e "${YELLOW}Please ensure your VPN is active and working correctly, then run the script again.${NC}"
-            exit 1
-        fi
-    ) &
-    spinner $! "   > Verifying internet connectivity..."
-
+    configure_iran_dns
 else
     ROLE="external"
     echo -e "${GREEN}>> Role Selected: FOREIGN Server (Upstream).${NC}"
 fi
 
 echo -e "\n${GREEN}--- STEP 1: PREPARING SYSTEM & DEPENDENCIES ---${NC}"
-if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
-export DEBIAN_FRONTEND=noninteractive
-
 install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         ($SUDO apt-get update -y -qq && $SUDO apt-get upgrade -y -qq && $SUDO apt-get install -y -qq curl git unzip ufw nginx certbot python3-certbot-nginx socat redis-server)
@@ -119,7 +182,6 @@ spinner $! "   > Downloading Node.js ${NODE_VERSION}..."
  $SUDO rm -rf /tmp/${NODE_DIST}) &
 spinner $! "   > Installing Node.js..."
 
-# NPM comes with Node.js, so no separate installation is needed.
 (npm install -g pm2 @angular/cli) &
 spinner $! "   > Installing global tools (pm2, @angular/cli)..."
 
