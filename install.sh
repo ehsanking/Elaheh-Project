@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 4.0.0 (Stability Release)
+# Version 4.1.0 (Local Source + Swap Fix)
 # Author: EHSANKiNG
 
-set -e
+# Disable immediate exit on error to handle errors gracefully with logs
+# set -e 
 
 # --- UI Colors ---
 GREEN='\033[1;32m'
@@ -13,7 +14,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+LOG_FILE="/var/log/elaheh-install.log"
+touch "$LOG_FILE"
+chmod 666 "$LOG_FILE"
+
 # --- Helper Functions ---
+log() {
+    echo "[$1] $2" >> "$LOG_FILE"
+}
+
 spinner() {
     local pid=$1
     local msg=$2
@@ -34,7 +43,7 @@ spinner() {
         printf "${GREEN} [✔ Done]${NC}\n"
     else
         printf "${RED} [✖ Failed]${NC}\n"
-        # We don't exit here to allow failover logic in main script
+        echo -e "${RED}   ! Check log: tail -n 20 $LOG_FILE${NC}"
     fi
     return $exitcode
 }
@@ -48,7 +57,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 4.0.0 (Optimized for Iran Infrastructure)"
+echo "   Version 4.1.0 (Fixed Build Process)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -82,11 +91,35 @@ else
     echo -e "${GREEN}>> Role: FOREIGN (Upstream)${NC}"
 fi
 
-# Get Domain immediately
+# Get Domain
 PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 ifconfig.me)
 echo -e "\n${YELLOW}Public IP Detected: ${CYAN}${PUBLIC_IP}${NC}"
 read -p "Enter your Domain (A record must point to IP): " DOMAIN
 if [ -z "$DOMAIN" ]; then DOMAIN="localhost"; fi
+
+log "INFO" "Starting installation for $ROLE on $DOMAIN ($OS)"
+
+# --- STEP 0: SWAP CONFIGURATION (Anti-Crash) ---
+echo -e "\n${GREEN}--- STEP 0: MEMORY OPTIMIZATION ---${NC}"
+setup_swap() {
+    # Check current swap
+    SWAP_SIZE=$(free -m | grep Swap | awk '{print $2}')
+    if [ "$SWAP_SIZE" -eq 0 ] || [ -z "$SWAP_SIZE" ]; then
+        echo -e "${YELLOW}   > No Swap detected. Creating 2GB Swap file for build stability...${NC}"
+        log "INFO" "Creating 2GB swap file"
+        fallocate -l 2G /swapfile >> "$LOG_FILE" 2>&1
+        chmod 600 /swapfile
+        mkswap /swapfile >> "$LOG_FILE" 2>&1
+        swapon /swapfile >> "$LOG_FILE" 2>&1
+        if ! grep -q "/swapfile" /etc/fstab; then
+            echo '/swapfile none swap sw 0 0' >> /etc/fstab
+        fi
+    else
+        echo -e "${GREEN}   > Swap space detected ($SWAP_SIZE MB).${NC}"
+    fi
+}
+(setup_swap) &
+spinner $! "   > Checking/Configuring Swap Memory..."
 
 # --- STEP 1: Smart Package Installation ---
 echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
@@ -94,35 +127,35 @@ echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
 install_pkg_apt() {
     PKG=$1
     if dpkg -l | grep -q "^ii  $PKG "; then
-        echo -e "${GREEN}   > $PKG is already installed. Checking for updates...${NC}"
-        # Optional: apt-get install --only-upgrade -y $PKG >/dev/null 2>&1
+        # Check if upgrade needed (simplified: just log it exists)
+        log "INFO" "$PKG is installed."
     else
-        echo -e "${CYAN}   > Installing $PKG...${NC}"
-        apt-get install -y -qq $PKG >/dev/null 2>&1
+        log "INFO" "Installing $PKG..."
+        apt-get install -y -qq $PKG >> "$LOG_FILE" 2>&1
     fi
 }
 
 install_pkg_dnf() {
     PKG=$1
     if rpm -q $PKG >/dev/null 2>&1; then
-        echo -e "${GREEN}   > $PKG is already installed.${NC}"
+        log "INFO" "$PKG is installed."
     else
-        echo -e "${CYAN}   > Installing $PKG...${NC}"
-        dnf install -y -q $PKG >/dev/null 2>&1
+        log "INFO" "Installing $PKG..."
+        dnf install -y -q $PKG >> "$LOG_FILE" 2>&1
     fi
 }
 
 prepare_system() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        apt-get update -y -qq >/dev/null 2>&1
+        apt-get update -y -qq >> "$LOG_FILE" 2>&1
         local DEPS=("curl" "git" "unzip" "ufw" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis-server")
         for dep in "${DEPS[@]}"; do install_pkg_apt "$dep"; done
-        systemctl enable --now redis-server >/dev/null 2>&1
+        systemctl enable --now redis-server >> "$LOG_FILE" 2>&1
     elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        dnf check-update >/dev/null 2>&1 || true
+        dnf check-update >> "$LOG_FILE" 2>&1 || true
         local DEPS=("curl" "git" "unzip" "firewalld" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis")
         for dep in "${DEPS[@]}"; do install_pkg_dnf "$dep"; done
-        systemctl enable --now redis >/dev/null 2>&1
+        systemctl enable --now redis >> "$LOG_FILE" 2>&1
     fi
 }
 (prepare_system) &
@@ -132,23 +165,21 @@ spinner $! "   > Verifying and installing base packages..."
 echo -e "\n${GREEN}--- STEP 2: NODE.JS & NPM CONFIGURATION ---${NC}"
 
 install_node() {
-    # Check if Node exists and version is sufficient (v18+)
     if check_command node; then
         NODE_V=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
         if [ "$NODE_V" -ge 18 ]; then
-            echo -e "${GREEN}   > Node.js ($NODE_V) is already installed.${NC}"
+            log "INFO" "Node.js v$NODE_V detected."
             return
         fi
     fi
 
-    echo -e "${CYAN}   > Installing Node.js v20 (LTS)...${NC}"
-    # Using NodeSource which usually has good mirrors, or fallback to direct binary if apt fails
+    log "INFO" "Installing Node.js..."
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
-        apt-get install -y nodejs >/dev/null 2>&1
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >> "$LOG_FILE" 2>&1
+        apt-get install -y nodejs >> "$LOG_FILE" 2>&1
     elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
-        dnf install -y nodejs >/dev/null 2>&1
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - >> "$LOG_FILE" 2>&1
+        dnf install -y nodejs >> "$LOG_FILE" 2>&1
     fi
 }
 (install_node) &
@@ -156,43 +187,64 @@ spinner $! "   > Configuring Node.js environment..."
 
 # Configure NPM Mirror to bypass sanctions
 echo -e "${CYAN}   > Configuring NPM registry mirror (Anti-Sanction)...${NC}"
-npm config set registry https://registry.npmmirror.com >/dev/null 2>&1
+npm config set registry https://registry.npmmirror.com >> "$LOG_FILE" 2>&1
 
 install_globals() {
     local TOOLS=("pm2" "@angular/cli")
     for tool in "${TOOLS[@]}"; do
         if ! command -v $tool >/dev/null 2>&1; then
-             npm install -g $tool >/dev/null 2>&1
+             log "INFO" "Installing global $tool..."
+             npm install -g $tool >> "$LOG_FILE" 2>&1
         fi
     done
 }
 (install_globals) &
-spinner $! "   > Checking/Installing global tools (pm2, angular-cli)..."
+spinner $! "   > Checking/Installing global tools..."
 
 # --- STEP 3: Project Setup ---
 echo -e "\n${GREEN}--- STEP 3: BUILDING APPLICATION ---${NC}"
 INSTALL_DIR="/opt/elaheh-project"
 
 setup_project() {
+    # CHECK SOURCE FILES
+    if [ ! -f "package.json" ]; then
+        log "ERROR" "package.json not found in $(pwd)"
+        echo "Error: package.json not found in current directory."
+        echo "Please upload all project files to the server and run install.sh from that directory."
+        exit 1
+    fi
+
+    log "INFO" "Cleaning install directory $INSTALL_DIR"
     rm -rf "$INSTALL_DIR"
     mkdir -p "$INSTALL_DIR"
+    
+    log "INFO" "Copying local files to $INSTALL_DIR"
+    cp -R . "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    # Clone
-    git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .
+    log "INFO" "Installing dependencies (npm install)"
+    npm install --legacy-peer-deps --loglevel=error >> "$LOG_FILE" 2>&1
+    if [ $? -ne 0 ]; then return 1; fi
     
-    # Install Deps (using the mirror set previously)
-    npm install --legacy-peer-deps --loglevel=error
-    
-    # Build
-    npm run build
+    log "INFO" "Building Angular app (npm run build)"
+    # Increase memory limit for node to prevent OOM
+    export NODE_OPTIONS="--max-old-space-size=2048"
+    npm run build >> "$LOG_FILE" 2>&1
+    if [ $? -ne 0 ]; then return 1; fi
 }
-(setup_project) >/dev/null 2>&1 &
-spinner $! "   > Cloning and Compiling (this may take a moment)..."
+(setup_project) &
+spinner $! "   > Compiling application (Source: Local)..."
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Critical Error: Build failed.${NC}"
+    echo -e "${YELLOW}Please check the log file: ${LOG_FILE}${NC}"
+    exit 1
+fi
 
 DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
 if [ ! -d "$DIST_PATH" ]; then
-    echo -e "${RED}Critical Error: Build failed. Check Node/NPM logs.${NC}"
+    echo -e "${RED}Critical Error: Build output directory not found.${NC}"
+    echo -e "${YELLOW}Check log: ${LOG_FILE}${NC}"
     exit 1
 fi
 
@@ -204,7 +256,7 @@ echo "{\"role\": \"${ROLE}\", \"domain\": \"${DOMAIN}\", \"installedAt\": \"$(da
 echo -e "\n${GREEN}--- STEP 4: WEBSERVER & SSL ---${NC}"
 
 # Stop Nginx to free port 80 for Certbot
-systemctl stop nginx >/dev/null 2>&1 || true
+systemctl stop nginx >> "$LOG_FILE" 2>&1 || true
 
 SSL_KEY=""
 SSL_CERT=""
@@ -212,7 +264,8 @@ USE_SELF_SIGNED=0
 
 attempt_certbot() {
     echo -e "${CYAN}   > Attempting to obtain valid SSL from Let's Encrypt...${NC}"
-    if certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "admin@${DOMAIN}" -d "${DOMAIN}" >/dev/null 2>&1; then
+    log "INFO" "Requesting Certbot SSL for $DOMAIN"
+    if certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "admin@${DOMAIN}" -d "${DOMAIN}" >> "$LOG_FILE" 2>&1; then
         SSL_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
         SSL_CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
         return 0
@@ -226,13 +279,14 @@ if attempt_certbot; then
 else
     echo -e "${YELLOW}   > Let's Encrypt failed (likely due to Iran filtering).${NC}"
     echo -e "${CYAN}   > Generating Self-Signed SSL (Fallback Strategy)...${NC}"
+    log "INFO" "Generating Self-Signed SSL"
     
     SELF_DIR="/etc/nginx/ssl"
     mkdir -p $SELF_DIR
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$SELF_DIR/selfsigned.key" \
         -out "$SELF_DIR/selfsigned.crt" \
-        -subj "/C=IR/ST=Tehran/L=Tehran/O=Elaheh/OU=IT/CN=${DOMAIN}" >/dev/null 2>&1
+        -subj "/C=IR/ST=Tehran/L=Tehran/O=Elaheh/OU=IT/CN=${DOMAIN}" >> "$LOG_FILE" 2>&1
     
     SSL_KEY="$SELF_DIR/selfsigned.key"
     SSL_CERT="$SELF_DIR/selfsigned.crt"
@@ -278,8 +332,8 @@ server {
 EOF
 
 # Link and Restart
-ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 systemctl restart nginx
 echo -e "${GREEN}   > Nginx configured and started.${NC}"
 
@@ -287,25 +341,26 @@ echo -e "${GREEN}   > Nginx configured and started.${NC}"
 echo -e "\n${GREEN}--- STEP 5: FINALIZING ---${NC}"
 
 setup_firewall() {
-    if command -v ufw >/dev/null 2>&1; then
-        ufw allow 22/tcp >/dev/null 2>&1
-        ufw allow 80/tcp >/dev/null 2>&1
-        ufw allow 443/tcp >/dev/null 2>&1
+    log "INFO" "Configuring Firewall"
+    if command -v ufw >> "$LOG_FILE" 2>&1; then
+        ufw allow 22/tcp >> "$LOG_FILE" 2>&1
+        ufw allow 80/tcp >> "$LOG_FILE" 2>&1
+        ufw allow 443/tcp >> "$LOG_FILE" 2>&1
         # Tunnel Ports
-        ufw allow 110/tcp >/dev/null 2>&1
-        ufw allow 510/tcp >/dev/null 2>&1
-        ufw allow 1414/udp >/dev/null 2>&1
-        ufw allow 53133/udp >/dev/null 2>&1
-        echo "y" | ufw enable >/dev/null 2>&1
-    elif command -v firewall-cmd >/dev/null 2>&1; then
+        ufw allow 110/tcp >> "$LOG_FILE" 2>&1
+        ufw allow 510/tcp >> "$LOG_FILE" 2>&1
+        ufw allow 1414/udp >> "$LOG_FILE" 2>&1
+        ufw allow 53133/udp >> "$LOG_FILE" 2>&1
+        echo "y" | ufw enable >> "$LOG_FILE" 2>&1
+    elif command -v firewall-cmd >> "$LOG_FILE" 2>&1; then
         systemctl start firewalld
-        firewall-cmd --permanent --add-service=http >/dev/null 2>&1
-        firewall-cmd --permanent --add-service=https >/dev/null 2>&1
-        firewall-cmd --permanent --add-port=110/tcp >/dev/null 2>&1
-        firewall-cmd --permanent --add-port=510/tcp >/dev/null 2>&1
-        firewall-cmd --permanent --add-port=1414/udp >/dev/null 2>&1
-        firewall-cmd --permanent --add-port=53133/udp >/dev/null 2>&1
-        firewall-cmd --reload >/dev/null 2>&1
+        firewall-cmd --permanent --add-service=http >> "$LOG_FILE" 2>&1
+        firewall-cmd --permanent --add-service=https >> "$LOG_FILE" 2>&1
+        firewall-cmd --permanent --add-port=110/tcp >> "$LOG_FILE" 2>&1
+        firewall-cmd --permanent --add-port=510/tcp >> "$LOG_FILE" 2>&1
+        firewall-cmd --permanent --add-port=1414/udp >> "$LOG_FILE" 2>&1
+        firewall-cmd --permanent --add-port=53133/udp >> "$LOG_FILE" 2>&1
+        firewall-cmd --reload >> "$LOG_FILE" 2>&1
     fi
 }
 (setup_firewall) &
@@ -314,8 +369,8 @@ spinner $! "   > Configuring Firewall (UFW/Firewalld)..."
 # Serve using Nginx is enough for static build, 
 # But if we had a node backend, we would start it here with PM2.
 # Ensuring PM2 startup for future backend modules
-pm2 startup >/dev/null 2>&1 || true
-pm2 save >/dev/null 2>&1 || true
+pm2 startup >> "$LOG_FILE" 2>&1 || true
+pm2 save >> "$LOG_FILE" 2>&1 || true
 
 echo ""
 echo -e "${GREEN}==============================================${NC}"
