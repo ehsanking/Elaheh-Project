@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 4.1.0 (Local Source + Swap Fix)
+# Version 4.2.0 (GitHub Source + Swap Fix)
 # Author: EHSANKiNG
 
 # Disable immediate exit on error to handle errors gracefully with logs
@@ -57,7 +57,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 4.1.0 (Fixed Build Process)"
+echo "   Version 4.2.0 (GitHub Source + Swap Fix)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -206,21 +206,35 @@ echo -e "\n${GREEN}--- STEP 3: BUILDING APPLICATION ---${NC}"
 INSTALL_DIR="/opt/elaheh-project"
 
 setup_project() {
-    # CHECK SOURCE FILES
-    if [ ! -f "package.json" ]; then
-        log "ERROR" "package.json not found in $(pwd)"
-        echo "Error: package.json not found in current directory."
-        echo "Please upload all project files to the server and run install.sh from that directory."
-        exit 1
-    fi
-
     log "INFO" "Cleaning install directory $INSTALL_DIR"
     rm -rf "$INSTALL_DIR"
     mkdir -p "$INSTALL_DIR"
-    
-    log "INFO" "Copying local files to $INSTALL_DIR"
-    cp -R . "$INSTALL_DIR"
     cd "$INSTALL_DIR"
+    
+    log "INFO" "Cloning repository from GitHub (https://github.com/ehsanking/Elaheh-Project.git)..."
+    
+    # Retry mechanism for Git Clone (Iran Internet Stability)
+    local count=0
+    local retries=3
+    local cloned=0
+    
+    while [ $count -lt $retries ]; do
+        if git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .; then
+            cloned=1
+            log "INFO" "Clone successful."
+            break
+        fi
+        count=$((count + 1))
+        log "WARN" "Clone failed, retrying ($count/$retries)..."
+        sleep 3
+    done
+
+    if [ $cloned -ne 1 ] || [ ! -f "package.json" ]; then
+        log "ERROR" "Failed to clone repository from GitHub."
+        echo -e "${RED}Error: Failed to download source code from GitHub.${NC}"
+        echo -e "${YELLOW}Check your internet connection or proxy settings.${NC}"
+        exit 1
+    fi
     
     log "INFO" "Installing dependencies (npm install)"
     npm install --legacy-peer-deps --loglevel=error >> "$LOG_FILE" 2>&1
@@ -233,7 +247,7 @@ setup_project() {
     if [ $? -ne 0 ]; then return 1; fi
 }
 (setup_project) &
-spinner $! "   > Compiling application (Source: Local)..."
+spinner $! "   > Downloading Source and Compiling..."
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Critical Error: Build failed.${NC}"
