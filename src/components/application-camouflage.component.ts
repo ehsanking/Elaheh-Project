@@ -1,5 +1,5 @@
 
-import { Component, inject, ChangeDetectionStrategy, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ElahehCoreService, GameProfile } from '../services/elaheh-core.service';
@@ -34,7 +34,7 @@ import { LanguageService } from '../services/language.service';
             
             <button type="button" (click)="setProfile('COD_MOBILE')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
               [class.border-teal-500]="core.applicationCamouflageProfile() === 'COD_MOBILE'"
-              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'COD_MOBILE'"
+              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'COD_MOBILE'}"
               [class.border-gray-700]="core.applicationCamouflageProfile() !== 'COD_MOBILE'">
               <span class="text-2xl mr-3">🔫</span>
               <div class="text-left rtl:text-right">
@@ -45,7 +45,7 @@ import { LanguageService } from '../services/language.service';
 
             <button type="button" (click)="setProfile('PUBG')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
               [class.border-teal-500]="core.applicationCamouflageProfile() === 'PUBG'"
-              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'PUBG'"
+              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'PUBG'}"
               [class.border-gray-700]="core.applicationCamouflageProfile() !== 'PUBG'">
               <span class="text-2xl mr-3">🍳</span>
               <div class="text-left rtl:text-right">
@@ -56,7 +56,7 @@ import { LanguageService } from '../services/language.service';
 
              <button type="button" (click)="setProfile('CLASH_ROYALE')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
               [class.border-teal-500]="core.applicationCamouflageProfile() === 'CLASH_ROYALE'"
-              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'CLASH_ROYALE'"
+              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'CLASH_ROYALE'}"
               [class.border-gray-700]="core.applicationCamouflageProfile() !== 'CLASH_ROYALE'">
               <span class="text-2xl mr-3">👑</span>
               <div class="text-left rtl:text-right">
@@ -67,7 +67,7 @@ import { LanguageService } from '../services/language.service';
 
              <button type="button" (click)="setProfile('MMORPG')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
               [class.border-teal-500]="core.applicationCamouflageProfile() === 'MMORPG'"
-              [class.bg-teal-900/20]="core.applicationCamouflageProfile() === 'MMORPG'"
+              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'MMORPG'}"
               [class.border-gray-700]="core.applicationCamouflageProfile() !== 'MMORPG'">
               <span class="text-2xl mr-3">🐲</span>
               <div class="text-left rtl:text-right">
@@ -101,51 +101,17 @@ import { LanguageService } from '../services/language.service';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ApplicationCamouflageComponent implements OnInit, OnDestroy {
+export class ApplicationCamouflageComponent {
   core = inject(ElahehCoreService);
   languageService = inject(LanguageService);
-
-  private statusInterval: any;
-
-  ngOnInit(): void {
-    this.statusInterval = setInterval(() => {
-      if (this.core.applicationCamouflageEnabled()) {
-        const statuses = [
-          'Processing (AI)', 
-          'Processing (Data Sync)', 
-          'Processing (Media)', 
-          'Idle', 
-          'Idle',
-          'Idle'
-        ];
-        const randomIndex = Math.floor(Math.random() * statuses.length);
-        this.core.applicationCamouflageStatus.set(statuses[randomIndex]);
-      } else {
-        if (this.core.applicationCamouflageStatus() !== 'Idle') {
-          this.core.applicationCamouflageStatus.set('Idle');
-        }
-      }
-    }, 4500);
-  }
-
-  ngOnDestroy(): void {
-    if (this.statusInterval) {
-      clearInterval(this.statusInterval);
-    }
-  }
 
   setEnabled(event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
     const currentProfile = this.core.applicationCamouflageProfile();
-    
     if (isChecked && !currentProfile) {
       this.core.updateApplicationCamouflage(true, 'COD_MOBILE');
     } else {
       this.core.updateApplicationCamouflage(isChecked, currentProfile);
-    }
-
-    if (!isChecked) {
-        this.core.applicationCamouflageStatus.set('Idle');
     }
   }
 

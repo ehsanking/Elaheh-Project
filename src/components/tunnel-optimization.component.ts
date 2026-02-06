@@ -69,10 +69,10 @@ import { LanguageService } from '../services/language.service';
       <div class="space-y-3">
         @for(provider of core.tunnelProviders(); track provider.id) {
           <div class="p-4 rounded-lg flex items-center justify-between transition-all border"
-            [class.bg-teal-900/50]="provider.status === 'optimal'"
-            [class.border-teal-500]="provider.status === 'optimal'"
             [class.bg-gray-800]="provider.status !== 'optimal'"
             [class.border-gray-700]="provider.status !== 'optimal' && provider.status !== 'testing'"
+            [ngClass]="{'bg-teal-900/50': provider.status === 'optimal'}"
+            [class.border-teal-500]="provider.status === 'optimal'"
             [class.border-blue-700]="provider.status === 'testing'">
             
             <div class="flex items-center gap-4 flex-1">

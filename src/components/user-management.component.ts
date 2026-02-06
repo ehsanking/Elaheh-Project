@@ -2,7 +2,7 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ElahehCoreService, User, LinkConfig } from '../services/elaheh-core.service';
-import { toDataURL } from 'qrcode';
+import * as QRCode from 'qrcode';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { LanguageService } from '../services/language.service';
@@ -31,7 +31,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   // Filter State
   statusFilter = signal<'all' | 'active' | 'expired' | 'banned'>('all');
-  searchTerm = signal('');
   
   // Creation Mode
   creationMode = signal<'auto' | 'manual'>('auto');
@@ -55,14 +54,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   filteredUsers = computed(() => {
     const filter = this.statusFilter();
-    const term = this.searchTerm().toLowerCase();
     const users = this.core.users();
-
-    return users.filter(u => {
-      const statusMatch = filter === 'all' || u.status === filter;
-      const termMatch = term === '' || u.username.toLowerCase().includes(term);
-      return statusMatch && termMatch;
-    });
+    if (filter === 'all') return users;
+    return users.filter(u => u.status === filter);
   });
 
   ngOnInit(): void { }
@@ -70,11 +64,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   setFilter(filter: 'all' | 'active' | 'expired' | 'banned') {
     this.statusFilter.set(filter);
-  }
-
-  handleSearchInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    this.searchTerm.set(input.value);
   }
 
   toggleAddModal() {
@@ -123,7 +112,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   async showQrCode(link: LinkConfig) {
     try {
-      const dataUrl = await toDataURL(link.url, { width: 256, margin: 2 });
+      const dataUrl = await QRCode.toDataURL(link.url, { width: 256, margin: 2, color: { dark: '#FFFFFF', light: '#00000000' } });
       this.qrCodeDataUrl.set(dataUrl);
       this.qrCodeLinkAlias.set(link.alias);
     } catch (err) { console.error(err); }
@@ -135,13 +124,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       if(this.selectedUser()) {
           this.core.removeLinkFromUser(this.selectedUser()!.id, index);
       }
-  }
-
-  confirmDelete(user: User) {
-    const message = `${this.languageService.translate('common.deleteConfirm')} "${user.username}"?`;
-    if (confirm(message)) {
-      this.core.removeUser(user.id);
-    }
   }
   
   updateConcurrency(userId: string, event: any) {
@@ -205,13 +187,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
               { name: 'WireGuard iOS', icon: '🍏', url: 'https://itunes.apple.com/us/app/wireguard/id1451685025?ls=1&mt=12' },
               { name: 'WireGuard Android', icon: '🤖', url: 'https://play.google.com/store/apps/details?id=com.wireguard.android' },
               { name: 'WireGuard macOS', icon: '💻', url: 'https://itunes.apple.com/us/app/wireguard/id1441195209?ls=1&mt=8' }
-          ];
-      }
-      
-      if (p.includes('hysteria')) {
-           return [
-              { name: 'NekoBox (Android)', icon: '🤖', url: 'https://github.com/MatsuriDayo/NekoBoxForAndroid/releases' },
-              { name: 'Hiddify', icon: '🚀', url: 'https://hiddify.com/en/download/' },
           ];
       }
 

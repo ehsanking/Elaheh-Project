@@ -21,36 +21,36 @@ import { LanguageService } from '../services/language.service';
                 [class.border-teal-500]="selectedStrategy() === 'CDN'" 
                 [class.bg-gray-800]="selectedStrategy() !== 'CDN'" 
                 [class.border-gray-700]="selectedStrategy() !== 'CDN'"
-                [attr.data-tooltip]="languageService.translate('tooltips.settings.endpointCDN')">
-            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('settings.endpoint.cdn') }}</span><span class="text-xs bg-green-900 text-green-300 px-2 rounded">{{ languageService.translate('settings.endpoint.cdnTag') }}</span></div>
-            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('settings.endpoint.cdnDesc') }}</div>
+                [attr.data-tooltip]="languageService.translate('tooltips.wizard.endpointCDN')">
+            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('wizard.endpoint.cdn') }}</span><span class="text-xs bg-green-900 text-green-300 px-2 rounded">{{ languageService.translate('wizard.endpoint.cdnTag') }}</span></div>
+            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('wizard.endpoint.cdnDesc') }}</div>
         </button>
         <button (click)="selectStrategy('CLOUD')" class="text-left p-4 rounded border transition-all" 
                 [class.bg-teal-900]="selectedStrategy() === 'CLOUD'" 
                 [class.border-teal-500]="selectedStrategy() === 'CLOUD'" 
                 [class.bg-gray-800]="selectedStrategy() !== 'CLOUD'" 
                 [class.border-gray-700]="selectedStrategy() !== 'CLOUD'"
-                [attr.data-tooltip]="languageService.translate('tooltips.settings.endpointCloud')">
-            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('settings.endpoint.cloud') }}</span><span class="text-xs bg-blue-900 text-blue-300 px-2 rounded">{{ languageService.translate('settings.endpoint.cloudTag') }}</span></div>
-            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('settings.endpoint.cloudDesc') }}</div>
+                [attr.data-tooltip]="languageService.translate('tooltips.wizard.endpointCloud')">
+            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('wizard.endpoint.cloud') }}</span><span class="text-xs bg-blue-900 text-blue-300 px-2 rounded">{{ languageService.translate('wizard.endpoint.cloudTag') }}</span></div>
+            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('wizard.endpoint.cloudDesc') }}</div>
         </button>
         <button (click)="selectStrategy('VPS')" class="text-left p-4 rounded border transition-all" 
                 [class.bg-teal-900]="selectedStrategy() === 'VPS'" 
                 [class.border-teal-500]="selectedStrategy() === 'VPS'" 
                 [class.bg-gray-800]="selectedStrategy() !== 'VPS'" 
                 [class.border-gray-700]="selectedStrategy() !== 'VPS'"
-                [attr.data-tooltip]="languageService.translate('tooltips.settings.endpointVPS')">
-            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('settings.endpoint.vps') }}</span><span class="text-xs bg-purple-900 text-purple-300 px-2 rounded">{{ languageService.translate('settings.endpoint.vpsTag') }}</span></div>
-            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('settings.endpoint.vpsDesc') }}</div>
+                [attr.data-tooltip]="languageService.translate('tooltips.wizard.endpointVPS')">
+            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('wizard.endpoint.vps') }}</span><span class="text-xs bg-purple-900 text-purple-300 px-2 rounded">{{ languageService.translate('wizard.endpoint.vpsTag') }}</span></div>
+            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('wizard.endpoint.vpsDesc') }}</div>
         </button>
         <button (click)="selectStrategy('EDGE')" class="text-left p-4 rounded border transition-all" 
                 [class.bg-teal-900]="selectedStrategy() === 'EDGE'" 
                 [class.border-teal-500]="selectedStrategy() === 'EDGE'" 
                 [class.bg-gray-800]="selectedStrategy() !== 'EDGE'" 
                 [class.border-gray-700]="selectedStrategy() !== 'EDGE'"
-                [attr.data-tooltip]="languageService.translate('tooltips.settings.endpointEdge')">
-            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('settings.endpoint.edge') }}</span><span class="text-xs bg-orange-900 text-orange-300 px-2 rounded">{{ languageService.translate('settings.endpoint.edgeTag') }}</span></div>
-            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('settings.endpoint.edgeDesc') }}</div>
+                [attr.data-tooltip]="languageService.translate('tooltips.wizard.endpointEdge')">
+            <div class="font-bold text-white flex justify-between"><span>{{ languageService.translate('wizard.endpoint.edge') }}</span><span class="text-xs bg-orange-900 text-orange-300 px-2 rounded">{{ languageService.translate('wizard.endpoint.edgeTag') }}</span></div>
+            <div class="text-xs text-gray-400 mt-1">{{ languageService.translate('wizard.endpoint.edgeDesc') }}</div>
         </button>
         <button (click)="selectStrategy('BLOCKCHAIN')" class="text-left p-4 rounded border transition-all" 
                 [class.bg-indigo-900]="selectedStrategy() === 'BLOCKCHAIN'" 

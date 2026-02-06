@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, ChangeDetectionStrategy, OnInit, OnDestroy, computed, effect } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { ElahehCoreService, EdgeNodeInfo } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
 import { CommonModule } from '@angular/common';
@@ -65,25 +65,20 @@ import { FormsModule } from '@angular/forms';
                 <h3 class="text-xl font-bold text-white mb-2">{{ languageService.translate('wizard.branding.title') }}</h3>
                 <p class="text-gray-400 mb-8">{{ languageService.translate('wizard.branding.description') }}</p>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-center">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div>
                         <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.siteTitle') }}</label>
                         <input type="text" [(ngModel)]="siteTitle" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="My VPN Service">
                     </div>
-                    <div class="flex items-center gap-4">
-                        @if(logoUrl()) {
-                            <img [src]="logoUrl()" alt="Logo Preview" class="w-16 h-16 rounded-full object-cover border-2 border-gray-600 bg-gray-900 flex-shrink-0">
-                        }
-                        <div class="flex-1">
-                            <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.logoUrl') }}</label>
-                            <input type="file" (change)="onLogoSelected($event)" accept=".png, .jpg, .jpeg, .svg" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-900/30 file:text-teal-400 hover:file:bg-teal-900/50 cursor-pointer">
-                        </div>
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">{{ languageService.translate('wizard.branding.logoUrl') }}</label>
+                        <input type="text" [(ngModel)]="logoUrl" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white focus:border-teal-500 outline-none" placeholder="https://example.com/logo.png">
                     </div>
                 </div>
 
                 <div class="mt-auto flex justify-between">
                   <button type="button" (click)="currentStep.set(1)" class="text-gray-400 hover:text-white">{{ languageService.translate('common.back') }}</button>
-                  <button type="button" (click)="currentStep.set(3)" [disabled]="!siteTitle().trim()" class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-colors">
+                  <button type="button" (click)="currentStep.set(3)" [disabled]="!siteTitle()" class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-colors">
                     {{ languageService.translate('common.next') }}
                   </button>
                 </div>
@@ -110,9 +105,9 @@ import { FormsModule } from '@angular/forms';
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <!-- External -->
-                  <button type="button" (click)="selectRole('external')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right"
-                    [class.border-teal-500]="selectedRole() === 'external'"
-                    [class.bg-teal-900/20]="selectedRole() === 'external'"
+                  <button type="button" (click)="selectRole('external')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
+                    [class.border-teal-500]="selectedRole() === 'external'" 
+                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'external'}"
                     [class.border-gray-600]="selectedRole() !== 'external'">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
@@ -127,9 +122,9 @@ import { FormsModule } from '@angular/forms';
                   </button>
 
                   <!-- Iran -->
-                  <button type="button" (click)="selectRole('iran')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right"
-                    [class.border-teal-500]="selectedRole() === 'iran'"
-                    [class.bg-teal-900/20]="selectedRole() === 'iran'"
+                  <button type="button" (click)="selectRole('iran')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
+                    [class.border-teal-500]="selectedRole() === 'iran'" 
+                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'iran'}"
                     [class.border-gray-600]="selectedRole() !== 'iran'">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
@@ -189,8 +184,8 @@ import { FormsModule } from '@angular/forms';
                             {{ languageService.translate('wizard.iran.keyLabel') }}
                         </label>
                         <div class="flex gap-3">
-                            <input type="text" [(ngModel)]="iranKeyInput" [disabled]="isLockedOut()" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white font-mono text-sm focus:border-teal-500 outline-none disabled:opacity-50" [placeholder]="languageService.translate('wizard.iran.placeholder')">
-                            <button type="button" (click)="verifyKey()" [disabled]="!iranKeyInput() || isVerifying() || isLockedOut()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded border border-gray-600 flex items-center gap-2 disabled:opacity-50">
+                            <input type="text" [(ngModel)]="iranKeyInput" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white font-mono text-sm focus:border-teal-500 outline-none" [placeholder]="languageService.translate('wizard.iran.placeholder')">
+                            <button type="button" (click)="verifyKey()" [disabled]="!iranKeyInput() || isVerifying()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded border border-gray-600 flex items-center gap-2">
                                 @if(isVerifying()) {
                                     <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                 } @else {
@@ -199,17 +194,6 @@ import { FormsModule } from '@angular/forms';
                             </button>
                         </div>
                         
-                        @if (verificationError()) {
-                            <div class="mt-2 text-sm text-red-400 text-center">{{ verificationError() }}</div>
-                        }
-
-                        @if (isLockedOut()) {
-                            <div class="mt-4 p-4 bg-red-900/30 border border-red-700 rounded text-center">
-                                <div class="text-red-400 font-bold">{{ languageService.translate('wizard.iran.lockoutTitle') }}</div>
-                                <p class="text-red-300 text-sm mt-1" [innerHTML]="getLockoutMessage()"></p>
-                            </div>
-                        }
-
                         @if (verifiedNode()) {
                             <div class="mt-4 p-4 bg-green-900/20 border border-green-800 rounded animate-in fade-in">
                                 <div class="text-green-400 text-sm font-bold">{{ languageService.translate('wizard.iran.verified') }}</div>
@@ -232,7 +216,7 @@ import { FormsModule } from '@angular/forms';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SetupWizardComponent implements OnInit, OnDestroy {
+export class SetupWizardComponent implements OnInit {
   core = inject(ElahehCoreService);
   languageService = inject(LanguageService);
 
@@ -251,36 +235,6 @@ export class SetupWizardComponent implements OnInit, OnDestroy {
   isVerifying = signal(false);
   verifiedNode = signal<EdgeNodeInfo | null>(null);
 
-  // Rate Limiting and Lockout State
-  failedAttempts = signal(0);
-  firstAttemptTimestamp = signal<number | null>(null);
-  isLockedOut = signal(false);
-  lockoutEndTime = signal<number | null>(null);
-  verificationError = signal('');
-  private timerInterval: any;
-  private currentTime = signal(Date.now());
-
-  lockoutRemainingMinutes = computed(() => {
-    if (!this.isLockedOut() || !this.lockoutEndTime()) {
-        return 0;
-    }
-    const remainingMs = Math.max(0, this.lockoutEndTime()! - this.currentTime());
-    return Math.ceil(remainingMs / (1000 * 60));
-  });
-
-  constructor() {
-    effect(() => {
-        const remainingTime = this.lockoutEndTime() ? this.lockoutEndTime()! - this.currentTime() : 0;
-        if (this.isLockedOut() && remainingTime <= 0) {
-            this.isLockedOut.set(false);
-            this.lockoutEndTime.set(null);
-            this.failedAttempts.set(0);
-            this.firstAttemptTimestamp.set(null);
-            this.core.addLog('INFO', 'Lockout period ended. Verification is re-enabled.');
-        }
-    });
-  }
-
   async ngOnInit() {
       const data = await this.core.fetchIpLocation();
       if (data && data.status === 'success') {
@@ -289,18 +243,6 @@ export class SetupWizardComponent implements OnInit, OnDestroy {
               this.selectedRole.set('iran');
           }
       }
-      this.timerInterval = setInterval(() => this.currentTime.set(Date.now()), 1000);
-  }
-
-  ngOnDestroy(): void {
-      if (this.timerInterval) {
-          clearInterval(this.timerInterval);
-      }
-  }
-
-  getLockoutMessage(): string {
-    const template = this.languageService.translate('wizard.iran.lockoutMessage');
-    return template.replace('{{minutes}}', `<strong class="text-white">${this.lockoutRemainingMinutes()}</strong>`);
   }
 
   selectLanguage(lang: 'en' | 'fa' | 'zh' | 'ru') {
@@ -310,24 +252,6 @@ export class SetupWizardComponent implements OnInit, OnDestroy {
 
   selectRole(role: 'iran' | 'external') { this.selectedRole.set(role); }
 
-  onLogoSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-        const allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
-        if (!allowedTypes.includes(file.type)) {
-            alert('Invalid file type. Please select a PNG, JPG, or SVG file.');
-            (event.target as HTMLInputElement).value = '';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.logoUrl.set(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-    }
-  }
-
   nextStep() {
     this.currentStep.update(s => s + 1);
     if (this.currentStep() === 4 && this.selectedRole() === 'external') {
@@ -336,57 +260,28 @@ export class SetupWizardComponent implements OnInit, OnDestroy {
   }
 
   verifyKey() {
-      if (!this.iranKeyInput() || this.isLockedOut()) return;
-      
+      if (!this.iranKeyInput()) return;
       this.isVerifying.set(true);
-      this.verificationError.set('');
       
       setTimeout(() => {
           const parsed = this.core.parseConnectionToken(this.iranKeyInput());
-          
           if (parsed) {
-              // Success
               this.verifiedNode.set({
                   ip: parsed.host,
                   hostname: parsed.host,
-                  location: 'Germany (Parsed)', // This would be fetched in a real scenario
+                  location: 'Germany (Parsed)',
                   latency: '0ms',
                   provider: 'Upstream'
               });
-              this.failedAttempts.set(0);
-              this.firstAttemptTimestamp.set(null);
           } else {
-              // Failure
-              this.verificationError.set(this.languageService.translate('wizard.iran.invalidToken'));
-              const now = Date.now();
-              const firstAttemptTime = this.firstAttemptTimestamp();
-
-              // Reset counter if the 60-second window has passed
-              if (firstAttemptTime && (now - firstAttemptTime > 60000)) {
-                  this.failedAttempts.set(1);
-                  this.firstAttemptTimestamp.set(now);
-              } else {
-                  this.failedAttempts.update(c => c + 1);
-                  if (this.failedAttempts() === 1) {
-                      this.firstAttemptTimestamp.set(now);
-                  }
-              }
-
-              // Check for lockout condition (5 attempts within 60 seconds)
-              if (this.failedAttempts() >= 5 && this.firstAttemptTimestamp() && (now - this.firstAttemptTimestamp()! <= 60000)) {
-                  const LOCKOUT_DURATION = 60 * 60 * 1000; // 60 minutes
-                  this.lockoutEndTime.set(now + LOCKOUT_DURATION);
-                  this.isLockedOut.set(true);
-                  this.verificationError.set(''); // Clear specific error to show lockout message
-                  this.core.addLog('ERROR', `Too many failed login attempts. Locking out for ${LOCKOUT_DURATION / 60000} minutes.`);
-              }
+              alert('Invalid Token Format');
           }
           this.isVerifying.set(false);
       }, 1000);
   }
 
   finishSetup() {
-    this.core.updateBranding(this.siteTitle().trim(), this.logoUrl() || null, this.core.currency());
+    this.core.updateBranding(this.siteTitle(), this.logoUrl() || null, this.core.currency());
 
     if (this.selectedRole() === 'iran') {
         this.core.connectToUpstream(this.iranKeyInput());

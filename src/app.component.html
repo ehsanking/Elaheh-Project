@@ -27,28 +27,13 @@
             <!-- Iran Logic: Public Store -> Login -> Admin Dashboard -->
             @switch(iranView()) {
               @case('public') {
-                @switch (core.camouflageMode()) {
-                  @case ('AI_RESEARCH') {
-                    <app-camouflage-site (loginRequest)="iranView.set('login')" (signupRequest)="iranView.set('signup')"></app-camouflage-site>
-                  }
-                  @default { <!-- SHOP or any other mode -->
-                    <app-storefront (loginRequest)="iranView.set('login')"></app-storefront>
-                  }
-                }
+                <app-storefront (loginRequest)="iranView.set('login')"></app-storefront>
               }
               @case('login') {
                 <div class="min-h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm fixed inset-0 z-50">
                    <app-login (closeLogin)="iranView.set('public')"></app-login>
                 </div>
-                <!-- Re-render the camouflage behind the modal -->
-                @switch (core.camouflageMode()) {
-                  @case ('AI_RESEARCH') {
-                    <app-camouflage-site></app-camouflage-site>
-                  }
-                  @default {
-                    <app-storefront></app-storefront>
-                  }
-                }
+                <app-storefront></app-storefront>
               }
               @case('signup') {
                 <app-signup (backToHome)="iranView.set('public')"></app-signup>

@@ -7,13 +7,10 @@
     </div>
     <div class="flex border-b border-gray-700 overflow-x-auto gap-1">
       <button (click)="setTab('general')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'general'" [class.text-white]="currentTab() === 'general'" [class.border-transparent]="currentTab() !== 'general'" [class.text-gray-400]="currentTab() !== 'general'">{{ languageService.translate('settings.tabs.general') }}</button>
-      <button (click)="setTab('security')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-red-500]="currentTab() === 'security'" [class.text-white]="currentTab() === 'security'" [class.border-transparent]="currentTab() !== 'security'" [class.text-gray-400]="currentTab() !== 'security'">{{ languageService.translate('settings.tabs.security') }}</button>
       <button (click)="setTab('branding')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-pink-500]="currentTab() === 'branding'" [class.text-white]="currentTab() === 'branding'" [class.border-transparent]="currentTab() !== 'branding'" [class.text-gray-400]="currentTab() !== 'branding'">{{ languageService.translate('settings.tabs.branding') }}</button>
       <button (click)="setTab('store')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-yellow-500]="currentTab() === 'store'" [class.text-white]="currentTab() === 'store'" [class.border-transparent]="currentTab() !== 'store'" [class.text-gray-400]="currentTab() !== 'store'">{{ languageService.translate('settings.tabs.store') }}</button>
       <button (click)="setTab('network')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'network'" [class.text-white]="currentTab() === 'network'" [class.border-transparent]="currentTab() !== 'network'" [class.text-gray-400]="currentTab() !== 'network'">{{ languageService.translate('settings.tabs.network') }}</button>
-      <button (click)="setTab('integrations')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-indigo-500]="currentTab() === 'integrations'" [class.text-white]="currentTab() === 'integrations'" [class.border-transparent]="currentTab() !== 'integrations'" [class.text-gray-400]="currentTab() !== 'integrations'">{{ languageService.translate('settings.tabs.integrations') }}</button>
-      <button (click)="setTab('installer')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-yellow-500]="currentTab() === 'installer'" [class.text-white]="currentTab() === 'installer'" [class.border-transparent]="currentTab() !== 'installer'" [class.text-gray-400]="currentTab() !== 'installer'">{{ languageService.translate('settings.tabs.installer') }}</button>
-      <button (click)="setTab('roadmap')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-purple-500]="currentTab() === 'roadmap'" [class.text-white]="currentTab() === 'roadmap'" [class.border-transparent]="currentTab() !== 'roadmap'" [class.text-gray-400]="currentTab() !== 'roadmap'">{{ languageService.translate('settings.tabs.roadmap') }}</button>
+      <button (click)="setTab('security')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'security'" [class.text-white]="currentTab() === 'security'" [class.border-transparent]="currentTab() !== 'security'" [class.text-gray-400]="currentTab() !== 'security'">{{ languageService.translate('settings.tabs.security') }}</button>
     </div>
   </div>
 
@@ -33,21 +30,10 @@
                   <label class="block text-gray-400 text-sm mb-1">{{ languageService.translate('settings.credentials.newPass') }}</label>
                   <input formControlName="password" type="password" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
                 </div>
-                <div>
-                  <label class="block text-gray-400 text-sm mb-1">{{ languageService.translate('common.email') }} (Recovery)</label>
-                  <input formControlName="email" type="email" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white" placeholder="admin@example.com">
-                </div>
               </div>
               <button type="submit" [disabled]="adminForm.invalid" class="mt-4 bg-teal-600 text-white px-4 py-2 rounded w-full">{{ languageService.translate('common.saveChanges') }}</button>
             </form>
         </div>
-      }
-      @case ('security') {
-          <app-two-factor-auth></app-two-factor-auth>
-          <app-tls-camouflage></app-tls-camouflage>
-          <app-application-camouflage></app-application-camouflage>
-          <app-camouflage-settings></app-camouflage-settings>
-          <app-doh-settings></app-doh-settings>
       }
       @case ('branding') {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -76,8 +62,8 @@
               <div class="bg-black/30 p-4 rounded-lg flex flex-col items-center justify-center border border-gray-700">
                   <span class="text-gray-500 text-xs mb-2">{{ languageService.translate('settings.branding.preview') }}</span>
                   <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded border border-gray-800">
-                      @if(core.brandLogo()) { <img [src]="core.brandLogo()" class="w-8 h-8 rounded-full object-cover"> }
-                      <span class="text-white font-bold">{{ brandNamePreview() }}</span>
+                      @if(core.brandLogo()) { <img [src]="core.brandLogo()" class="w-8 h-8 rounded-full"> }
+                      <span class="text-white font-bold">{{ brandingForm.get('brandName')?.value }}</span>
                   </div>
               </div>
           </div>
@@ -186,16 +172,12 @@
             <app-ssh-settings></app-ssh-settings>
         </div>
       }
-      @case ('integrations') {
+      @case ('security') {
         <div class="space-y-8">
-            <app-telegram-bot></app-telegram-bot>
+          <app-camouflage-settings></app-camouflage-settings>
+          <app-application-camouflage></app-application-camouflage>
+          <app-doh-settings></app-doh-settings>
         </div>
-      }
-      @case('installer') {
-        <app-remote-installer></app-remote-installer>
-      }
-      @case('roadmap') {
-        <app-roadmap></app-roadmap>
       }
     }
   </div>

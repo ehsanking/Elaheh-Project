@@ -1,4 +1,3 @@
-
 import { Injectable, signal, effect } from '@angular/core';
 import { translations } from './translations';
 
@@ -21,7 +20,7 @@ export class LanguageService {
     this.currentLang.set(lang);
   }
 
-  translate(key: string): any {
+  translate(key: string): string {
     const lang = this.currentLang();
     const keys = key.split('.');
     let result: any = translations[lang];

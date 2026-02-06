@@ -10,23 +10,17 @@ import { EndpointSettingsComponent } from './endpoint-settings.component';
 import { TunnelOptimizationComponent } from './tunnel-optimization.component';
 import { DomainSslComponent } from './domain-ssl.component';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { ApplicationCamouflageComponent } from './application-camouflage.component';
 import { DohSettingsComponent } from './doh-settings.component';
 import { IapSettingsComponent } from './iap-settings.component';
 import { NatTraversalComponent } from './nat-traversal.component';
 import { SshSettingsComponent } from './ssh-settings.component';
 import { EmailService } from '../services/email.service';
-import { TelegramBotComponent } from './telegram-bot.component';
-import { TwoFactorAuthComponent } from './two-factor-auth.component';
-import { RoadmapComponent } from './roadmap.component';
-import { TlsCamouflageComponent } from './tls-camouflage.component';
-import { ApplicationCamouflageComponent } from './application-camouflage.component';
-import { RemoteInstallerComponent } from './remote-installer.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent, RoadmapComponent, TlsCamouflageComponent, ApplicationCamouflageComponent, RemoteInstallerComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,7 +34,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security' | 'integrations' | 'roadmap' | 'installer'>('general');
+  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security'>('general');
   successMessage = signal('');
   
   // Store Mgmt Signals
@@ -53,16 +47,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
   // Forms
   adminForm = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
-    password: ['', [Validators.required, Validators.minLength(4)]],
-    email: ['', [Validators.required, Validators.email]]
+    password: ['', [Validators.required, Validators.minLength(4)]]
   });
 
   brandingForm = this.fb.group({
       brandName: [''],
       currency: ['تومان']
   });
-
-  brandNamePreview = signal('');
 
   productForm = this.fb.group({
       title: [''],
@@ -79,19 +70,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.adminForm.setValue({
       username: this.core.adminUsername(),
-      password: this.core.adminPassword(),
-      email: this.core.adminEmail() || ''
+      password: this.core.adminPassword()
     });
     this.brandingForm.setValue({
         brandName: this.core.brandName(),
         currency: this.core.currency()
-    });
-
-    this.brandNamePreview.set(this.core.brandName());
-    this.brandingForm.get('brandName')?.valueChanges.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(value => {
-        this.brandNamePreview.set(value || '');
     });
   }
 
@@ -106,9 +89,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   saveCredentials() {
     if (this.adminForm.valid) {
-      const { username, password, email } = this.adminForm.value;
+      const { username, password } = this.adminForm.value;
       this.core.updateAdminCredentials(username!, password!);
-      this.core.updateAdminEmail(email!);
       this.showSuccess(this.languageService.translate('settings.credentials.success'));
     }
   }
