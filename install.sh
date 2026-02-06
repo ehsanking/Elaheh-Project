@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.3.2 (Robust Domain Handling)
+# Version 2.3.3 (Foolproof Domain & SSL)
 # Author: EHSANKiNG
 
 set -e
@@ -114,7 +114,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.3.2 (Robust Domain Handling)"
+echo "   Version 2.3.3 (Foolproof Domain & SSL)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -237,34 +237,31 @@ fi
 DOMAIN=""
 DEFAULT_DOMAIN=""
 if [ -n "$PUBLIC_IP" ]; then
-    # Sanitize IP to ensure it's a valid format, preventing issues with weird curl outputs (e.g., firewall HTML pages)
     PUBLIC_IP=$(echo "$PUBLIC_IP" | tr -d '[:space:]' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | head -n 1 || true)
     if [ -n "$PUBLIC_IP" ]; then
         DEFAULT_DOMAIN="${PUBLIC_IP}.sslip.io"
     fi
 fi
 
-# Loop until a domain is provided to make the process foolproof
-while [ -z "$DOMAIN" ]; do
+while true; do
     if [ -n "$DEFAULT_DOMAIN" ]; then
-        read -p "Enter your Domain (or press Enter to use ${DEFAULT_DOMAIN}): " INPUT_DOMAIN
-        # Use shell parameter expansion for default value
-        DOMAIN=${INPUT_DOMAIN:-$DEFAULT_DOMAIN}
+        read -p "Enter your Domain (or press Enter for default: ${DEFAULT_DOMAIN}): " DOMAIN
+        if [ -z "$DOMAIN" ]; then
+            DOMAIN="$DEFAULT_DOMAIN"
+        fi
     else
-        read -p "Enter your Domain (this is required): " DOMAIN
+        read -p "Enter your Domain (required): " DOMAIN
     fi
 
-    if [ -z "$DOMAIN" ]; then
-        echo -e "${RED}   > A domain name is mandatory. Please try again.${NC}"
+    if [[ "$DOMAIN" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        echo -e "${GREEN}   > Using domain: ${DOMAIN}${NC}"
+        break
+    else
+        echo -e "${RED}Error: Invalid or empty domain provided. Please try again.${NC}"
+        DOMAIN=""
     fi
 done
-echo -e "${GREEN}   > Using domain: ${DOMAIN}${NC}"
 
-# A simple validation
-if ! [[ "$DOMAIN" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-    echo -e "${RED}Error: Invalid domain format: '${DOMAIN}'${NC}"
-    exit 1
-fi
 EMAIL="admin@${DOMAIN}"
 
 mkdir -p "$DIST_PATH/assets"

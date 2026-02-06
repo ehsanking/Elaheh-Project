@@ -74,8 +74,8 @@
               <div class="bg-black/30 p-4 rounded-lg flex flex-col items-center justify-center border border-gray-700">
                   <span class="text-gray-500 text-xs mb-2">{{ languageService.translate('settings.branding.preview') }}</span>
                   <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded border border-gray-800">
-                      @if(core.brandLogo()) { <img [src]="core.brandLogo()" class="w-8 h-8 rounded-full"> }
-                      <span class="text-white font-bold">{{ brandingForm.get('brandName')?.value }}</span>
+                      @if(core.brandLogo()) { <img [src]="core.brandLogo()" class="w-8 h-8 rounded-full object-cover"> }
+                      <span class="text-white font-bold">{{ brandNamePreview() }}</span>
                   </div>
               </div>
           </div>

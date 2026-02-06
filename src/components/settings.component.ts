@@ -10,6 +10,7 @@ import { EndpointSettingsComponent } from './endpoint-settings.component';
 import { TunnelOptimizationComponent } from './tunnel-optimization.component';
 import { DomainSslComponent } from './domain-ssl.component';
 import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { DohSettingsComponent } from './doh-settings.component';
 import { IapSettingsComponent } from './iap-settings.component';
 import { NatTraversalComponent } from './nat-traversal.component';
@@ -59,6 +60,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       currency: ['تومان']
   });
 
+  brandNamePreview = signal('');
+
   productForm = this.fb.group({
       title: [''],
       price: [0],
@@ -80,6 +83,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.brandingForm.setValue({
         brandName: this.core.brandName(),
         currency: this.core.currency()
+    });
+
+    this.brandNamePreview.set(this.core.brandName());
+    this.brandingForm.get('brandName')?.valueChanges.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(value => {
+        this.brandNamePreview.set(value || '');
     });
   }
 
