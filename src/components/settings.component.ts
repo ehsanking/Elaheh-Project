@@ -20,11 +20,13 @@ import { TelegramBotComponent } from './telegram-bot.component';
 import { TwoFactorAuthComponent } from './two-factor-auth.component';
 import { RoadmapComponent } from './roadmap.component';
 import { TlsCamouflageComponent } from './tls-camouflage.component';
+import { ApplicationCamouflageComponent } from './application-camouflage.component';
+import { RemoteInstallerComponent } from './remote-installer.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent, RoadmapComponent, TlsCamouflageComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, TelegramBotComponent, TwoFactorAuthComponent, RoadmapComponent, TlsCamouflageComponent, ApplicationCamouflageComponent, RemoteInstallerComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,7 +40,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security' | 'integrations' | 'roadmap'>('general');
+  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security' | 'integrations' | 'roadmap' | 'installer'>('general');
   successMessage = signal('');
   
   // Store Mgmt Signals

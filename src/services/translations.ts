@@ -159,6 +159,21 @@ export const translations: any = {
             presets: 'Use a preset:',
             liveStatus: 'Live Status'
         },
+        appCamouflage: {
+            title: 'Application Camouflage (Gaming)',
+            description: 'Optimize and obfuscate traffic for specific online games to improve latency and avoid detection.',
+            enable: 'Enable Gaming Mode',
+            profile: 'Game Profile',
+            codm: 'Call of Duty: Mobile',
+            codmDesc: 'Prioritizes UDP packets for fast-paced shooters.',
+            pubg: 'PUBG Mobile',
+            pubgDesc: 'Optimizes for stable connection during matches.',
+            clash: 'Clash Royale',
+            clashDesc: 'Lowers latency for real-time card deployment.',
+            mmorpg: 'General MMORPG',
+            mmorpgDesc: 'Balances TCP and UDP for world events.',
+            liveStatus: 'Live Status'
+        },
         doh: {
             title: 'Secure DNS (DoH)',
             description: 'Enable DNS over HTTPS to prevent DNS poisoning.',
@@ -297,6 +312,8 @@ export const translations: any = {
             camouflageFrequency: 'How often the camouflage engine changes its traffic patterns. More frequent changes are harder to detect but may slightly increase server load.',
             tlsCamouflageEnable: 'When enabled, the system wraps tunnel data inside a standard TLS 1.3 handshake, making it look like regular HTTPS traffic.',
             tlsCamouflageSni: 'The domain name the TLS handshake will pretend to connect to. Using a high-reputation domain like www.google.com can effectively hide your traffic.',
+            appCamoEnable: 'Activates specific routing rules and packet shaping to mimic the selected game\'s traffic.',
+            appCamoProfile: 'Choose a profile to optimize for. This changes how packets are prioritized and timed.',
             dohEnable: 'Activates a DNS-over-HTTPS resolver on your server. Clients can use this to encrypt their DNS queries, preventing DNS poisoning and blocking.',
             dohSubdomain: 'The subdomain where the DoH resolver will be available (e.g., dns.yourdomain.com).',
             iap: 'Google Cloud\'s Identity-Aware Proxy allows you to create secure tunnels to your instances without needing a public IP address, enhancing security.',
@@ -524,6 +541,21 @@ export const translations: any = {
         presets: 'استفاده از پیش‌فرض:',
         liveStatus: 'وضعیت زنده'
       },
+      appCamouflage: {
+          title: 'استتار اپلیکیشن (بازی)',
+          description: 'بهینه‌سازی و پنهان‌سازی ترافیک برای بازی‌های آنلاین خاص جهت بهبود پینگ و جلوگیری از شناسایی.',
+          enable: 'فعال‌سازی حالت بازی',
+          profile: 'پروفایل بازی',
+          codm: 'کالاف دیوتی موبایل',
+          codmDesc: 'اولویت‌بندی بسته‌های UDP برای بازی‌های شوتر.',
+          pubg: 'پابجی موبایل',
+          pubgDesc: 'بهینه‌سازی برای اتصال پایدار در طول بازی.',
+          clash: 'کلش رویال',
+          clashDesc: 'کاهش تاخیر برای ارسال سریع‌تر کارت‌ها.',
+          mmorpg: 'بازی‌های آنلاین عمومی',
+          mmorpgDesc: 'تعادل بین TCP و UDP برای رویدادهای جهانی.',
+          liveStatus: 'وضعیت زنده'
+      },
       doh: {
           title: 'DNS امن (DoH)',
           description: 'فعالسازی DNS بر بستر HTTPS برای جلوگیری از شنود.',
@@ -662,6 +694,8 @@ export const translations: any = {
             camouflageFrequency: 'موتور استتار هر چند وقت یکبار الگوهای ترافیک خود را تغییر می‌دهد. تغییرات مکرر شناسایی را دشوارتر می‌کند اما ممکن است بار سرور را کمی افزایش دهد.',
             tlsCamouflageEnable: 'در صورت فعال‌سازی، سیستم داده‌های تونل را درون یک دست‌دهی استاندارد TLS 1.3 قرار می‌دهد تا شبیه ترافیک HTTPS معمولی به نظر برسد.',
             tlsCamouflageSni: 'نام دامنه‌ای که دست‌دهی TLS تظاهر به اتصال به آن می‌کند. استفاده از یک دامنه معتبر مانند www.google.com می‌تواند ترافیک شما را به طور موثر پنهان کند.',
+            appCamoEnable: 'قوانین مسیریابی و شکل‌دهی بسته‌ها را برای تقلید از ترافیک بازی انتخاب شده فعال می‌کند.',
+            appCamoProfile: 'یک پروفایل برای بهینه‌سازی انتخاب کنید. این نحوه اولویت‌بندی و زمان‌بندی بسته‌ها را تغییر می‌دهد.',
             dohEnable: 'یک DNS-over-HTTPS resolver روی سرور شما فعال می‌کند. کلاینت‌ها می‌توانند از این برای رمزگذاری درخواست‌های DNS خود استفاده کنند که از مسمومیت DNS و مسدودسازی جلوگیری می‌کند.',
             dohSubdomain: 'زیردامنه‌ای که resolver DoH در آن در دسترس خواهد بود (مثلاً dns.yourdomain.com).',
             iap: 'پراکسی هویت‌محور گوگل به شما امکان می‌دهد تونل‌های امن به ماشین‌های مجازی خود بدون نیاز به IP عمومی ایجاد کنید و امنیت را افزایش می‌دهد.',
@@ -828,6 +862,21 @@ export const translations: any = {
             presets: '使用预设:',
             liveStatus: '实时状态'
         },
+        appCamouflage: {
+            title: '应用伪装 (游戏)',
+            description: '为特定在线游戏优化和混淆流量，以改善延迟并避免检测。',
+            enable: '启用游戏模式',
+            profile: '游戏配置文件',
+            codm: '《使命召唤：移动版》',
+            codmDesc: '优先处理UDP数据包，适用于快节奏射击游戏。',
+            pubg: '《绝地求生》移动版',
+            pubgDesc: '优化比赛期间的稳定连接。',
+            clash: '《部落冲突：皇室战争》',
+            clashDesc: '降低实时卡牌部署的延迟。',
+            mmorpg: '通用大型多人在线角色扮演游戏',
+            mmorpgDesc: '平衡TCP和UDP以适应世界事件。',
+            liveStatus: '实时状态'
+        },
         doh: {
             title: '安全DNS (DoH)',
             description: '启用 DNS over HTTPS 以防止DNS中毒。',
@@ -966,6 +1015,8 @@ export const translations: any = {
             camouflageFrequency: '伪装引擎更改其流量模式的频率。更频繁的更改更难被检测到，但可能会略微增加服务器负载。',
             tlsCamouflageEnable: '启用后，系统会将隧道数据包装在标准的TLS 1.3握手协议中，使其看起来像常规的HTTPS流量。',
             tlsCamouflageSni: 'TLS握手协议将伪装连接到的域名。使用像www.google.com这样的高信誉域名可以有效地隐藏您的流量。',
+            appCamoEnable: '激活特定路由规则和数据包整形，以模仿所选游戏的流量。',
+            appCamoProfile: '选择一个配置文件进行优化。这将改变数据包的优先级和计时方式。',
             dohEnable: '在您的服务器上激活一个DNS-over-HTTPS解析器。客户端可以使用它来加密其DNS查询，防止DNS中毒和阻止。',
             dohSubdomain: 'DoH解析器将可用的子域名（例如dns.yourdomain.com）。',
             iap: 'Google Cloud的身份感知代理允许您创建到实例的安全隧道，而无需公共IP地址，从而增强安全性。'
@@ -1132,6 +1183,21 @@ export const translations: any = {
             presets: 'Использовать пресет:',
             liveStatus: 'Текущий статус'
         },
+        appCamouflage: {
+            title: 'Маскировка приложений (Игры)',
+            description: 'Оптимизируйте и маскируйте трафик для определенных онлайн-игр, чтобы улучшить задержку и избежать обнаружения.',
+            enable: 'Включить игровой режим',
+            profile: 'Игровой профиль',
+            codm: 'Call of Duty: Mobile',
+            codmDesc: 'Приоритет для UDP-пакетов для быстрых шутеров.',
+            pubg: 'PUBG Mobile',
+            pubgDesc: 'Оптимизация для стабильного соединения во время матчей.',
+            clash: 'Clash Royale',
+            clashDesc: 'Снижение задержки для мгновенного развертывания карт.',
+            mmorpg: 'Общие MMORPG',
+            mmorpgDesc: 'Баланс TCP и UDP для мировых событий.',
+            liveStatus: 'Текущий статус'
+        },
         doh: {
             title: 'Безопасный DNS (DoH)',
             description: 'Включите DNS через HTTPS, чтобы предотвратить отравление DNS.',
@@ -1270,6 +1336,8 @@ export const translations: any = {
             camouflageFrequency: 'Как часто движок маскировки меняет свои шаблоны трафика. Более частые изменения сложнее обнаружить, но они могут незначительно увеличить нагрузку на сервер.',
             tlsCamouflageEnable: 'При включении система упаковывает данные туннеля в стандартное рукопожатие TLS 1.3, делая его похожим на обычный HTTPS-трафик.',
             tlsCamouflageSni: 'Доменное имя, к которому будет притворяться подключение TLS. Использование домена с высокой репутацией, например www.google.com, может эффективно скрыть ваш трафик.',
+            appCamoEnable: 'Активирует определенные правила маршрутизации и формирования пакетов для имитации трафика выбранной игры.',
+            appCamoProfile: 'Выберите профиль для оптимизации. Это изменяет способ приоритизации и синхронизации пакетов.',
             dohEnable: 'Активирует резолвер DNS-over-HTTPS на вашем сервере. Клиенты могут использовать его для шифрования своих DNS-запросов, предотвращая отравление DNS и блокировку.',
             dohSubdomain: 'Поддомен, на котором будет доступен резолвер DoH (например, dns.yourdomain.com).',
             iap: 'Прокси с учетом идентификации Google Cloud позволяет создавать безопасные туннели к вашим экземплярам без необходимости иметь публичный IP-адрес, повышая безопасность.'

@@ -139,7 +139,6 @@ export interface AutoSwitchConfig {
     improvementMarginMs: number; // New tunnel must be this much better to switch
 }
 
-// FIX: Add GameProfile type for application camouflage
 export type GameProfile = 'COD_MOBILE' | 'PUBG' | 'CLASH_ROYALE' | 'MMORPG';
 
 @Injectable({
@@ -278,7 +277,6 @@ export class ElahehCoreService {
   tlsCamouflageSni = signal<string>('www.google.com');
   tlsCamouflageStatus = signal<'active' | 'inactive' | 'error'>('inactive');
 
-  // FIX: Add signals for Application Camouflage
   applicationCamouflageEnabled = signal<boolean>(false);
   applicationCamouflageProfile = signal<GameProfile | null>(null);
   applicationCamouflageStatus = signal<string>('Idle');
@@ -401,7 +399,6 @@ export class ElahehCoreService {
     });
   }
 
-  // --- Fix: Implement addLog method ---
   addLog(level: 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS', message: string) {
     const newLog: LogEntry = {
       timestamp: new Date().toLocaleTimeString(),
@@ -535,7 +532,6 @@ Health Summary:
 
   // --- End of AI Methods ---
   
-  // --- Fix: Implement missing methods ---
   toggleTheme() {
     this.theme.update(current => (current === 'dark' ? 'light' : 'dark'));
   }
@@ -780,7 +776,6 @@ Health Summary:
     }
   }
   
-  // FIX: Add method for Application Camouflage
   updateApplicationCamouflage(enabled: boolean, profile: GameProfile | null) {
     this.applicationCamouflageEnabled.set(enabled);
     if (enabled && profile) {

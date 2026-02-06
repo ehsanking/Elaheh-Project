@@ -115,7 +115,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   sortedProtocols = computed(() => {
       const usage = this.core.protocolUsage();
-      // FIX: Explicitly cast to Number to prevent potential type errors during sorting.
       return Object.entries(usage).sort((a, b) => Number(b[1]) - Number(a[1]));
   });
 
