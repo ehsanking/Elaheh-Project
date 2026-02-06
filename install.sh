@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.3.0 (Enhanced UI & Progress Tracking)
+# Version 2.3.1 (Enhanced Reliability & Network Calls)
 # Author: EHSANKiNG
 
 set -e
@@ -114,7 +114,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.3.0 (Enhanced UI & Progress Tracking)"
+echo "   Version 2.3.1 (Enhanced Reliability & Network Calls)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -155,7 +155,7 @@ if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; OS_ID=$ID; fi
 export DEBIAN_FRONTEND=noninteractive
 
 if [[ "$OS_ID" == "ubuntu" ]] || [[ "$OS_ID" == "debian" ]]; then
-    (repair_apt_system && $SUDO apt-get update -y -qq && $SUDO apt-get upgrade -y -qq && $SUDO apt-get install -y -qq curl git unzip ufw nginx certbot python3-certbot-nginx socat redis-server cron) &
+    (repair_apt_system && $SUDO apt-get update -y -qq && $SUDO apt-get upgrade -y -qq && $SUDO apt-get install -y -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" curl git unzip ufw nginx certbot python3-certbot-nginx socat redis-server cron) &
     spinner $! "   > Updating and installing base packages (APT)..."
 elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
     ($SUDO dnf upgrade -y --refresh && $SUDO dnf install -y -q curl git unzip firewalld nginx certbot python3-certbot-nginx socat redis cronie) &
@@ -224,8 +224,19 @@ if [ ! -d "$DIST_PATH" ]; then echo -e "${RED}[!] Build Failed! Check logs.${NC}
 # --- Domain & SSL Configuration ---
 update_progress
 echo -e "${CYAN}--- STEP 6: CONFIGURING DOMAIN & NGINX ---${NC}"
-echo -e "${YELLOW}Please ensure your domain's A record points to: $(curl -s ifconfig.me)${NC}\n"
-while [ -z "$DOMAIN" ]; do read -p "Enter your Domain (e.g., panel.example.com): " DOMAIN; done
+echo -e "${YELLOW}Detecting server's public IP address...${NC}"
+PUBLIC_IP=$(curl -s --max-time 10 ifconfig.me || curl -s --max-time 10 ipinfo.io/ip)
+
+if [ -z "$PUBLIC_IP" ]; then
+    echo -e "${RED}Could not automatically detect the public IP address.${NC}"
+    echo -e "${YELLOW}Please find it manually and ensure your domain's A record points to it.${NC}\n"
+else
+    echo -e "${YELLOW}Please ensure your domain's A record points to: ${CYAN}${PUBLIC_IP}${NC}\n"
+fi
+
+while [ -z "$DOMAIN" ]; do
+    read -p "Enter your Domain (e.g., panel.example.com): " DOMAIN
+done
 EMAIL="admin@${DOMAIN}"
 
 mkdir -p "$DIST_PATH/assets"

@@ -83,7 +83,7 @@ import { FormsModule } from '@angular/forms';
 
                 <div class="mt-auto flex justify-between">
                   <button type="button" (click)="currentStep.set(1)" class="text-gray-400 hover:text-white">{{ languageService.translate('common.back') }}</button>
-                  <button type="button" (click)="currentStep.set(3)" [disabled]="!siteTitle()" class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-colors">
+                  <button type="button" (click)="currentStep.set(3)" [disabled]="!siteTitle().trim()" class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-colors">
                     {{ languageService.translate('common.next') }}
                   </button>
                 </div>
@@ -386,7 +386,7 @@ export class SetupWizardComponent implements OnInit, OnDestroy {
   }
 
   finishSetup() {
-    this.core.updateBranding(this.siteTitle(), this.logoUrl() || null, this.core.currency());
+    this.core.updateBranding(this.siteTitle().trim(), this.logoUrl() || null, this.core.currency());
 
     if (this.selectedRole() === 'iran') {
         this.core.connectToUpstream(this.iranKeyInput());

@@ -109,7 +109,13 @@ export class TelegramBotComponent implements OnInit {
     this.isTesting.set(true);
     this.testStatus.set('idle');
     
-    const config = this.botForm.getRawValue();
+    const rawValue = this.botForm.getRawValue();
+    const config: TelegramBotConfig = {
+      token: rawValue.token ?? '',
+      adminChatId: rawValue.adminChatId ?? '',
+      isEnabled: rawValue.isEnabled,
+      proxyEnabled: rawValue.proxyEnabled,
+    };
     
     const success = await this.core.testTelegramBot(config);
 
@@ -120,7 +126,13 @@ export class TelegramBotComponent implements OnInit {
 
   saveSettings() {
     if (this.botForm.valid) {
-        const config = this.botForm.getRawValue();
+        const rawValue = this.botForm.getRawValue();
+        const config: TelegramBotConfig = {
+          token: rawValue.token ?? '',
+          adminChatId: rawValue.adminChatId ?? '',
+          isEnabled: rawValue.isEnabled,
+          proxyEnabled: rawValue.proxyEnabled,
+        };
         this.core.updateTelegramBotConfig(config);
         this.core.addLog('SUCCESS', '[Telegram] Bot settings saved.');
     }
