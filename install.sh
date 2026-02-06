@@ -2,22 +2,136 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 1.0.6 (Sudo-Aware Edition)
+# Version 2.0.0 (Sanction Bypass Edition)
 # Author: EHSANKiNG
 
 set -e
+
+# --- UI & Helper Functions ---
 
 # Colors
 GREEN='\033[1;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
+# Spinner function for background tasks
+spinner() {
+    local pid=$1
+    local msg=$2
+    local delay=0.1
+    local spinstr='|/-\'
+    printf "${CYAN}%s${NC}" "$msg"
+    while ps -p $pid > /dev/null; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "\b\b\b\b\b\b"
+    wait $pid
+    if [ $? -eq 0 ]; then
+        printf "${GREEN} [✔ Done]${NC}\n"
+    else
+        printf "${RED} [✖ Failed]${NC}\n"
+        exit 1
+    fi
+}
+
+# --- Tunnel & Proxy Management ---
+TUNNEL_PID=""
+FOREIGN_IP=""
+FOREIGN_USER=""
+FOREIGN_PASS=""
+PROXY_PORT="10800"
+PROXY_URL="socks5h://127.0.0.1:${PROXY_PORT}"
+
+start_tunnel() {
+    echo -e "${YELLOW}[!] Sanction Bypass Mode Activated.${NC}"
+    
+    # Get Foreign Server Credentials
+    read -p "Enter Foreign Server IP Address: " FOREIGN_IP
+    read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
+    read -s -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
+    echo
+    
+    if [ -z "$FOREIGN_IP" ] || [ -z "$FOREIGN_USER" ] || [ -z "$FOREIGN_PASS" ]; then
+        echo -e "${RED}Error: Foreign server credentials are required for installation in Iran.${NC}"
+        exit 1
+    fi
+    
+    # Install sshpass
+    echo -e "${CYAN}   > Installing 'sshpass' utility...${NC}"
+    if command -v apt-get >/dev/null; then
+        $SUDO apt-get update -y -qq && $SUDO apt-get install -y -qq sshpass
+    elif command -v dnf >/dev/null; then
+        $SUDO dnf install -y -q sshpass
+    else
+        echo -e "${RED}Error: Could not install sshpass. Unsupported OS package manager.${NC}"
+        exit 1
+    fi
+
+    # Establish SSH Tunnel
+    (
+    export SSHPASS="$FOREIGN_PASS"
+    sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -fN -D ${PROXY_PORT} "${FOREIGN_USER}@${FOREIGN_IP}"
+    ) &> /dev/null
+    
+    # Give it a moment to establish
+    sleep 5
+    TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}")
+
+    if [ -z "$TUNNEL_PID" ]; then
+        echo -e "${RED}Error: Failed to establish SSH tunnel. Check credentials and server connectivity.${NC}"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}[+] SSH tunnel established successfully (PID: $TUNNEL_PID).${NC}"
+    
+    # Configure system tools to use the proxy
+    echo -e "${CYAN}   > Routing installation traffic through the tunnel...${NC}"
+    export HTTPS_PROXY="${PROXY_URL}"
+    export HTTP_PROXY="${PROXY_URL}"
+    export ALL_PROXY="${PROXY_URL}"
+    $SUDO npm config set proxy "${PROXY_URL}"
+    $SUDO npm config set https-proxy "${PROXY_URL}"
+    # Git automatically respects HTTPS_PROXY
+}
+
+cleanup() {
+    # This function is called on script exit to clean up
+    if [ -n "$TUNNEL_PID" ]; then
+        echo -e "\n${CYAN}[i] Terminating SSH tunnel (PID: $TUNNEL_PID)...${NC}"
+        kill "$TUNNEL_PID" || true
+    fi
+    
+    if [[ "$ROLE" == "iran" ]]; then
+        echo -e "${CYAN}[i] Cleaning up proxy configurations...${NC}"
+        unset HTTPS_PROXY HTTP_PROXY ALL_PROXY
+        $SUDO npm config delete proxy >/dev/null 2>&1 || true
+        $SUDO npm config delete https-proxy >/dev/null 2>&1 || true
+        if command -v apt-get >/dev/null; then
+             $SUDO apt-get remove --purge -y -qq sshpass >/dev/null 2>&1 || true
+        elif command -v dnf >/dev/null; then
+             $SUDO dnf remove -y -q sshpass >/dev/null 2>&1 || true
+        fi
+        echo -e "${GREEN}[+] Cleanup complete.${NC}"
+    fi
+}
+trap cleanup EXIT
+
+# -----------------------------------------------------------------------------
+# Main Installation Logic
+# -----------------------------------------------------------------------------
+
+clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 1.0.6"
+echo "   Version 2.0.0 (Sanction Bypass Edition)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -28,461 +142,138 @@ if [ "$EUID" -ne 0 ]; then
   if command -v sudo >/dev/null 2>&1; then
     SUDO="sudo"
   else
-    echo -e "${RED}Error: Please run as root (sudo su)${NC}"
+    echo -e "${RED}Error: Please run as root.${NC}"
     exit 1
   fi
 fi
 
-# 2. Input Collection & Role Selection
-DOMAIN=""
-EMAIL=""
-ROLE=""
-
+# 2. Role Selection
 echo -e "${YELLOW}Select Server Location/Role:${NC}"
 echo "1) Foreign Server (Upstream - Germany, Finland, etc.)"
-echo "   > Functions: Relay Traffic, Generate Connection Keys."
-echo "   > UI: Minimal Dashboard only."
-echo "2) Iran Server (Edge - Storefront, User Access)"
-echo "   > Functions: Store, Users, Database, Tunnel Client."
-echo "   > UI: Full Admin Panel & Shop."
+echo "2) Iran Server (Edge - User Access)"
 read -p "Select [1 or 2]: " ROLE_CHOICE
 
-if [ "$ROLE_CHOICE" -eq 2 ]; then
+ROLE="external"
+if [[ "$ROLE_CHOICE" == *"2"* || "$ROLE_CHOICE" == *"۲"* ]]; then
     ROLE="iran"
-    echo -e "${GREEN}>> Configuring as IRAN (Edge/Main) Server...${NC}"
+    echo -e "${GREEN}>> Role Selected: IRAN Server (Edge).${NC}"
+    start_tunnel
 else
-    ROLE="external"
-    echo -e "${GREEN}>> Configuring as FOREIGN (Upstream) Server...${NC}"
+    echo -e "${GREEN}>> Role Selected: FOREIGN Server (Upstream).${NC}"
 fi
 
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --domain) DOMAIN="$2"; shift 2;;
-    --email) EMAIL="$2"; shift 2;;
-    --key) KEY="$2"; shift 2;;
-    *) shift 1;;
-  esac
-done
-
-if [ -z "$DOMAIN" ]; then
-    echo -e "${YELLOW}Enter your Domain (A record must point to this IP):${NC}"
-    read -p "Domain: " DOMAIN
-fi
-
-if [ -z "$EMAIL" ]; then
-    EMAIL="admin@${DOMAIN}"
-fi
-
-# 3. Detect OS & System Prep
-echo -e "${GREEN}[+] Preparing System...${NC}"
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS=$NAME
-fi
+# 3. System Preparation
+echo -e "\n${GREEN}--- STEP 1: PREPARING SYSTEM & DEPENDENCIES ---${NC}"
+if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; fi
+export DEBIAN_FRONTEND=noninteractive
 
 install_deps() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
-        export DEBIAN_FRONTEND=noninteractive
-        $SUDO rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
-        $SUDO apt-get update -y -qq
-        # Install Robust DB (SQLite), Caching (Redis), and Tunnel Protocols
-        $SUDO apt-get install -y -qq curl git unzip ufw xz-utils grep sed nginx certbot python3-certbot-nginx socat lsof build-essential openvpn wireguard sqlite3 redis-server
-    elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"Fedora"* ]]; then
-        $SUDO dnf upgrade -y --refresh
-        $SUDO dnf install -y -q curl git unzip firewalld grep sed nginx certbot python3-certbot-nginx socat lsof tar make openvpn wireguard-tools sqlite redis
+        ($SUDO apt-get update -y -qq && $SUDO apt-get upgrade -y -qq && $SUDO apt-get install -y -qq curl git unzip ufw nginx certbot python3-certbot-nginx socat redis-server)
+    elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        ($SUDO dnf upgrade -y --refresh && $SUDO dnf install -y -q curl git unzip firewalld nginx certbot python3-certbot-nginx socat redis)
     fi
 }
-install_deps
+(install_deps) &
+spinner $! "   > Updating and installing base packages..."
 
-# Enable Redis for Performance
-$SUDO systemctl enable --now redis-server || $SUDO systemctl enable --now redis
+$SUDO systemctl enable --now redis-server >/dev/null 2>&1 || $SUDO systemctl enable --now redis >/dev/null 2>&1
 
-# 4. Swap Setup
-TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-if [ "$TOTAL_MEM" -lt 2000000 ]; then
-    if [ ! -f /swapfile ]; then
-        echo -e "${YELLOW}[i] Low RAM detected. Creating Swap...${NC}"
-        $SUDO fallocate -l 2G /swapfile
-        $SUDO chmod 600 /swapfile
-        $SUDO mkswap /swapfile
-        $SUDO swapon /swapfile
-        echo '/swapfile none swap sw 0 0' | $SUDO tee -a /etc/fstab > /dev/null
-    fi
+# 4. Node.js & PNPM Installation
+echo -e "\n${GREEN}--- STEP 2: INSTALLING NODE.JS & PNPM ---${NC}"
+NODE_VERSION="v22.12.0"
+NODE_DIST="node-${NODE_VERSION}-linux-x64"
+
+(curl -L --retry 3 --retry-delay 5 "https://nodejs.org/dist/${NODE_VERSION}/${NODE_DIST}.tar.xz" | tar -xJ -C /tmp) &
+spinner $! "   > Downloading Node.js ${NODE_VERSION}..."
+
+($SUDO rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx && \
+ $SUDO cp -R /tmp/${NODE_DIST}/* /usr/local/ && \
+ $SUDO rm -rf /tmp/${NODE_DIST}) &
+spinner $! "   > Installing Node.js..."
+
+($SUDO npm install -g pnpm) &
+spinner $! "   > Installing pnpm package manager..."
+
+($SUDO pnpm add -g pm2 @angular/cli) &
+spinner $! "   > Installing global tools (pm2, @angular/cli)..."
+
+# 5. Project Setup
+echo -e "\n${GREEN}--- STEP 3: SETTING UP PROJECT ---${NC}"
+INSTALL_DIR="/opt/elaheh-project"
+$SUDO mkdir -p "$INSTALL_DIR" && $SUDO chown -R $USER:$USER "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+
+(git clone --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .) &
+spinner $! "   > Cloning repository from GitHub..."
+
+echo "legacy-peer-deps=true" > .npmrc
+(pnpm install) &
+spinner $! "   > Installing dependencies with pnpm (this may take a moment)..."
+
+(pnpm run build) &
+spinner $! "   > Compiling production-ready application..."
+
+DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
+if [ ! -d "$DIST_PATH" ]; then 
+    echo -e "${RED}[!] Build Failed! Output directory not found.${NC}"
+    exit 1
 fi
 
-# 5. Cleanup Ports
-$SUDO systemctl stop nginx || true
-# Kill processes on specific ports requested (80, 443, 110 for OpenVPN, 1414 for WireGuard)
-if lsof -Pi :80 -sTCP:LISTEN -t >/dev/null ; then $SUDO kill -9 $(lsof -t -i:80) || true; fi
-if lsof -Pi :110 -sTCP:LISTEN -t >/dev/null ; then $SUDO kill -9 $(lsof -t -i:110) || true; fi
-if lsof -Pi :1414 -sUDP:LISTEN -t >/dev/null ; then $SUDO kill -9 $(lsof -t -i:1414) || true; fi
+# 6. Domain & Nginx Configuration
+echo -e "\n${GREEN}--- STEP 4: CONFIGURING DOMAIN & NGINX ---${NC}"
+PUBLIC_IP=$(curl -s --max-time 10 ifconfig.me || curl -s --max-time 10 ipinfo.io/ip)
+echo -e "${YELLOW}Please ensure your domain's A record points to: ${CYAN}${PUBLIC_IP}${NC}\n"
+read -p "Enter your Domain: " DOMAIN
+EMAIL="admin@${DOMAIN}"
 
-# 6. SSL
-if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
-    echo -e "${GREEN}[+] Requesting SSL...${NC}"
-    $SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}" || true
-fi
+$SUDO mkdir -p "$DIST_PATH/assets"
+cat <<EOF | $SUDO tee "$DIST_PATH/assets/server-config.json" > /dev/null
+{"role": "${ROLE}", "domain": "${DOMAIN}", "installedAt": "$(date)"}
+EOF
 
-# 7. Nginx Config
-echo -e "${GREEN}[+] Configuring Nginx...${NC}"
-APP_PORT=3000
+($SUDO systemctl stop nginx >/dev/null 2>&1 || true)
+($SUDO lsof -t -i:80 -sTCP:LISTEN | xargs -r $SUDO kill -9 || true)
+
+($SUDO certbot certonly --standalone --preferred-challenges http --non-interactive --agree-tos -m "${EMAIL}" -d "${DOMAIN}") &
+spinner $! "   > Requesting SSL certificate via Certbot..."
+
 cat <<EOF | $SUDO tee /etc/nginx/sites-available/elaheh > /dev/null
 server {
-    listen 80;
-    server_name ${DOMAIN} www.${DOMAIN};
+    listen 80; server_name ${DOMAIN};
     return 301 https://\$host\$request_uri;
 }
-
 server {
-    listen 443 ssl http2;
-    server_name ${DOMAIN} www.${DOMAIN};
-
+    listen 443 ssl http2; server_name ${DOMAIN};
     ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     
-    root /opt/elaheh-project/dist/project-elaheh/browser;
-    index index.html;
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Tunnel WebSocket Support
-    location /ws {
-        if (\$http_upgrade != "websocket") { return 404; }
-        proxy_pass http://127.0.0.1:10000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    }
+    root ${DIST_PATH}; index index.html;
+    location / { try_files \$uri \$uri/ /index.html; }
 }
 EOF
 $SUDO ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
-$SUDO systemctl restart nginx
+($SUDO crontab -l 2>/dev/null | grep -v "certbot renew") | $SUDO crontab - || true
+($SUDO crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --deploy-hook 'systemctl reload nginx'") | $SUDO crontab -
+($SUDO systemctl restart nginx) &
+spinner $! "   > Configuring Nginx for HTTPS..."
 
-# 8. Node.js
-NODE_VERSION="v22.12.0"
-if ! command -v node &> /dev/null || [[ $(node -v) != "v22.12.0" ]]; then
-    echo -e "${YELLOW}[i] Installing Node.js ${NODE_VERSION}...${NC}"
-    MACHINE_ARCH=$(uname -m)
-    if [ "${MACHINE_ARCH}" == "x86_64" ]; then NODE_ARCH="x64"; else NODE_ARCH="arm64"; fi
-    curl -L "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node.tar.xz"
-    $SUDO tar -xf "/tmp/node.tar.xz" -C /usr/local --strip-components=1
-fi
-$SUDO npm install -g pm2 @angular/cli || true
-
-INSTALL_DIR="/opt/elaheh-project"
-if [ -d "$INSTALL_DIR" ]; then
-    cd "$INSTALL_DIR"
-    git reset --hard
-    git pull origin main
-else
-    git clone "https://github.com/ehsanking/Elaheh-Project.git" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
-fi
-
-# 9. Project Configuration
-echo -e "${GREEN}[+] Configuring Project...${NC}"
-
-# 9.1 Clean Slate
-rm -rf node_modules package-lock.json dist
-
-# 9.2 Package.json
-cat <<EOF > package.json
-{
-  "name": "project-elaheh",
-  "version": "1.0.3",
-  "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build"
-  },
-  "private": true,
-  "dependencies": {
-    "@angular/animations": "^19.0.0",
-    "@angular/common": "^19.0.0",
-    "@angular/compiler": "^19.0.0",
-    "@angular/core": "^19.0.0",
-    "@angular/forms": "^19.0.0",
-    "@angular/platform-browser": "^19.0.0",
-    "@angular/router": "^19.0.0",
-    "@google/genai": "*",
-    "chart.js": "^4.4.1",
-    "qrcode": "^1.5.3",
-    "rxjs": "~7.8.0",
-    "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
-  },
-  "devDependencies": {
-    "@angular-devkit/build-angular": "^19.0.0",
-    "@angular/cli": "^19.0.0",
-    "@angular/compiler-cli": "^19.0.0",
-    "@types/node": "^18.18.0",
-    "@types/qrcode": "^1.5.5",
-    "typescript": "~5.6.2"
-  }
-}
-EOF
-
-# 9.3 Angular JSON (With Zone.js)
-cat <<EOF > angular.json
-{
-  "\$schema": "./node_modules/@angular/cli/lib/config/schema.json",
-  "version": 1,
-  "newProjectRoot": "projects",
-  "projects": {
-    "project-elaheh": {
-      "projectType": "application",
-      "root": "",
-      "sourceRoot": "src",
-      "prefix": "app",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-angular:browser",
-          "options": {
-            "outputPath": "dist/project-elaheh/browser",
-            "index": "src/index.html",
-            "main": "src/main.ts",
-            "polyfills": ["zone.js"],
-            "tsConfig": "tsconfig.app.json",
-            "assets": ["src/favicon.ico", "src/assets"],
-            "styles": ["src/styles.css"],
-            "scripts": []
-          },
-          "configurations": {
-            "production": {
-              "budgets": [
-                { "type": "initial", "maximumWarning": "4mb", "maximumError": "6mb" }
-              ],
-              "outputHashing": "all"
-            },
-            "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
-            }
-          },
-          "defaultConfiguration": "production"
-        }
-      }
-    }
-  }
-}
-EOF
-
-# 9.4 TSConfigs
-cat <<EOF > tsconfig.json
-{
-  "compileOnSave": false,
-  "compilerOptions": {
-    "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "sourceMap": true,
-    "declaration": false,
-    "downlevelIteration": true,
-    "experimentalDecorators": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "target": "ES2022",
-    "module": "ES2022",
-    "useDefineForClassFields": false,
-    "lib": ["ES2022", "dom"],
-    "skipLibCheck": true
-  },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": true
-  }
-}
-EOF
-
-cat <<EOF > tsconfig.app.json
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./dist/out-tsc",
-    "types": ["node"]
-  },
-  "files": ["src/main.ts"],
-  "include": ["src/**/*.d.ts"]
-}
-EOF
-
-# 9.5 Main.ts
-cat <<EOF > src/main.ts
-import '@angular/compiler';
-import { bootstrapApplication } from '@angular/platform-browser';
-import { provideZoneChangeDetection } from '@angular/core';
-import { AppComponent } from './app.component';
-
-// Type shim
-declare var process: any;
-
-bootstrapApplication(AppComponent, {
-  providers: [
-    provideZoneChangeDetection({ eventCoalescing: true })
-  ]
-}).catch((err) => console.error(err));
-EOF
-
-# 10. Build
-echo -e "${GREEN}[+] Installing Dependencies...${NC}"
-npm install --legacy-peer-deps --loglevel error
-npm install @google/genai@latest --legacy-peer-deps --save
-
-echo -e "${GREEN}[+] Building Application...${NC}"
-export NODE_OPTIONS="--max-old-space-size=4096"
-npm run build
-
-DIST_PATH="$INSTALL_DIR/dist/project-elaheh/browser"
-if [ ! -d "$DIST_PATH" ]; then
-    echo -e "${RED}[!] Build Failed!${NC}"
-    exit 1
-fi
-
-$SUDO mkdir -p "$DIST_PATH/assets"
-# Save specific role to config
-cat <<EOF | $SUDO tee "$DIST_PATH/assets/server-config.json" > /dev/null
-{
-  "role": "${ROLE}",
-  "key": "${KEY}",
-  "domain": "${DOMAIN}",
-  "installedAt": "$(date)"
-}
-EOF
-
-# 11. Finalize
-echo -e "${GREEN}[+] Starting Services...${NC}"
-$SUDO pm2 delete elaheh-app 2>/dev/null || true
-$SUDO pm2 serve "$DIST_PATH" ${APP_PORT} --name "elaheh-app" --spa
-$SUDO pm2 save --force
-$SUDO pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
-
-# 12. Create 'elaheh' CLI tool
-echo -e "${GREEN}[+] Installing CLI Management Tool...${NC}"
-cat <<EOF | $SUDO tee /usr/local/bin/elaheh > /dev/null
-#!/bin/bash
-# Elaheh Management CLI v1.1
-
-_SUDO=""
-if [ "\$EUID" -ne 0 ]; then
-  if command -v sudo >/dev/null 2>&1; then
-    _SUDO="sudo"
-  else
-    echo "Error: Root privileges are required for this command."
-    exit 1
-  fi
-fi
-
-GREEN='\033[1;32m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
-echo -e "\${GREEN}Elaheh Management Console\${NC}"
-echo "1. Update Application"
-echo "2. Enable Google BBR"
-echo "3. Restart Services"
-echo "4. Uninstall"
-echo "5. Exit"
-read -p "Select option [1-5]: " OPT
-
-case "\$OPT" in
-  1)
-    echo "Updating..."
-    cd /opt/elaheh-project
-    git pull origin main
-    npm install --legacy-peer-deps
-    npm run build
-    \$_SUDO pm2 restart elaheh-app
-    echo -e "\${GREEN}Update Complete.\${NC}"
-    ;;
-  2)
-    echo "Enabling BBR..."
-    echo "net.core.default_qdisc=fq" | \$_SUDO tee -a /etc/sysctl.conf > /dev/null
-    echo "net.ipv4.tcp_congestion_control=bbr" | \$_SUDO tee -a /etc/sysctl.conf > /dev/null
-    \$_SUDO sysctl -p
-    echo -e "\${GREEN}BBR Enabled.\${NC}"
-    ;;
-  3)
-    \$_SUDO systemctl restart nginx
-    \$_SUDO pm2 restart elaheh-app
-    echo -e "\${GREEN}Services Restarted.\${NC}"
-    ;;
-  4)
-    read -p "Are you sure? This will remove everything. (y/N) " CONFIRM
-    if [[ "\$CONFIRM" == "y" ]]; then
-        \$_SUDO pm2 delete elaheh-app
-        \$_SUDO rm -rf /opt/elaheh-project
-        \$_SUDO rm -f /etc/nginx/sites-enabled/elaheh /etc/nginx/sites-available/elaheh
-        \$_SUDO rm -f /usr/local/bin/elaheh /usr/bin/elaheh
-        \$_SUDO systemctl restart nginx
-        echo -e "\${GREEN}Uninstalled.\${NC}"
-    fi
-    ;;
-  *)
-    echo "Exiting."
-    exit 0
-    ;;
-esac
-EOF
-$SUDO chmod +x /usr/local/bin/elaheh
-# Add to global path for convenience if not already there
-$SUDO ln -sf /usr/local/bin/elaheh /usr/bin/elaheh
-
-# 13. Firewall - Allow Specific Ports
-echo -e "${GREEN}[+] Configuring Firewall (Standard & Reserved Ports)...${NC}"
+# 7. Finalize
+echo -e "\n${GREEN}--- STEP 5: FINALIZING INSTALLATION ---${NC}"
 if command -v ufw &> /dev/null; then
-    $SUDO ufw allow 22/tcp >/dev/null
-    $SUDO ufw allow 80/tcp >/dev/null
-    $SUDO ufw allow 443/tcp >/dev/null
-    # Tunnel Ports
-    $SUDO ufw allow 110/tcp >/dev/null
-    $SUDO ufw allow 1414/udp >/dev/null
-    # Reserved Ports (Cloudflare/CDN)
-    $SUDO ufw allow 8080/tcp >/dev/null
-    $SUDO ufw allow 8000/tcp >/dev/null
-    $SUDO ufw allow 8880/tcp >/dev/null
-    $SUDO ufw allow 2053/tcp >/dev/null
-    $SUDO ufw allow 2083/tcp >/dev/null
-    $SUDO ufw allow 2096/tcp >/dev/null
-    $SUDO ufw allow 8443/tcp >/dev/null
-    echo "y" | $SUDO ufw enable
+    ($SUDO ufw allow 22/tcp >/dev/null 2>&1 && $SUDO ufw allow 80/tcp >/dev/null 2>&1 && $SUDO ufw allow 443/tcp >/dev/null 2>&1 && echo "y" | $SUDO ufw enable >/dev/null 2>&1) &
+    spinner $! "   > Configuring firewall (UFW)..."
 elif command -v firewall-cmd &> /dev/null; then
-    $SUDO systemctl start firewalld
-    $SUDO firewall-cmd --permanent --add-port=22/tcp >/dev/null
-    $SUDO firewall-cmd --permanent --add-port=80/tcp >/dev/null
-    $SUDO firewall-cmd --permanent --add-port=443/tcp >/dev/null
-    $SUDO firewall-cmd --permanent --add-port=110/tcp >/dev/null
-    $SUDO firewall-cmd --permanent --add-port=1414/udp >/dev/null
-    # Reserved
-    $SUDO firewall-cmd --permanent --add-port=8080/tcp >/dev/null
-    $SUDO firewall-cmd --permanent --add-port=2096/tcp >/dev/null
-    $SUDO firewall-cmd --permanent --add-port=8443/tcp >/dev/null
-    $SUDO firewall-cmd --permanent --add-port=2053/tcp >/dev/null
-    $SUDO firewall-cmd --reload
+    ($SUDO systemctl start firewalld && $SUDO firewall-cmd --permanent --add-service=http >/dev/null 2>&1 && $SUDO firewall-cmd --permanent --add-service=https >/dev/null 2>&1 && $SUDO firewall-cmd --reload >/dev/null 2>&1) &
+    spinner $! "   > Configuring firewall (firewalld)..."
 fi
 
 echo ""
 echo -e "${GREEN}=========================================${NC}"
-echo -e "${GREEN}   INSTALLATION SUCCESSFUL!${NC}"
-echo -e "   Role: ${ROLE^^}"
-echo -e "   Panel URL: https://${DOMAIN}"
-echo -e "   Management CLI: Type 'elaheh' in terminal"
+echo -e "${GREEN}      INSTALLATION COMPLETE!${NC}"
+echo -e "      Role: ${ROLE^^}"
+echo -e "      Panel URL: https://${DOMAIN}"
+echo -e "${YELLOW}      Default Login: admin / admin${NC}"
 echo -e "${GREEN}=========================================${NC}"
-if [ "$ROLE" == "external" ]; then
-    echo -e "${YELLOW}>> UPSTREAM MODE: Log in to generate a connection key for your Iran server.${NC}"
-elif [ "$ROLE" == "iran" ]; then
-    echo -e "${YELLOW}>> EDGE MODE: Log in and paste the Upstream Token in Settings.${NC}"
-fi
-echo ""
+# The 'trap' will call the cleanup function automatically on exit.
+exit 0
