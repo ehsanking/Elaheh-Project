@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # Project Elaheh Installer
-# Version 2.2.0 (Interactive Tunnel Verification)
+# Version 2.4.0 (SSH Port Customization)
 # Author: EHSANKiNG
 
 set -e
@@ -45,6 +45,7 @@ TUNNEL_PID=""
 FOREIGN_IP=""
 FOREIGN_USER=""
 FOREIGN_PASS=""
+FOREIGN_PORT=""
 PROXY_PORT="10800"
 PROXY_URL="socks5h://127.0.0.1:${PROXY_PORT}"
 
@@ -68,6 +69,8 @@ start_tunnel() {
     while true; do
         read -p "Enter Foreign Server IP Address: " FOREIGN_IP
         read -p "Enter Foreign Server SSH Username (e.g., root): " FOREIGN_USER
+        read -p "Enter Foreign Server SSH Port [22]: " FOREIGN_PORT
+        FOREIGN_PORT=${FOREIGN_PORT:-22} # Default to 22 if empty
         read -s -p "Enter Foreign Server SSH Password: " FOREIGN_PASS
         echo
 
@@ -79,10 +82,11 @@ start_tunnel() {
         (
             export SSHPASS="$FOREIGN_PASS"
             sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                -p "${FOREIGN_PORT}" \
                 -o ServerAliveInterval=60 -fN -D ${PROXY_PORT} "${FOREIGN_USER}@${FOREIGN_IP}"
         ) > /tmp/elaheh-tunnel.log 2>&1 &
         
-        spinner $! "   > Establishing secure tunnel to ${FOREIGN_IP}..."
+        spinner $! "   > Establishing secure tunnel to ${FOREIGN_IP}:${FOREIGN_PORT}..."
         
         TUNNEL_PID=$(pgrep -f "ssh.*-D ${PROXY_PORT}")
         if [ -z "$TUNNEL_PID" ]; then
@@ -107,13 +111,10 @@ start_tunnel() {
         fi
     done
     
-    echo -e "${CYAN}   > Routing installation traffic (curl, git, pnpm, etc.) through the tunnel...${NC}"
+    echo -e "${CYAN}   > Routing installation traffic (curl, git, etc.) through the tunnel...${NC}"
     export HTTPS_PROXY="${PROXY_URL}"
     export HTTP_PROXY="${PROXY_URL}"
     export ALL_PROXY="${PROXY_URL}"
-    
-    $SUDO pnpm config set proxy "${PROXY_URL}" >/dev/null 2>&1 || true
-    $SUDO pnpm config set https-proxy "${PROXY_URL}" >/dev/null 2>&1 || true
 }
 
 cleanup() {
@@ -126,8 +127,9 @@ cleanup() {
         echo -e "${CYAN}[i] Cleaning up proxy configurations and temporary files...${NC}"
         unset HTTPS_PROXY HTTP_PROXY ALL_PROXY
         
-        $SUDO pnpm config delete proxy >/dev/null 2>&1 || true
-        $SUDO pnpm config delete https-proxy >/dev/null 2>&1 || true
+        pnpm config delete proxy >/dev/null 2>&1 || true
+        pnpm config delete https-proxy >/dev/null 2>&1 || true
+        pnpm config delete registry >/dev/null 2>&1 || true
         
         rm -f /tmp/elaheh-tunnel.log
 
@@ -151,7 +153,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Stealth Tunnel Management System"
-echo "   Version 2.2.0 (Interactive Tunnel Verification)"
+echo "   Version 2.4.0 (SSH Port Customization)"
 echo "   'Secure. Fast. Uncensored.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -209,13 +211,21 @@ spinner $! "   > Downloading Node.js ${NODE_VERSION}..."
  $SUDO rm -rf /tmp/${NODE_DIST}) &
 spinner $! "   > Installing Node.js..."
 
-# Install pnpm using npm which is now installed
+# Install pnpm using its official script
 (curl -fsSL https://get.pnpm.io/install.sh | sh -) &
 spinner $! "   > Installing pnpm package manager..."
 export PNPM_HOME="/root/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 
-($SUDO pnpm add -g pm2 @angular/cli) &
+# Configure pnpm AFTER installation, only for Iran servers
+if [[ "$ROLE" == "iran" ]]; then
+    echo -e "${CYAN}   > Configuring pnpm for sanction bypass...${NC}"
+    (pnpm config set proxy "${PROXY_URL}" && \
+     pnpm config set https-proxy "${PROXY_URL}" && \
+     pnpm config set registry "https://registry.npmjs.org/") &> /dev/null
+fi
+
+(pnpm add -g pm2 @angular/cli) &
 spinner $! "   > Installing global tools (pm2, @angular/cli)..."
 
 echo -e "\n${GREEN}--- STEP 3: SETTING UP PROJECT ---${NC}"
