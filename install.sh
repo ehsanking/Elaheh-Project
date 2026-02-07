@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.1.3 (Nginx Permission Fix)
+# Version 1.1.4 (Nginx Root Fix & Arch Detection)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 LOG_FILE="/var/log/elaheh-install.log"
-INSTALLER_VERSION="1.1.3"
+INSTALLER_VERSION="1.1.4"
 
 # --- Helper Functions ---
 log() {
@@ -49,7 +49,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version ${INSTALLER_VERSION} (Nginx Permission Fix)"
+echo "   Version ${INSTALLER_VERSION} (Nginx Root Fix)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -60,8 +60,9 @@ if [ "$EUID" -ne 0 ]; then
     if command -v sudo >/dev/null 2>&1; then SUDO_CMD="sudo"; else echo -e "${RED}Error: This script must be run as root.${NC}"; exit 1; fi
 fi
 
-# OS Detection
+# OS & Arch Detection
 if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; else echo -e "${RED}Error: Cannot detect OS.${NC}"; exit 1; fi
+ARCH=$(uname -m)
 
 # Set Nginx User based on OS
 NGINX_USER="www-data"
@@ -90,7 +91,7 @@ echo -e "${GREEN}   > Public IP Detected: ${CYAN}${PUBLIC_IP}${NC}"
 read -p "Enter your Domain (A record must point to IP): " DOMAIN
 if [ -z "$DOMAIN" ]; then DOMAIN="localhost"; fi
 
-log "INFO" "Starting installation v${INSTALLER_VERSION} for $ROLE on $DOMAIN ($OS)"
+log "INFO" "Starting installation v${INSTALLER_VERSION} for $ROLE on $DOMAIN ($OS / $ARCH)"
 
 # --- STEP 1: Smart Package Installation ---
 echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
@@ -213,7 +214,7 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     
-    root ${INSTALL_DIR};
+    root ${INSTALL_DIR}/dist/project-elaheh/browser;
     index index.html;
 
     location / {
