@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, computed, Output, EventEmitter, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -205,20 +206,20 @@ import { TermsComponent } from './terms.component';
             <!-- Trust Badges Row -->
             <div class="flex flex-wrap justify-center gap-8 mb-8 items-center">
                 <!-- Danesh Bonyan -->
-                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
-                    <img src="https://www.orummachine.com/wp-content/uploads/2023/09/header_logo-copy-856x1024.png" alt="Danesh Bonyan" class="max-h-full max-w-full object-contain">
+                <div class="bg-white dark:bg-gray-200 rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://www.orummachine.com/wp-content/uploads/2023/09/header_logo-copy-856x1024.png" alt="Danesh Bonyan" class="max-h-full max-w-full object-contain dark:mix-blend-multiply">
                 </div>
                 <!-- Park Elm -->
-                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
-                    <img src="https://www.orummachine.com/wp-content/uploads/2023/09/park-elm-fanavari.png" alt="Science Park" class="max-h-full max-w-full object-contain">
+                <div class="bg-white dark:bg-gray-200 rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://www.orummachine.com/wp-content/uploads/2023/09/park-elm-fanavari.png" alt="Science Park" class="max-h-full max-w-full object-contain dark:mix-blend-multiply">
                 </div>
                 <!-- ISO 9001 -->
-                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
-                    <img src="https://pars.host/wp-content/uploads//2025/06/ISO_9001.png" alt="ISO 9001" class="max-h-full max-w-full object-contain">
+                <div class="bg-white dark:bg-gray-200 rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://pars.host/wp-content/uploads//2025/06/ISO_9001.png" alt="ISO 9001" class="max-h-full max-w-full object-contain dark:mix-blend-multiply">
                 </div>
                  <!-- Anjoman Senfi -->
-                <div class="bg-white rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
-                    <img src="https://pars.host/wp-content/uploads//2025/06/anjooman-senfi.png" alt="Tech Association" class="max-h-full max-w-full object-contain">
+                <div class="bg-white dark:bg-gray-200 rounded-xl p-2 w-24 h-24 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                    <img src="https://pars.host/wp-content/uploads//2025/06/anjooman-senfi.png" alt="Tech Association" class="max-h-full max-w-full object-contain dark:mix-blend-multiply">
                 </div>
             </div>
 
