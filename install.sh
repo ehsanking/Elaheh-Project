@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.1.1 (Pre-compiled, Hardened for Iran)
+# Version 1.1.2 (Pre-compiled, No API Dependency)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -12,6 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 LOG_FILE="/var/log/elaheh-install.log"
+INSTALLER_VERSION="1.1.2"
 
 # --- Helper Functions ---
 log() {
@@ -48,7 +49,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.1.1 (Pre-compiled, Hardened Release)"
+echo "   Version ${INSTALLER_VERSION} (Hardened Release, No API Dependency)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -83,7 +84,7 @@ echo -e "${GREEN}   > Public IP Detected: ${CYAN}${PUBLIC_IP}${NC}"
 read -p "Enter your Domain (A record must point to IP): " DOMAIN
 if [ -z "$DOMAIN" ]; then DOMAIN="localhost"; fi
 
-log "INFO" "Starting installation v1.1.1 for $ROLE on $DOMAIN ($OS)"
+log "INFO" "Starting installation v${INSTALLER_VERSION} for $ROLE on $DOMAIN ($OS)"
 
 # --- STEP 1: Smart Package Installation ---
 echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
@@ -122,18 +123,14 @@ download_and_install_panel() {
     $SUDO_CMD rm -rf "$INSTALL_DIR"
     $SUDO_CMD mkdir -p "$INSTALL_DIR"
     
-    log "INFO" "Fetching latest pre-compiled release URL from GitHub..."
-    LATEST_RELEASE_JSON=$(curl -s --connect-timeout 15 https://api.github.com/repos/ehsanking/Elaheh-Project/releases/latest)
-    
-    if [ -z "$LATEST_RELEASE_JSON" ]; then log "ERROR" "Failed to fetch release info from GitHub API."; return 1; fi
-    
-    RELEASE_URL=$(echo "$LATEST_RELEASE_JSON" | grep "browser_download_url" | grep "panel-v.*.zip" | cut -d '"' -f 4)
-    if [ -z "$RELEASE_URL" ]; then log "ERROR" "Failed to find pre-compiled panel asset."; return 1; fi
+    PANEL_VERSION="$INSTALLER_VERSION"
+    PANEL_ASSET_NAME="panel-v${PANEL_VERSION}.zip"
 
+    log "INFO" "Targeting panel version ${PANEL_VERSION}"
+    RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/v${PANEL_VERSION}/${PANEL_ASSET_NAME}"
     FALLBACK_RELEASE_URL="https://mirror.ghproxy.com/${RELEASE_URL}"
-    PANEL_ASSET_NAME=$(basename "$RELEASE_URL")
     
-    echo -e "   > Found latest version: ${CYAN}${PANEL_ASSET_NAME}${NC}"
+    echo -e "   > Downloading version: ${CYAN}${PANEL_ASSET_NAME}${NC}"
     cd /tmp
 
     log "INFO" "Attempting download from Primary URL: ${RELEASE_URL}"

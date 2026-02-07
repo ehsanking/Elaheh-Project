@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
+  [![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>

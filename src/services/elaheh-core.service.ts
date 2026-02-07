@@ -6,7 +6,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.1.1'; 
+export const APP_VERSION = '1.1.2'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
