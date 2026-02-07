@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.1.4 (Nginx Root Fix & Arch Detection)
+# Version 1.1.6 (CLI Verification & Stability)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 LOG_FILE="/var/log/elaheh-install.log"
-INSTALLER_VERSION="1.1.4"
+INSTALLER_VERSION="1.1.6"
 
 # --- Helper Functions ---
 log() {
@@ -49,7 +49,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version ${INSTALLER_VERSION} (Nginx Root Fix)"
+echo "   Version ${INSTALLER_VERSION} (CLI Verification & Stability)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -218,7 +218,7 @@ server {
     index index.html;
 
     location / {
-        try_files \$uri \$uri/ /index.html;
+        try_files \$uri /index.html;
         add_header Cache-Control "no-store, no-cache, must-revalidate";
     }
 }
@@ -231,8 +231,93 @@ $SUDO_CMD ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
 ($SUDO_CMD systemctl restart nginx) &
 spinner $! "   > Configuring and starting Nginx..."
 
-# --- STEP 4: Firewall ---
-echo -e "\n${GREEN}--- STEP 4: FINALIZING ---${NC}"
+# --- STEP 4: INSTALLING 'elaheh' CLI ---
+echo -e "\n${GREEN}--- STEP 4: INSTALLING 'elaheh' CLI ---${NC}"
+
+create_cli() {
+    CLI_PATH="/usr/local/bin/elaheh"
+    log "INFO" "Creating CLI tool at ${CLI_PATH}"
+    cat <<EOF | $SUDO_CMD tee ${CLI_PATH} > /dev/null
+#!/bin/bash
+# Project Elaheh CLI - v${INSTALLER_VERSION}
+
+# This is a helper utility for managing the Elaheh panel.
+# More features like user management will be added in future versions.
+
+show_status() {
+    echo "--- Elaheh Service Status ---"
+    echo -n "Nginx Web Panel: "
+    systemctl is-active --quiet nginx && echo -e "\e[32mActive\e[0m" || echo -e "\e[31mInactive\e[0m"
+    
+    # Handle both redis and redis-server service names
+    if systemctl list-units --type=service | grep -q 'redis-server'; then
+        REDIS_SERVICE="redis-server"
+    else
+        REDIS_SERVICE="redis"
+    fi
+    echo -n "Redis Cache: "
+    systemctl is-active --quiet \${REDIS_SERVICE} && echo -e "\e[32mActive\e[0m" || echo -e "\e[31mInactive\e[0m"
+    
+    echo "-----------------------------"
+    echo "For detailed tunnel and user status, please use the web panel."
+}
+
+show_logs() {
+    echo "Displaying last 50 lines of install/update log..."
+    tail -n 50 /var/log/elaheh-install.log
+}
+
+restart_panel() {
+    echo "Restarting Nginx web server..."
+    if sudo systemctl restart nginx; then
+        echo "Nginx restarted successfully."
+    else
+        echo "Failed to restart Nginx. Check logs with 'journalctl -u nginx'."
+    fi
+}
+
+show_help() {
+    echo "Project Elaheh Command-Line Interface (v${INSTALLER_VERSION})"
+    echo "A simple tool to manage your Elaheh installation."
+    echo ""
+    echo "Usage: elaheh <command>"
+    echo ""
+    echo "Available Commands:"
+    echo "  status       Check the status of core services (Nginx, Redis)."
+    echo "  restart      Restart the Nginx web panel."
+    echo "  logs         Show the last 50 lines of the installation log."
+    echo "  help         Display this help message."
+    echo ""
+    echo "User management commands will be added in a future release."
+}
+
+case "\$1" in
+    status)
+        show_status
+        ;;
+    restart)
+        restart_panel
+        ;;
+    logs)
+        show_logs
+        ;;
+    help|--help|-h|*)
+        show_help
+        ;;
+esac
+EOF
+    $SUDO_CMD chmod +x ${CLI_PATH}
+    if ! command -v elaheh >/dev/null; then
+        log "ERROR" "CLI tool 'elaheh' was created but is not available in PATH. Please check /usr/local/bin is in your PATH."
+        return 1
+    fi
+    log "SUCCESS" "CLI tool installed. You can now use the 'elaheh' command."
+}
+(create_cli) &
+spinner $! "   > Creating 'elaheh' command-line tool..."
+
+# --- STEP 5: FINALIZING ---
+echo -e "\n${GREEN}--- STEP 5: FINALIZING ---${NC}"
 
 setup_firewall() {
     log "INFO" "Configuring Firewall"
@@ -263,5 +348,6 @@ if [ "$USE_SELF_SIGNED" -eq 1 ]; then
     echo -e "${YELLOW}          Your browser will show a security warning.${NC}"
 fi
 echo -e "${YELLOW}          Login: admin / admin${NC}"
+echo -e "${CYAN}          CLI Tool: Use 'elaheh status' to check services.${NC}"
 echo -e "${GREEN}==============================================${NC}"
 exit 0

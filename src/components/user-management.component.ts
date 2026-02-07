@@ -3,14 +3,13 @@ import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetection
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ElahehCoreService, User, LinkConfig } from '../services/elaheh-core.service';
 import * as QRCode from 'qrcode';
-import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { LanguageService } from '../services/language.service';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './user-management.component.html',
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,

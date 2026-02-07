@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
+  [![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>
@@ -30,6 +30,7 @@ This script installs the **pre-compiled** version and completes in **under 30 se
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
+After installation, you can manage the service using the `elaheh` command (e.g., `elaheh status`, `elaheh restart`).
 
 ### Manual Installation
 If the automated script fails, the new manual process is much simpler.
@@ -103,6 +104,7 @@ Help bypass censorship by donating a server (VPS).
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
+پس از نصب، می‌توانید با دستور `elaheh` سرویس را مدیریت کنید (مثلاً `elaheh status` یا `elaheh restart`).
 
 ### نصب دستی
 اگر اسکریپت خودکار با خطا مواجه شد، نصب دستی جدید بسیار ساده‌تر شده است.
