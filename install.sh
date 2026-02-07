@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.1.2 (Pre-compiled, No API Dependency)
+# Version 1.1.3 (Nginx Permission Fix)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 LOG_FILE="/var/log/elaheh-install.log"
-INSTALLER_VERSION="1.1.2"
+INSTALLER_VERSION="1.1.3"
 
 # --- Helper Functions ---
 log() {
@@ -49,7 +49,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version ${INSTALLER_VERSION} (Hardened Release, No API Dependency)"
+echo "   Version ${INSTALLER_VERSION} (Nginx Permission Fix)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -62,6 +62,12 @@ fi
 
 # OS Detection
 if [ -f /etc/os-release ]; then . /etc/os-release; OS=$NAME; else echo -e "${RED}Error: Cannot detect OS.${NC}"; exit 1; fi
+
+# Set Nginx User based on OS
+NGINX_USER="www-data"
+if [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+    NGINX_USER="nginx"
+fi
 
 $SUDO_CMD touch "$LOG_FILE"
 $SUDO_CMD chmod 666 "$LOG_FILE"
@@ -155,7 +161,7 @@ download_and_install_panel() {
     $SUDO_CMD mkdir -p "$INSTALL_DIR/assets"
     echo "{\"role\": \"${ROLE}\", \"domain\": \"${DOMAIN}\", \"installedAt\": \"$(date)\"}" | $SUDO_CMD tee "$INSTALL_DIR/assets/server-config.json" > /dev/null
     
-    $SUDO_CMD chown -R root:root "$INSTALL_DIR"
+    $SUDO_CMD chown -R ${NGINX_USER}:${NGINX_USER} "$INSTALL_DIR"
     $SUDO_CMD chmod -R 755 "$INSTALL_DIR"
 
     return 0
