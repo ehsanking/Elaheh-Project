@@ -1,4 +1,5 @@
 
+
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -32,10 +33,8 @@ import { LanguageService } from '../services/language.service';
           <label class="block text-gray-400 text-sm mb-2 font-bold" [attr.data-tooltip]="languageService.translate('tooltips.settings.appCamoProfile')">{{ languageService.translate('settings.appCamouflage.profile') }}</label>
           <div class="space-y-2">
             
-            <button type="button" (click)="setProfile('COD_MOBILE')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [class.border-teal-500]="core.applicationCamouflageProfile() === 'COD_MOBILE'"
-              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'COD_MOBILE'}"
-              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'COD_MOBILE'">
+            <button type="button" (click)="setProfile('COD_MOBILE')" 
+              [class]="'w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all ' + (core.applicationCamouflageProfile() === 'COD_MOBILE' ? 'border-teal-500 bg-teal-900/20' : 'border-gray-700')">
               <span class="text-2xl mr-3">🔫</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.codm') }}</div>
@@ -43,10 +42,8 @@ import { LanguageService } from '../services/language.service';
               </div>
             </button>
 
-            <button type="button" (click)="setProfile('PUBG')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [class.border-teal-500]="core.applicationCamouflageProfile() === 'PUBG'"
-              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'PUBG'}"
-              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'PUBG'">
+            <button type="button" (click)="setProfile('PUBG')" 
+              [class]="'w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all ' + (core.applicationCamouflageProfile() === 'PUBG' ? 'border-teal-500 bg-teal-900/20' : 'border-gray-700')">
               <span class="text-2xl mr-3">🍳</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.pubg') }}</div>
@@ -54,10 +51,8 @@ import { LanguageService } from '../services/language.service';
               </div>
             </button>
 
-             <button type="button" (click)="setProfile('CLASH_ROYALE')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [class.border-teal-500]="core.applicationCamouflageProfile() === 'CLASH_ROYALE'"
-              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'CLASH_ROYALE'}"
-              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'CLASH_ROYALE'">
+             <button type="button" (click)="setProfile('CLASH_ROYALE')" 
+              [class]="'w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all ' + (core.applicationCamouflageProfile() === 'CLASH_ROYALE' ? 'border-teal-500 bg-teal-900/20' : 'border-gray-700')">
               <span class="text-2xl mr-3">👑</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.clash') }}</div>
@@ -65,10 +60,8 @@ import { LanguageService } from '../services/language.service';
               </div>
             </button>
 
-             <button type="button" (click)="setProfile('MMORPG')" class="w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all"
-              [class.border-teal-500]="core.applicationCamouflageProfile() === 'MMORPG'"
-              [ngClass]="{'bg-teal-900/20': core.applicationCamouflageProfile() === 'MMORPG'}"
-              [class.border-gray-700]="core.applicationCamouflageProfile() !== 'MMORPG'">
+             <button type="button" (click)="setProfile('MMORPG')" 
+              [class]="'w-full flex items-center p-3 rounded-lg border cursor-pointer transition-all ' + (core.applicationCamouflageProfile() === 'MMORPG' ? 'border-teal-500 bg-teal-900/20' : 'border-gray-700')">
               <span class="text-2xl mr-3">🐲</span>
               <div class="text-left rtl:text-right">
                 <div class="text-sm text-gray-200 font-bold">{{ languageService.translate('settings.appCamouflage.mmorpg') }}</div>

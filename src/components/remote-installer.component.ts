@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, ChangeDetectionStrategy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -85,12 +86,8 @@ import { LanguageService } from '../services/language.service';
                             <p class="text-sm text-gray-400 mb-2">{{ languageService.translate('settings.installer.command.description') }}</p>
                             <div class="relative">
                                 <textarea readonly class="w-full h-32 bg-black p-3 rounded-md text-sm font-mono text-gray-300 border border-gray-600 resize-none">{{ generatedCommand() }}</textarea>
-                                <button (click)="copyCommand()" class="absolute top-2 right-2 px-3 py-1 text-xs rounded transition-colors"
-                                    [class.bg-green-700]="commandCopied()"
-                                    [class.text-white]="commandCopied()"
-                                    [class.bg-gray-700]="!commandCopied()"
-                                    [class.text-gray-300]="!commandCopied()"
-                                    [class.hover:bg-gray-600]="!commandCopied()">
+                                <button (click)="copyCommand()" 
+                                    [class]="'absolute top-2 right-2 px-3 py-1 text-xs rounded transition-colors ' + (commandCopied() ? 'bg-green-700 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
                                     {{ commandCopied() ? languageService.translate('settings.installer.command.copied') : languageService.translate('settings.installer.command.copy') }}
                                 </button>
                             </div>

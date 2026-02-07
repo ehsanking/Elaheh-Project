@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.0.3 (Auto-Fetches Latest Release)
+# Version 1.0.4 (Auto-Fetches Latest Release)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -52,7 +52,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.0.3 (Auto-Fetches Latest Release)"
+echo "   Version 1.0.4 (Auto-Fetches Latest Release)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -95,9 +95,18 @@ else
     echo -e "${GREEN}>> Role: FOREIGN (Upstream)${NC}"
 fi
 
-# Get Domain
-PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 ifconfig.me)
-echo -e "\n${YELLOW}Public IP Detected: ${CYAN}${PUBLIC_IP}${NC}"
+# Get Domain & IP (Robust Method)
+echo -e "\n${YELLOW}Detecting Public IP...${NC}"
+PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 icanhazip.com || curl -s --max-time 5 ifconfig.me)
+
+# Validate IP to prevent Nginx config errors
+if ! [[ $PUBLIC_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo -e "${RED}Error: Could not determine public IP address. Please check your network connection.${NC}"
+    log "ERROR" "Failed to fetch a valid public IP. Received: $PUBLIC_IP"
+    exit 1
+fi
+echo -e "${GREEN}   > Public IP Detected: ${CYAN}${PUBLIC_IP}${NC}"
+
 read -p "Enter your Domain (A record must point to IP): " DOMAIN
 if [ -z "$DOMAIN" ]; then DOMAIN="localhost"; fi
 
@@ -222,7 +231,7 @@ fi
 # --- STEP 3: Nginx & SSL ---
 echo -e "\n${GREEN}--- STEP 3: WEBSERVER & SSL ---${NC}"
 
-$SUDO_CMD systemctl stop nginx >> "$LOG_FILE" 2>&1 || true
+($SUDO_CMD systemctl stop nginx >> "$LOG_FILE" 2>&1)
 
 SSL_KEY=""
 SSL_CERT=""
@@ -236,14 +245,24 @@ attempt_certbot() {
         SSL_CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
         return 0
     else
+        log "ERROR" "Certbot failed."
         return 1
     fi
 }
 
-if attempt_certbot; then
-    echo -e "${GREEN}   > Valid SSL Certificate obtained!${NC}"
+if [ "$DOMAIN" != "localhost" ]; then
+    if attempt_certbot; then
+        echo -e "${GREEN}   > Valid SSL Certificate obtained!${NC}"
+    else
+        echo -e "${YELLOW}   > Let's Encrypt failed (likely due to Iran filtering or DNS issue).${NC}"
+        USE_SELF_SIGNED=1
+    fi
 else
-    echo -e "${YELLOW}   > Let's Encrypt failed (likely due to Iran filtering).${NC}"
+    echo -e "${YELLOW}   > Skipping Let's Encrypt for localhost domain.${NC}"
+    USE_SELF_SIGNED=1
+fi
+
+if [ "$USE_SELF_SIGNED" -eq 1 ]; then
     echo -e "${CYAN}   > Generating Self-Signed SSL (Fallback Strategy)...${NC}"
     log "INFO" "Generating Self-Signed SSL"
     
@@ -256,18 +275,26 @@ else
     
     SSL_KEY="$SELF_DIR/selfsigned.key"
     SSL_CERT="$SELF_DIR/selfsigned.crt"
-    USE_SELF_SIGNED=1
 fi
 
 cat <<EOF | $SUDO_CMD tee /etc/nginx/sites-available/elaheh > /dev/null
 server {
     listen 80;
     server_name ${DOMAIN} ${PUBLIC_IP};
-    return 301 https://\$host\$request_uri;
+    
+    # For Certbot verification
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
 }
 
 server {
     listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name ${DOMAIN} ${PUBLIC_IP};
 
     ssl_certificate ${SSL_CERT};
@@ -288,8 +315,14 @@ EOF
 
 $SUDO_CMD rm -f /etc/nginx/sites-enabled/default
 $SUDO_CMD ln -sf /etc/nginx/sites-available/elaheh /etc/nginx/sites-enabled/
-$SUDO_CMD systemctl restart nginx
-echo -e "${GREEN}   > Nginx configured and started.${NC}"
+
+($SUDO_CMD nginx -t >> "$LOG_FILE" 2>&1)
+($SUDO_CMD systemctl restart nginx) &
+spinner $! "   > Configuring and starting Nginx..."
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Nginx failed to start. Please check the log file for details.${NC}"
+    echo -e "${YELLOW}   > Run 'sudo systemctl status nginx' and 'sudo nginx -t' for more info.${NC}"
+fi
 
 # --- STEP 4: Firewall ---
 echo -e "\n${GREEN}--- STEP 4: FINALIZING ---${NC}"

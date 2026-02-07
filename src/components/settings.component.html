@@ -12,6 +12,7 @@
       <button (click)="setTab('store')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-yellow-500]="currentTab() === 'store'" [class.text-white]="currentTab() === 'store'" [class.border-transparent]="currentTab() !== 'store'" [class.text-gray-400]="currentTab() !== 'store'">{{ languageService.translate('settings.tabs.store') }}</button>
       <button (click)="setTab('network')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'network'" [class.text-white]="currentTab() === 'network'" [class.border-transparent]="currentTab() !== 'network'" [class.text-gray-400]="currentTab() !== 'network'">{{ languageService.translate('settings.tabs.network') }}</button>
       <button (click)="setTab('security')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-teal-500]="currentTab() === 'security'" [class.text-white]="currentTab() === 'security'" [class.border-transparent]="currentTab() !== 'security'" [class.text-gray-400]="currentTab() !== 'security'">{{ languageService.translate('settings.tabs.security') }}</button>
+       <button (click)="setTab('migration')" class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors" [class.border-indigo-500]="currentTab() === 'migration'" [class.text-white]="currentTab() === 'migration'" [class.border-transparent]="currentTab() !== 'migration'" [class.text-gray-400]="currentTab() !== 'migration'">Migration</button>
     </div>
   </div>
 
@@ -179,6 +180,9 @@
           <app-application-camouflage></app-application-camouflage>
           <app-doh-settings></app-doh-settings>
         </div>
+      }
+      @case('migration') {
+        <app-migration></app-migration>
       }
     }
   </div>

@@ -31,9 +31,8 @@ import { LanguageService } from '../services/language.service';
               <label class="block text-gray-400 text-xs uppercase font-bold mb-2">{{ languageService.translate('settings.doh.activeUrl') }}</label>
               <div class="flex gap-2">
                 <input type="text" readonly [value]="core.dohUrl()" class="w-full bg-black p-2 rounded-md font-mono text-sm text-teal-300 border border-gray-600">
-                <button (click)="copyUrl(core.dohUrl()!)" class="px-4 py-2 text-sm rounded transition-colors"
-                        [class.bg-green-700]="copied()" [class.text-white]="copied()"
-                        [class.bg-gray-700]="!copied()" [class.text-gray-300]="!copied()" [class.hover:bg-gray-600]="!copied()">
+                <button (click)="copyUrl(core.dohUrl()!)" 
+                        [class]="'px-4 py-2 text-sm rounded transition-colors ' + (copied() ? 'bg-green-700 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
                   {{ copied() ? languageService.translate('settings.doh.copied') : languageService.translate('settings.doh.copy') }}
                 </button>
               </div>

@@ -17,11 +17,12 @@ import { IapSettingsComponent } from './iap-settings.component';
 import { NatTraversalComponent } from './nat-traversal.component';
 import { SshSettingsComponent } from './ssh-settings.component';
 import { EmailService } from '../services/email.service';
+import { MigrationComponent } from './migration.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent],
+  imports: [ReactiveFormsModule, CamouflageSettingsComponent, FormsModule, CommonModule, EndpointSettingsComponent, TunnelOptimizationComponent, DomainSslComponent, ApplicationCamouflageComponent, DohSettingsComponent, IapSettingsComponent, NatTraversalComponent, SshSettingsComponent, MigrationComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,7 +36,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security'>('general');
+  currentTab = signal<'general' | 'store' | 'branding' | 'network' | 'security' | 'migration'>('general');
   successMessage = signal('');
   
   // Store Mgmt Signals

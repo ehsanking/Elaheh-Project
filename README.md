@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
+  [![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>
@@ -103,10 +103,11 @@ Help bypass censorship by donating a server (VPS).
 This project is a powerful Proof of Concept (PoC) for a managed tunneling system.
 *   **Strengths:** Professional UI/UX, full multilingual support, Dual-Mode architecture, and multi-protocol support.
 *   **Future Development:** The next steps involve transitioning from a PoC to a production-ready system:
-    1.  **Backend Integration:** Replace `LocalStorage` with a robust backend API (`Express.js`/`NestJS`) for state management, enabling migration from other panels.
+    1.  **Backend Integration:** Replace `LocalStorage` with a robust backend API (`Express.js`/`NestJS`) for state management.
     2.  **Real-time Metrics:** Integrate system tools like `vnstat` or `netdata` to display actual server metrics instead of simulated data.
     3.  **Secure Authentication:** Implement a production-grade authentication system using JWT/OAuth2 instead of the current simple credential check.
-    4.  **Containerization:** Provide an official Docker image for easy, isolated, and scalable deployment.
+    4.  **Migration Tools:** Develop importers for popular panels like Marzban and X-UI to simplify migration to Project Elaheh.
+    5.  **Containerization:** Provide an official Docker image for easy, isolated, and scalable deployment.
 
 ---
 
@@ -179,10 +180,11 @@ EOF'
 این پروژه یک اثبات مفهوم (PoC) قدرتمند است.
 *   **نقاط قوت:** رابط کاربری حرفه‌ای، پشتیبانی از چند زبان، معماری دو حالته و پشتیبانی از پروتکل‌های متعدد.
 *   **نیازمند توسعه:** گام‌های بعدی برای تبدیل پروژه به یک سیستم کامل عبارتند از:
-    1.  **یکپارچه‌سازی با Backend:** جایگزینی `LocalStorage` با یک API برای مدیریت کاربران و تنظیمات جهت امکان مهاجرت از پنل‌های دیگر.
+    1.  **یکپارچه‌سازی با Backend:** جایگزینی `LocalStorage` با یک API برای مدیریت کاربران و تنظیمات.
     2.  **معیارهای واقعی:** نمایش آمار واقعی سرور با استفاده از ابزارهایی مانند `vnstat` به جای داده‌های شبیه‌سازی شده.
     3.  **احراز هویت امن:** پیاده‌سازی سیستم ورود امن مبتنی بر JWT/OAuth2.
-    4.  **کانتینرسازی:** ارائه یک ایمیج رسمی Docker برای نصب و مدیریت آسان‌تر.
+    4.  **ابزار مهاجرت:** ساخت ابزار برای انتقال ساده کاربران از پنل‌های دیگر مانند مرزبان و X-UI.
+    5.  **کانتینرسازی:** ارائه یک ایمیج رسمی Docker برای نصب و مدیریت آسان‌تر.
 ---
 
 ## 🇨🇳 中文 (Chinese)
