@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 4.6.0 (Proxy Bypass & Manual Fallback)
+# Version 4.7.0 (Resilient Downloader)
 # Author: EHSANKiNG
 
 # Disable immediate exit on error to handle errors gracefully with logs
@@ -54,7 +54,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 4.6.0 (Proxy Bypass & Manual Fallback)"
+echo "   Version 4.7.0 (Resilient Downloader)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -133,26 +133,6 @@ setup_swap() {
 }
 (setup_swap) &
 spinner $! "   > Checking/Configuring Swap Memory..."
-
-# --- STEP 0.5: NETWORK OPTIMIZATION (IRAN) ---
-if [ "$ROLE" == "iran" ]; then
-    echo -e "\n${GREEN}--- STEP 0.5: NETWORK OPTIMIZATION (IRAN) ---${NC}"
-    configure_dns() {
-        log "INFO" "Configuring Cloudflare DNS for Iran server"
-        if [ -f /etc/resolv.conf ]; then
-            if [ ! -f /etc/resolv.conf.bak-elaheh ]; then
-                $SUDO_CMD cp /etc/resolv.conf /etc/resolv.conf.bak-elaheh
-            fi
-        fi
-        {
-            echo "nameserver 1.1.1.1"
-            echo "nameserver 1.0.0.1"
-        } | $SUDO_CMD tee /etc/resolv.conf > /dev/null
-        log "SUCCESS" "DNS set to Cloudflare (1.1.1.1, 1.0.0.1)"
-    }
-    (configure_dns) &
-    spinner $! "   > Configuring Cloudflare DNS (Anti-Sanction)..."
-fi
 
 # --- STEP 1: Smart Package Installation ---
 echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
@@ -244,26 +224,44 @@ download_source() {
     $SUDO_CMD chown -R "$RUN_USER:$RUN_USER" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    # --- Robust Clone Strategy v2 ---
-    # Forcefully unset any proxy environment variables that might be interfering.
+    # --- Robust Clone/Download Strategy v3 ---
+    # Forcefully unset proxy environment variables for all attempts.
     unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
 
-    # Attempt 1: Direct GitHub, explicitly bypassing any git config proxy.
-    log "INFO" "Attempt 1: Cloning from official GitHub (bypassing proxies)..."
+    # --- Attempt 1: `git clone` with proxy bypass ---
+    log "INFO" "Attempt 1: Cloning via Git (proxy bypassed)..."
     if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
-        log "SUCCESS" "Clone from official GitHub successful."
+        log "SUCCESS" "Git clone successful."
         return 0
     fi
-    log "WARN" "Attempt 1 failed. Trying fallback mirror."
+    log "WARN" "Attempt 1 (Git) failed. Falling back to ZIP download."
 
-    # --- Attempt 2: GitHub Mirror, also bypassing proxy ---
-    log "INFO" "Attempt 2: Cloning from GitHub mirror (ghfast.top), bypassing proxies..."
-    if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://ghfast.top/https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
-        log "SUCCESS" "Clone from GitHub mirror successful."
-        return 0
+    # --- Attempt 2: `curl` to download ZIP from GitHub ---
+    log "INFO" "Attempt 2: Downloading ZIP from GitHub..."
+    if curl -s -L -o main.zip "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip" >> "$LOG_FILE" 2>&1; then
+        if unzip -q main.zip && mv Elaheh-Project-main/* . && mv Elaheh-Project-main/.* . 2>/dev/null && rm -rf Elaheh-Project-main main.zip; then
+            log "SUCCESS" "ZIP download from GitHub successful."
+            return 0
+        else
+            log "ERROR" "Failed to extract ZIP from GitHub."
+            # Cleanup failed extraction
+            rm -rf "$INSTALL_DIR"/* "$INSTALL_DIR"/.* 2>/dev/null
+        fi
     fi
+    log "WARN" "Attempt 2 (GitHub ZIP) failed. Falling back to mirror."
 
-    log "ERROR" "All automated clone attempts failed. Please check network connection or try manual installation as described in README."
+    # --- Attempt 3: `curl` to download ZIP from a mirror ---
+    log "INFO" "Attempt 3: Downloading ZIP from mirror (ghproxy.com)..."
+    if curl -s -L -o main.zip "https://ghproxy.com/https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip" >> "$LOG_FILE" 2>&1; then
+        if unzip -q main.zip && mv Elaheh-Project-main/* . && mv Elaheh-Project-main/.* . 2>/dev/null && rm -rf Elaheh-Project-main main.zip; then
+            log "SUCCESS" "ZIP download from mirror successful."
+            return 0
+        else
+            log "ERROR" "Failed to extract ZIP from mirror."
+        fi
+    fi
+    
+    log "ERROR" "All download attempts failed. Please check network connection."
     return 1
 }
 
