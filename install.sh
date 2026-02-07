@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 4.7.0 (Resilient Downloader)
+# Version 4.8.0 (ZIP-First Downloader)
 # Author: EHSANKiNG
 
 # Disable immediate exit on error to handle errors gracefully with logs
@@ -54,7 +54,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 4.7.0 (Resilient Downloader)"
+echo "   Version 4.8.0 (ZIP-First Downloader)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -140,7 +140,7 @@ echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
 install_pkg_apt() {
     PKG=$1
     if dpkg -l | grep -q "^ii  $PKG "; then
-        log "INFO" "$PKG is installed."
+        log "INFO" "$PKG is already installed. Skipping."
     else
         log "INFO" "Installing $PKG..."
         $SUDO_CMD apt-get install -y -qq $PKG >> "$LOG_FILE" 2>&1
@@ -150,7 +150,7 @@ install_pkg_apt() {
 install_pkg_dnf() {
     PKG=$1
     if rpm -q $PKG >/dev/null 2>&1; then
-        log "INFO" "$PKG is installed."
+        log "INFO" "$PKG is already installed. Skipping."
     else
         log "INFO" "Installing $PKG..."
         $SUDO_CMD dnf install -y -q $PKG >> "$LOG_FILE" 2>&1
@@ -180,12 +180,12 @@ install_node() {
     if check_command node; then
         NODE_V=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
         if [ "$NODE_V" -ge 18 ]; then
-            log "INFO" "Node.js v$NODE_V detected."
+            log "INFO" "Node.js v$NODE_V detected. Skipping install."
             return
         fi
     fi
 
-    log "INFO" "Installing Node.js..."
+    log "INFO" "Installing Node.js v20..."
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO_CMD bash - >> "$LOG_FILE" 2>&1
         $SUDO_CMD apt-get install -y nodejs >> "$LOG_FILE" 2>&1
@@ -205,8 +205,10 @@ install_globals() {
     local TOOLS=("pm2" "@angular/cli")
     for tool in "${TOOLS[@]}"; do
         if ! command -v $tool >/dev/null 2>&1; then
-             log "INFO" "Installing global $tool..."
+             log "INFO" "Installing global tool: $tool..."
              $SUDO_CMD npm install -g $tool >> "$LOG_FILE" 2>&1
+        else
+            log "INFO" "Global tool $tool already installed."
         fi
     done
 }
@@ -224,41 +226,41 @@ download_source() {
     $SUDO_CMD chown -R "$RUN_USER:$RUN_USER" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    # --- Robust Clone/Download Strategy v3 ---
+    # --- Robust Download Strategy v4 ---
     # Forcefully unset proxy environment variables for all attempts.
     unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
 
-    # --- Attempt 1: `git clone` with proxy bypass ---
-    log "INFO" "Attempt 1: Cloning via Git (proxy bypassed)..."
-    if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
-        log "SUCCESS" "Git clone successful."
-        return 0
-    fi
-    log "WARN" "Attempt 1 (Git) failed. Falling back to ZIP download."
-
-    # --- Attempt 2: `curl` to download ZIP from GitHub ---
-    log "INFO" "Attempt 2: Downloading ZIP from GitHub..."
+    # --- Attempt 1: `curl` to download ZIP from GitHub (Primary Method) ---
+    log "INFO" "Attempt 1: Downloading ZIP from GitHub..."
     if curl -s -L -o main.zip "https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip" >> "$LOG_FILE" 2>&1; then
         if unzip -q main.zip && mv Elaheh-Project-main/* . && mv Elaheh-Project-main/.* . 2>/dev/null && rm -rf Elaheh-Project-main main.zip; then
             log "SUCCESS" "ZIP download from GitHub successful."
             return 0
         else
             log "ERROR" "Failed to extract ZIP from GitHub."
-            # Cleanup failed extraction
             rm -rf "$INSTALL_DIR"/* "$INSTALL_DIR"/.* 2>/dev/null
         fi
     fi
-    log "WARN" "Attempt 2 (GitHub ZIP) failed. Falling back to mirror."
+    log "WARN" "Attempt 1 (GitHub ZIP) failed. Falling back to mirror."
 
-    # --- Attempt 3: `curl` to download ZIP from a mirror ---
-    log "INFO" "Attempt 3: Downloading ZIP from mirror (ghproxy.com)..."
+    # --- Attempt 2: `curl` to download ZIP from a mirror ---
+    log "INFO" "Attempt 2: Downloading ZIP from mirror (ghproxy.com)..."
     if curl -s -L -o main.zip "https://ghproxy.com/https://github.com/ehsanking/Elaheh-Project/archive/refs/heads/main.zip" >> "$LOG_FILE" 2>&1; then
         if unzip -q main.zip && mv Elaheh-Project-main/* . && mv Elaheh-Project-main/.* . 2>/dev/null && rm -rf Elaheh-Project-main main.zip; then
             log "SUCCESS" "ZIP download from mirror successful."
             return 0
         else
             log "ERROR" "Failed to extract ZIP from mirror."
+            rm -rf "$INSTALL_DIR"/* "$INSTALL_DIR"/.* 2>/dev/null
         fi
+    fi
+    log "WARN" "Attempt 2 (Mirror ZIP) failed. Falling back to git clone."
+    
+    # --- Attempt 3: `git clone` with proxy bypass (Fallback) ---
+    log "INFO" "Attempt 3: Cloning via Git (proxy bypassed)..."
+    if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
+        log "SUCCESS" "Git clone successful."
+        return 0
     fi
     
     log "ERROR" "All download attempts failed. Please check network connection."
