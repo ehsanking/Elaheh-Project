@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.0.1 (Pre-compiled Release)
+# Version 1.0.2 (Auto-Fetches Latest Release)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -12,8 +12,6 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 LOG_FILE="/var/log/elaheh-install.log"
-RELEASE_TAG="elaheh-1.0.1" 
-PANEL_ASSET_NAME="Elaheh-Project-1.0.1.zip"
 
 # --- Helper Functions ---
 log() {
@@ -54,7 +52,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.0.1 (Pre-compiled Release)"
+echo "   Version 1.0.2 (Auto-Fetches Latest Release)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -152,12 +150,21 @@ download_and_extract() {
     log "INFO" "Cleaning install directory $INSTALL_DIR"
     $SUDO_CMD rm -rf "$INSTALL_DIR"
     $SUDO_CMD mkdir -p "$INSTALL_DIR"
+    
+    # --- Dynamic Release Fetching ---
+    log "INFO" "Fetching latest release URL from GitHub..."
+    RELEASE_URL=$(curl -s https://api.github.com/repos/ehsanking/Elaheh-Project/releases/latest | grep "browser_download_url" | grep ".zip" | cut -d '"' -f 4)
+
+    if [ -z "$RELEASE_URL" ]; then
+        log "ERROR" "Failed to fetch latest release URL. Check API rate limits or network."
+        return 1
+    fi
+    log "INFO" "Latest release URL: $RELEASE_URL"
+    PANEL_ASSET_NAME=$(basename "$RELEASE_URL")
 
     cd /tmp
     
     # --- Robust Download Strategy ---
-    RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/${RELEASE_TAG}/${PANEL_ASSET_NAME}"
-    
     log "INFO" "Attempt 1: Downloading from GitHub Release: ${RELEASE_URL}"
     if curl -s -L -o "$PANEL_ASSET_NAME" "$RELEASE_URL" >> "$LOG_FILE" 2>&1; then
         log "SUCCESS" "Download from GitHub successful."
@@ -179,12 +186,15 @@ download_and_extract() {
     log "SUCCESS" "Panel extracted to $INSTALL_DIR"
     
     # Handle nested directory after extraction
-    if [ $($SUDO_CMD ls -A "$INSTALL_DIR" | wc -l) -eq 1 ] && [ -d "$INSTALL_DIR/$($SUDO_CMD ls -A "$INSTALL_DIR")" ]; then
-        EXTRACTED_DIR_NAME=$($SUDO_CMD ls -A "$INSTALL_DIR")
-        log "INFO" "Moving contents from subdirectory $EXTRACTED_DIR_NAME"
-        $SUDO_CMD mv "$INSTALL_DIR/$EXTRACTED_DIR_NAME"/* "$INSTALL_DIR"
-        $SUDO_CMD mv "$INSTALL_DIR/$EXTRACTED_DIR_NAME"/.* "$INSTALL_DIR" 2>/dev/null || true
-        $SUDO_CMD rmdir "$INSTALL_DIR/$EXTRACTED_DIR_NAME"
+    # Using a wildcard to be version-agnostic
+    if [ -d "$INSTALL_DIR"/Elaheh-Project-* ]; then
+        EXTRACTED_DIR_PATH=$(find "$INSTALL_DIR" -maxdepth 1 -type d -name "Elaheh-Project-*")
+        if [ -n "$EXTRACTED_DIR_PATH" ]; then
+            log "INFO" "Moving contents from subdirectory..."
+            $SUDO_CMD mv "$EXTRACTED_DIR_PATH"/* "$INSTALL_DIR"
+            $SUDO_CMD mv "$EXTRACTED_DIR_PATH"/.* "$INSTALL_DIR" 2>/dev/null || true
+            $SUDO_CMD rmdir "$EXTRACTED_DIR_PATH"
+        fi
     fi
     
     rm -f "$PANEL_ASSET_NAME"
@@ -199,7 +209,7 @@ download_and_extract() {
 }
 
 (download_and_extract) &
-spinner $! "   > Downloading and extracting pre-compiled panel..."
+spinner $! "   > Downloading and extracting latest panel..."
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Failed to download or extract the panel.${NC}"
     echo -e "${YELLOW}Check your internet connection and see log: ${LOG_FILE}${NC}"

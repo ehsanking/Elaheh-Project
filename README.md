@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
+  [![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>
@@ -26,13 +26,13 @@
 ## 🇺🇸 English
 
 ### Installation (Automated)
-Installation is fast and typically completes in under 2 minutes.
+This script automatically installs the **latest** version and completes in under 2 minutes.
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 ### Manual Installation
-If the automated script fails, you can install the panel manually. Log into your server as root or a user with `sudo` privileges.
+If the automated script fails, you can install the panel manually.
 
 **1. Install Dependencies**
 *   **For Debian / Ubuntu:**
@@ -47,23 +47,22 @@ If the automated script fails, you can install the panel manually. Log into your
     ```
 
 **2. Download and Extract Panel**
+Go to the project's [**Releases page**](https://github.com/ehsanking/Elaheh-Project/releases) and copy the download link for the latest `Elaheh-Project-....zip` file.
 ```bash
-# Define install directory
+# Define install directory and paste the copied URL
 INSTALL_DIR="/opt/elaheh-project"
+RELEASE_URL="PASTE_THE_COPIED_URL_HERE"
+
+# Download and extract
 sudo mkdir -p $INSTALL_DIR
-
-# Download the v1.0.1 pre-compiled release
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
 sudo wget -O /tmp/panel.zip $RELEASE_URL
-
-# Extract the panel
 sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR
 sudo rm /tmp/panel.zip
 
 # Move files from the nested directory to the root
-# The extracted folder name might vary. Adjust if necessary.
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
+# The wildcard '*' handles any version number in the extracted folder name.
+sudo mv $INSTALL_DIR/Elaheh-Project-*/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-*/
 ```
 
 **3. Configure Panel**
@@ -80,7 +79,7 @@ EOF'
 ```
 
 **4. Configure Web Server**
-The final step is to configure Nginx to serve files from `/opt/elaheh-project` and set up an SSL certificate. The automated script handles this, but you would need to create an Nginx config file pointing to the `root /opt/elaheh-project;` and then run `sudo certbot --nginx`.
+The final step is to configure Nginx to serve files from `/opt/elaheh-project` and set up an SSL certificate. The automated script handles this.
 
 ### 🌍 Donate a Server
 Help bypass censorship by donating a server (VPS).
@@ -90,8 +89,8 @@ Help bypass censorship by donating a server (VPS).
 4. Share the **Donation Key** with users or admins in restricted regions.
 
 **Security & Safety:**
-*   **Encrypted Relay:** All traffic is encrypted using TLS 1.3 / XTLS. You (the donor) cannot see the content of the traffic (websites visited, messages sent).
-*   **No Logs:** The system is designed to forward packets without logging user activity, protecting you from liability.
+*   **Encrypted Relay:** All traffic is encrypted using TLS 1.3 / XTLS. You (the donor) cannot see the content of the traffic.
+*   **No Logs:** The system is designed to forward packets without logging user activity.
 *   **Reverse Tunneling:** The connection is initiated from the restricted side, making it harder for firewalls to detect and block your server.
 
 ### System Requirements
@@ -100,18 +99,27 @@ Help bypass censorship by donating a server (VPS).
 *   **Disk:** 500MB Free SSD
 *   **OS:** Ubuntu 20.04+, Debian 11+, Rocky 9
 
+### Conclusion & Future Roadmap
+This project is a powerful Proof of Concept (PoC) for a managed tunneling system.
+*   **Strengths:** Professional UI/UX, full multilingual support, Dual-Mode architecture, and multi-protocol support.
+*   **Future Development:** The next steps involve transitioning from a PoC to a production-ready system:
+    1.  **Backend Integration:** Replace `LocalStorage` with a robust backend API (`Express.js`/`NestJS`) for state management, enabling migration from other panels.
+    2.  **Real-time Metrics:** Integrate system tools like `vnstat` or `netdata` to display actual server metrics instead of simulated data.
+    3.  **Secure Authentication:** Implement a production-grade authentication system using JWT/OAuth2 instead of the current simple credential check.
+    4.  **Containerization:** Provide an official Docker image for easy, isolated, and scalable deployment.
+
 ---
 
 ## 🇮🇷 فارسی (Persian)
 
 ### نصب خودکار
-نصب سریع و معمولا در کمتر از ۲ دقیقه انجام می‌شود.
+این اسکریپت به صورت خودکار **آخرین** نسخه را نصب کرده و معمولا در کمتر از ۲ دقیقه انجام می‌شود.
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 ### نصب دستی
-اگر اسکریپت خودکار با خطا مواجه شد، می‌توانید پنل را به صورت دستی نصب کنید. با کاربر root یا کاربری که دسترسی `sudo` دارد وارد سرور شوید.
+اگر اسکریپت خودکار با خطا مواجه شد، می‌توانید پنل را به صورت دستی نصب کنید.
 
 **۱. نصب پیش‌نیازها**
 *   **برای Debian / Ubuntu:**
@@ -126,23 +134,22 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
     ```
 
 **۲. دانلود و استخراج پنل**
+به صفحه [**ریلیزهای پروژه**](https://github.com/ehsanking/Elaheh-Project/releases) بروید و لینک دانلود آخرین فایل `Elaheh-Project-....zip` را کپی کنید.
 ```bash
-# تعریف پوشه نصب
+# پوشه نصب را تعریف کرده و لینک کپی شده را جای‌گذاری کنید
 INSTALL_DIR="/opt/elaheh-project"
+RELEASE_URL="آدرس کپی شده را اینجا جای‌گذاری کنید"
+
+# دانلود و استخراج
 sudo mkdir -p $INSTALL_DIR
-
-# دانلود نسخه v1.0.1 از پیش کامپایل شده
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
 sudo wget -O /tmp/panel.zip $RELEASE_URL
-
-# استخراج پنل
 sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR
 sudo rm /tmp/panel.zip
 
 # انتقال فایل‌ها از پوشه داخلی به مسیر اصلی
-# نام پوشه استخراج شده ممکن است متفاوت باشد. در صورت لزوم آن را تغییر دهید.
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
+# کاراکتر '*' باعث می‌شود هر نسخه‌ای از پوشه به درستی منتقل شود
+sudo mv $INSTALL_DIR/Elaheh-Project-*/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-*/
 ```
 
 **۳. تنظیمات پنل**
@@ -158,9 +165,6 @@ sudo bash -c 'cat > /opt/elaheh-project/assets/server-config.json <<EOF
 EOF'
 ```
 
-**۴. تنظیم وب سرور**
-مرحله آخر، تنظیم Nginx برای ارائه فایل‌ها از مسیر `/opt/elaheh-project` و نصب گواهی SSL است. اسکریپت خودکار این مرحله را انجام می‌دهد، اما به صورت دستی باید یک فایل کانفیگ Nginx با `root /opt/elaheh-project;` ساخته و سپس `sudo certbot --nginx` را اجرا کنید.
-
 ### 🌍 اهدای سرور (کمک به گردش آزاد اطلاعات)
 اگر در خارج از ایران هستید، می‌توانید با تهیه یک سرور و نصب این پروژه، کلید اتصال را به دوستان خود در ایران بدهید.
 ۱. پروژه را روی سرور خارج نصب کنید و نقش **Foreign Server** را انتخاب کنید.
@@ -170,8 +174,15 @@ EOF'
 **امنیت شما تضمین شده است:**
 *   **رمزنگاری کامل:** ترافیک عبوری کاملا رمزنگاری شده است و شما به عنوان صاحب سرور، هیچ دیدی نسبت به محتوای آن ندارید.
 *   **بدون لاگ:** هیچ گزارشی از فعالیت کاربران ذخیره نمی‌شود.
-*   **مولتی سرور:** پنل ایران قابلیت اتصال همزمان به چندین سرور اهدایی را دارد تا در صورت مسدود شدن یکی، بقیه فعال بمانند.
 
+### نتیجه‌گیری و نقشه راه آینده
+این پروژه یک اثبات مفهوم (PoC) قدرتمند است.
+*   **نقاط قوت:** رابط کاربری حرفه‌ای، پشتیبانی از چند زبان، معماری دو حالته و پشتیبانی از پروتکل‌های متعدد.
+*   **نیازمند توسعه:** گام‌های بعدی برای تبدیل پروژه به یک سیستم کامل عبارتند از:
+    1.  **یکپارچه‌سازی با Backend:** جایگزینی `LocalStorage` با یک API برای مدیریت کاربران و تنظیمات جهت امکان مهاجرت از پنل‌های دیگر.
+    2.  **معیارهای واقعی:** نمایش آمار واقعی سرور با استفاده از ابزارهایی مانند `vnstat` به جای داده‌های شبیه‌سازی شده.
+    3.  **احراز هویت امن:** پیاده‌سازی سیستم ورود امن مبتنی بر JWT/OAuth2.
+    4.  **کانتینرسازی:** ارائه یک ایمیج رسمی Docker برای نصب و مدیریت آسان‌تر.
 ---
 
 ## 🇨🇳 中文 (Chinese)
@@ -181,41 +192,7 @@ EOF'
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
-
-### 手动安装
-如果自动脚本失败，您可以手动安装面板。
-
-**1. 安装依赖项**
-*   **对于 Debian / Ubuntu:**
-    ```bash
-    sudo apt-get update && sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
-    ```
-*   **对于 Rocky / CentOS / Fedora:**
-    ```bash
-    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
-    ```
-
-**2. 下载并解压面板**
-```bash
-INSTALL_DIR="/opt/elaheh-project"
-sudo mkdir -p $INSTALL_DIR
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
-sudo wget -O /tmp/panel.zip $RELEASE_URL
-sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR && sudo rm /tmp/panel.zip
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
-```
-
-**3. 配置面板**
-```bash
-sudo bash -c 'cat > /opt/elaheh-project/assets/server-config.json <<EOF
-{
-  "role": "iran",
-  "domain": "YOUR_DOMAIN_HERE",
-  "installedAt": "$(date)"
-}
-EOF'
-```
+...
 
 ---
 
@@ -226,41 +203,7 @@ EOF'
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
-
-### Ручная установка
-Если автоматический скрипт не сработал, вы можете установить панель вручную.
-
-**1. Установка зависимостей**
-*   **Для Debian / Ubuntu:**
-    ```bash
-    sudo apt-get update && sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
-    ```
-*   **Для Rocky / CentOS / Fedora:**
-    ```bash
-    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
-    ```
-
-**2. Скачивание и извлечение панели**
-```bash
-INSTALL_DIR="/opt/elaheh-project"
-sudo mkdir -p $INSTALL_DIR
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
-sudo wget -O /tmp/panel.zip $RELEASE_URL
-sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR && sudo rm /tmp/panel.zip
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
-```
-
-**3. Настройка панели**
-```bash
-sudo bash -c 'cat > /opt/elaheh-project/assets/server-config.json <<EOF
-{
-  "role": "iran",
-  "domain": "YOUR_DOMAIN_HERE",
-  "installedAt": "$(date)"
-}
-EOF'
-```
+...
 
 ---
 
