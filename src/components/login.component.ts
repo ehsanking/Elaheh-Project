@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy, AfterViewInit, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, AfterViewInit, ViewChild, ElementRef, Output, EventEmitter, input } from '@angular/core';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { FormsModule } from '@angular/forms';
 import { LanguageService } from '../services/language.service';
@@ -11,9 +11,11 @@ import { LogoComponent } from './logo.component';
   template: `
     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 z-10 relative">
       <!-- Close button -->
-      <button (click)="closeLogin.emit()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
+      @if(isModal()) {
+        <button (click)="closeLogin.emit()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      }
 
       @switch (view()) {
         @case ('login') {
@@ -125,6 +127,7 @@ export class LoginComponent implements AfterViewInit {
 
   view = signal<'login' | 'reset' | 'reset_sent'>('login');
 
+  isModal = input(false);
   @Output() closeLogin = new EventEmitter<void>();
 
   @ViewChild('captchaCanvas') captchaCanvas!: ElementRef<HTMLCanvasElement>;

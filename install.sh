@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.0.0 (Pre-compiled Release)
+# Version 1.0.1 (Pre-compiled Release)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -54,7 +54,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.0.0 (Pre-compiled Release)"
+echo "   Version 1.0.1 (Pre-compiled Release)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
