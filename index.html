@@ -5,12 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Elaheh</title>
   
-  <!-- Vazirmatn Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+  <!-- Vazirmatn Font - Using Iran-accessible CDN -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS - Using accessible CDN with fallback -->
+  <script>
+    // Fallback for Tailwind if CDN fails
+    window.tailwindFallback = function() {
+      console.warn('Tailwind CDN failed, using fallback configuration');
+      document.documentElement.style.fontFamily = 'Vazirmatn, Tahoma, Arial, sans-serif';
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.js" onerror="tailwindFallback()"></script>
+  <script src="https://unpkg.com/tailwindcss-cdn@3.4.1/tailwindcss.js" onerror="tailwindFallback()"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -23,6 +31,10 @@
     }
   </script>
   <style>
+    /* Fallback styles if CDNs fail */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Vazirmatn', Tahoma, Arial, sans-serif; line-height: 1.6; }
+    
     /* Custom Scrollbar for Terminal Look */
     ::-webkit-scrollbar {
       width: 8px;
@@ -142,19 +154,19 @@
 <script type="importmap">
 {
   "imports": {
-    "rxjs": "https://esm.sh/rxjs@^7.8.2?conditions=es2015",
-    "rxjs/operators": "https://esm.sh/rxjs@^7.8.2/operators?conditions=es2015",
-    "rxjs/ajax": "https://esm.sh/rxjs@^7.8.2/ajax?conditions=es2015",
-    "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
-    "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
-    "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
-    "@angular/compiler": "https://esm.sh/@angular/compiler@^21.1.2?external=rxjs",
-    "@angular/core": "https://esm.sh/@angular/core@^21.1.2?external=rxjs",
-    "@google/genai": "https://esm.sh/@google/genai@^1.39.0?external=rxjs",
-    "@angular/common": "https://esm.sh/@angular/common@^21.1.2?external=rxjs",
-    "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.1.2?external=rxjs",
-    "@angular/forms": "https://esm.sh/@angular/forms@^21.1.2?external=rxjs",
-    "qrcode": "https://esm.sh/qrcode@^1.5.3"
+    "rxjs": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/+esm",
+    "rxjs/operators": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/operators/index.js",
+    "rxjs/ajax": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/ajax/index.js",
+    "rxjs/webSocket": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/webSocket/index.js",
+    "rxjs/testing": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/testing/index.js",
+    "rxjs/fetch": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/fetch/index.js",
+    "@angular/compiler": "https://cdn.jsdelivr.net/npm/@angular/compiler@21.1.2/+esm",
+    "@angular/core": "https://cdn.jsdelivr.net/npm/@angular/core@21.1.2/+esm",
+    "@google/genai": "https://cdn.jsdelivr.net/npm/@google/genai@1.39.0/+esm",
+    "@angular/common": "https://cdn.jsdelivr.net/npm/@angular/common@21.1.2/+esm",
+    "@angular/platform-browser": "https://cdn.jsdelivr.net/npm/@angular/platform-browser@21.1.2/+esm",
+    "@angular/forms": "https://cdn.jsdelivr.net/npm/@angular/forms@21.1.2/+esm",
+    "qrcode": "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm"
   }
 }
 </script>

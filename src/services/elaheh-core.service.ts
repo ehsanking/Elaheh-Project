@@ -6,7 +6,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.9'; 
+export const APP_VERSION = '1.1.0'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
@@ -372,15 +372,29 @@ export class ElahehCoreService {
 
   private loadServerConfig() {
     fetch('assets/server-config.json')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(config => {
         if (config.domain) this.customDomain.set(config.domain);
         if (config.role) {
             this.serverRole.set(config.role);
             this.isConfigured.set(true);
+            this.addLog('SUCCESS', `Server configured as ${config.role.toUpperCase()} mode`);
         }
       })
-      .catch(() => {});
+      .catch((error) => {
+        // Fallback: If config file doesn't exist, allow manual setup
+        console.warn('Server config not found, falling back to manual setup mode:', error);
+        this.addLog('WARN', 'Server config not found. Please complete setup wizard.');
+        // Don't set isConfigured to true, so setup wizard will show
+        this.isConfigured.set(false);
+        // Set default role to null to trigger setup
+        this.serverRole.set(null);
+      });
   }
 
   async fetchIpLocation(ip?: string): Promise<any> {

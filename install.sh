@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.0.9 (Pre-compiled, No Node/npm dependency)
+# Version 1.1.0 (Pre-compiled, Enhanced Iran Support)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -48,7 +48,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.0.9 (Pre-compiled Release)"
+echo "   Version 1.1.0 (Iran-Optimized Release)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -83,7 +83,7 @@ echo -e "${GREEN}   > Public IP Detected: ${CYAN}${PUBLIC_IP}${NC}"
 read -p "Enter your Domain (A record must point to IP): " DOMAIN
 if [ -z "$DOMAIN" ]; then DOMAIN="localhost"; fi
 
-log "INFO" "Starting installation v1.0.9 for $ROLE on $DOMAIN ($OS)"
+log "INFO" "Starting installation v1.1.0 for $ROLE on $DOMAIN ($OS)"
 
 # --- STEP 1: Smart Package Installation ---
 echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
@@ -123,10 +123,34 @@ download_and_install_panel() {
     $SUDO_CMD mkdir -p "$INSTALL_DIR"
     
     log "INFO" "Fetching latest pre-compiled release URL from GitHub..."
-    # Find the asset named "panel-vX.Y.Z.zip"
-    RELEASE_URL=$(curl -s https://api.github.com/repos/ehsanking/Elaheh-Project/releases/latest | grep "browser_download_url" | grep "panel-v.*.zip" | cut -d '"' -f 4)
+    
+    # Try multiple methods to fetch release URL (Iran-friendly alternatives)
+    RELEASE_URL=""
+    
+    # Method 1: Direct GitHub API (may be blocked in Iran)
+    RELEASE_URL=$(curl -s https://api.github.com/repos/ehsanking/Elaheh-Project/releases/latest 2>/dev/null | grep "browser_download_url" | grep "panel-v.*.zip" | cut -d '"' -f 4)
+    
+    # Method 2: Try GitHub via mirror (if method 1 fails)
+    if [ -z "$RELEASE_URL" ]; then
+        log "WARN" "GitHub API failed, trying alternative mirror..."
+        RELEASE_URL=$(curl -s https://hub.fgit.ml/ehsanking/Elaheh-Project/releases/latest 2>/dev/null | grep -o 'href="[^"]*panel-v[^"]*\.zip"' | sed 's/href="//;s/"$//' | head -1)
+        if [ -n "$RELEASE_URL" ] && [[ ! "$RELEASE_URL" =~ ^https?:// ]]; then
+            RELEASE_URL="https://github.com${RELEASE_URL}"
+        fi
+    fi
+    
+    # Method 3: Fallback to known version if all else fails
+    if [ -z "$RELEASE_URL" ]; then
+        log "WARN" "Could not fetch latest release, using fallback URL..."
+        RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/v1.1.0/panel-v1.1.0.zip"
+    fi
 
-    if [ -z "$RELEASE_URL" ]; then log "ERROR" "Failed to find pre-compiled panel asset."; return 1; fi
+    if [ -z "$RELEASE_URL" ]; then 
+        log "ERROR" "Failed to find pre-compiled panel asset."
+        echo -e "${RED}Error: Could not determine download URL. Please check your internet connection.${NC}"
+        return 1
+    fi
+    
     log "INFO" "Latest release URL: $RELEASE_URL"
     PANEL_ASSET_NAME=$(basename "$RELEASE_URL")
     
@@ -134,9 +158,28 @@ download_and_install_panel() {
 
     cd /tmp
     log "INFO" "Downloading pre-compiled panel from GitHub: ${RELEASE_URL}"
-    if ! curl -s -L -o "$PANEL_ASSET_NAME" "$RELEASE_URL" >> "$LOG_FILE" 2>&1; then log "ERROR" "Download failed."; return 1; fi
+    
+    # Try multiple download methods for Iran compatibility
+    DOWNLOAD_SUCCESS=0
+    
+    # Method 1: curl with retry
+    if curl -L -o "$PANEL_ASSET_NAME" --connect-timeout 30 --max-time 300 --retry 3 --retry-delay 5 "$RELEASE_URL" >> "$LOG_FILE" 2>&1; then
+        DOWNLOAD_SUCCESS=1
+    # Method 2: wget fallback
+    elif command -v wget >/dev/null 2>&1 && wget -O "$PANEL_ASSET_NAME" --timeout=30 --tries=3 "$RELEASE_URL" >> "$LOG_FILE" 2>&1; then
+        DOWNLOAD_SUCCESS=1
+    fi
+    
+    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
+        log "ERROR" "Download failed with both curl and wget."
+        echo -e "${RED}Error: Failed to download panel. Please check your internet connection.${NC}"
+        return 1
+    fi
 
-    if ! $SUDO_CMD unzip -q -o "$PANEL_ASSET_NAME" -d "$INSTALL_DIR" >> "$LOG_FILE" 2>&1; then log "ERROR" "Failed to extract panel asset."; return 1; fi
+    if ! $SUDO_CMD unzip -q -o "$PANEL_ASSET_NAME" -d "$INSTALL_DIR" >> "$LOG_FILE" 2>&1; then 
+        log "ERROR" "Failed to extract panel asset."
+        return 1
+    fi
     log "SUCCESS" "Panel assets extracted to $INSTALL_DIR"
     
     rm -f "$PANEL_ASSET_NAME"

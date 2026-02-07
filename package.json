@@ -1,13 +1,15 @@
 {
   "name": "project-elaheh",
-  "version": "1.0.9",
-  "description": "Advanced Tunneling Management System",
+  "version": "1.1.0",
+  "description": "Advanced Tunneling Management System - Iran Optimized",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --host 0.0.0.0 --disable-host-check",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "release": "./build-release.sh"
   },
   "private": true,
   "dependencies": {
