@@ -6,7 +6,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.3'; 
+export const APP_VERSION = '1.0.9'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
@@ -751,12 +751,10 @@ export class ElahehCoreService {
     try {
       this.addLog('INFO', 'Querying Gemini for optimization advice...');
       const response = await this.ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-2.5-flash',
         contents: `Context: You are a network security expert specializing in censorship circumvention for Project Elaheh. Analyze the following user query and provide concise, actionable advice on tunnel optimization. User query: "${prompt}"`,
         config: {
-          thinkingConfig: {
-            thinkingBudget: 32768,
-          },
+          thinkingConfig: { thinkingBudget: 0 }
         },
       });
       const text = response.text;

@@ -5,7 +5,7 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.0.8-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
+  [![Version](https://img.shields.io/badge/version-1.0.9-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>
@@ -26,43 +26,38 @@
 ## 🇺🇸 English
 
 ### Installation (Automated)
-This script automatically installs the **latest** version and completes in under 2 minutes.
+This script installs the **pre-compiled** version and completes in **under 30 seconds**.
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 ### Manual Installation
-If the automated script fails, you can install the panel manually.
+If the automated script fails, the new manual process is much simpler.
 
 **1. Install Dependencies**
 *   **For Debian / Ubuntu:**
     ```bash
     sudo apt-get update
-    sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
+    sudo apt-get install -y wget unzip nginx certbot python3-certbot-nginx redis-server
     ```
 *   **For Rocky / CentOS / Fedora:**
     ```bash
     sudo dnf check-update
-    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
+    sudo dnf install -y wget unzip nginx certbot python3-certbot-nginx redis
     ```
 
 **2. Download and Extract Panel**
-Go to the project's [**Releases page**](https://github.com/ehsanking/Elaheh-Project/releases) and copy the download link for the latest `Elaheh-Project-....zip` file.
+Go to the project's [**Releases page**](https://github.com/ehsanking/Elaheh-Project/releases) and copy the download link for the latest `panel-vX.X.X.zip` file.
 ```bash
 # Define install directory and paste the copied URL
 INSTALL_DIR="/opt/elaheh-project"
-RELEASE_URL="PASTE_THE_COPIED_URL_HERE"
+RELEASE_URL="PASTE_THE_COPIED_PANEL_ASSET_URL_HERE"
 
 # Download and extract
 sudo mkdir -p $INSTALL_DIR
 sudo wget -O /tmp/panel.zip $RELEASE_URL
-sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR
+sudo unzip -q -o /tmp/panel.zip -d $INSTALL_DIR
 sudo rm /tmp/panel.zip
-
-# Move files from the nested directory to the root
-# The wildcard '*' handles any version number in the extracted folder name.
-sudo mv $INSTALL_DIR/Elaheh-Project-*/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-*/
 ```
 
 **3. Configure Panel**
@@ -79,7 +74,7 @@ EOF'
 ```
 
 **4. Configure Web Server**
-The final step is to configure Nginx to serve files from `/opt/elaheh-project` and set up an SSL certificate. The automated script handles this.
+The final step is to configure Nginx to serve files from `/opt/elaheh-project` and set up an SSL certificate. The automated script handles this part.
 
 ### 🌍 Donate a Server
 Help bypass censorship by donating a server (VPS).
@@ -95,62 +90,47 @@ Help bypass censorship by donating a server (VPS).
 
 ### System Requirements
 *   **CPU:** 1 Core
-*   **RAM:** 512MB (1GB Recommended)
+*   **RAM:** 512MB
 *   **Disk:** 500MB Free SSD
 *   **OS:** Ubuntu 20.04+, Debian 11+, Rocky 9
-
-### Conclusion & Future Roadmap
-This project is a powerful Proof of Concept (PoC) for a managed tunneling system.
-*   **Strengths:** Professional UI/UX, full multilingual support, Dual-Mode architecture, and multi-protocol support.
-*   **Future Development:** The next steps involve transitioning from a PoC to a production-ready system:
-    1.  **Backend Integration:** Replace `LocalStorage` with a robust backend API (`Express.js`/`NestJS`) for state management.
-    2.  **Real-time Metrics:** Integrate system tools like `vnstat` or `netdata` to display actual server metrics instead of simulated data.
-    3.  **Secure Authentication:** Implement a production-grade authentication system using JWT/OAuth2 instead of the current simple credential check.
-    4.  **Migration Tools:** Develop importers for popular panels like Marzban and X-UI to simplify migration to Project Elaheh.
-    5.  **Containerization:** Provide an official Docker image for easy, isolated, and scalable deployment.
 
 ---
 
 ## 🇮🇷 فارسی (Persian)
 
 ### نصب خودکار
-این اسکریپت به صورت خودکار **آخرین** نسخه را نصب کرده و معمولا در کمتر از ۲ دقیقه انجام می‌شود.
+این اسکریپت نسخه **آماده و کامپایل‌شده** را نصب کرده و در کمتر از **۳۰ ثانیه** انجام می‌شود.
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
 ### نصب دستی
-اگر اسکریپت خودکار با خطا مواجه شد، می‌توانید پنل را به صورت دستی نصب کنید.
+اگر اسکریپت خودکار با خطا مواجه شد، نصب دستی جدید بسیار ساده‌تر شده است.
 
 **۱. نصب پیش‌نیازها**
 *   **برای Debian / Ubuntu:**
     ```bash
     sudo apt-get update
-    sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
+    sudo apt-get install -y wget unzip nginx certbot python3-certbot-nginx redis-server
     ```
 *   **برای Rocky / CentOS / Fedora:**
     ```bash
     sudo dnf check-update
-    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
+    sudo dnf install -y wget unzip nginx certbot python3-certbot-nginx redis
     ```
 
 **۲. دانلود و استخراج پنل**
-به صفحه [**ریلیزهای پروژه**](https://github.com/ehsanking/Elaheh-Project/releases) بروید و لینک دانلود آخرین فایل `Elaheh-Project-....zip` را کپی کنید.
+به صفحه [**ریلیزهای پروژه**](https://github.com/ehsanking/Elaheh-Project/releases) بروید و لینک دانلود آخرین فایل `panel-vX.X.X.zip` را کپی کنید.
 ```bash
 # پوشه نصب را تعریف کرده و لینک کپی شده را جای‌گذاری کنید
 INSTALL_DIR="/opt/elaheh-project"
-RELEASE_URL="آدرس کپی شده را اینجا جای‌گذاری کنید"
+RELEASE_URL="آدرس کپی شده پنل را اینجا جای‌گذاری کنید"
 
 # دانلود و استخراج
 sudo mkdir -p $INSTALL_DIR
 sudo wget -O /tmp/panel.zip $RELEASE_URL
-sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR
+sudo unzip -q -o /tmp/panel.zip -d $INSTALL_DIR
 sudo rm /tmp/panel.zip
-
-# انتقال فایل‌ها از پوشه داخلی به مسیر اصلی
-# کاراکتر '*' باعث می‌شود هر نسخه‌ای از پوشه به درستی منتقل شود
-sudo mv $INSTALL_DIR/Elaheh-Project-*/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-*/
 ```
 
 **۳. تنظیمات پنل**
@@ -176,21 +156,12 @@ EOF'
 *   **رمزنگاری کامل:** ترافیک عبوری کاملا رمزنگاری شده است و شما به عنوان صاحب سرور، هیچ دیدی نسبت به محتوای آن ندارید.
 *   **بدون لاگ:** هیچ گزارشی از فعالیت کاربران ذخیره نمی‌شود.
 
-### نتیجه‌گیری و نقشه راه آینده
-این پروژه یک اثبات مفهوم (PoC) قدرتمند است.
-*   **نقاط قوت:** رابط کاربری حرفه‌ای، پشتیبانی از چند زبان، معماری دو حالته و پشتیبانی از پروتکل‌های متعدد.
-*   **نیازمند توسعه:** گام‌های بعدی برای تبدیل پروژه به یک سیستم کامل عبارتند از:
-    1.  **یکپارچه‌سازی با Backend:** جایگزینی `LocalStorage` با یک API برای مدیریت کاربران و تنظیمات.
-    2.  **معیارهای واقعی:** نمایش آمار واقعی سرور با استفاده از ابزارهایی مانند `vnstat` به جای داده‌های شبیه‌سازی شده.
-    3.  **احراز هویت امن:** پیاده‌سازی سیستم ورود امن مبتنی بر JWT/OAuth2.
-    4.  **ابزار مهاجرت:** ساخت ابزار برای انتقال ساده کاربران از پنل‌های دیگر مانند مرزبان و X-UI.
-    5.  **کانتینرسازی:** ارائه یک ایمیج رسمی Docker برای نصب و مدیریت آسان‌تر.
 ---
 
 ## 🇨🇳 中文 (Chinese)
 
 ### 自动安装
-安装速度快，通常在2分钟内完成。
+此脚本安装预编译版本，可在30秒内完成。
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
@@ -201,7 +172,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ## 🇷🇺 Русский (Russian)
 
 ### Автоматическая установка
-Установка быстрая и обычно занимает менее 2 минут.
+Этот скрипт устанавливает предварительно скомпилированную версию и завершается менее чем за 30 секунд.
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
