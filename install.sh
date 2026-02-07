@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.0.7 (Builds from source, fetches latest release)
+# Version 1.0.8 (Builds from source, fetches latest release)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -52,7 +52,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.0.7 (Builds from source, fetches latest release)"
+echo "   Version 1.0.8 (Builds from source, fetches latest release)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -229,7 +229,7 @@ download_and_build() {
     # --- BUILD STEP ---
     log "INFO" "Installing npm dependencies..."
     cd "$INSTALL_DIR" || return 1
-    if ! $SUDO_CMD npm install >> "$LOG_FILE" 2>&1; then
+    if ! $SUDO_CMD npm install --legacy-peer-deps >> "$LOG_FILE" 2>&1; then
         log "ERROR" "npm install failed. Check log for details."
         return 1
     fi

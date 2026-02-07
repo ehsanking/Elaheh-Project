@@ -1,6 +1,6 @@
 {
   "name": "project-elaheh",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Advanced Tunneling Management System",
   "scripts": {
     "ng": "ng",
@@ -38,6 +38,6 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.2.2"
+    "typescript": "~5.5.2"
   }
 }
