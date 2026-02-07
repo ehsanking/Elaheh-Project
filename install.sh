@@ -12,8 +12,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 LOG_FILE="/var/log/elaheh-install.log"
-RELEASE_TAG="v1.0.0" 
-PANEL_ASSET_NAME="panel.tar.gz"
+RELEASE_TAG="elaheh-project" 
+PANEL_ASSET_NAME="Elaheh-Project-1.0.0.zip"
 
 # --- Helper Functions ---
 log() {
@@ -131,12 +131,12 @@ install_pkg_dnf() {
 prepare_system() {
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         $SUDO_CMD apt-get update -y -qq >> "$LOG_FILE" 2>&1
-        local DEPS=("curl" "wget" "tar" "ufw" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis-server")
+        local DEPS=("curl" "wget" "tar" "unzip" "ufw" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis-server")
         for dep in "${DEPS[@]}"; do install_pkg_apt "$dep"; done
         $SUDO_CMD systemctl enable --now redis-server >> "$LOG_FILE" 2>&1
     elif [[ "$OS" == *"Rocky"* ]] || [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Fedora"* ]]; then
         $SUDO_CMD dnf check-update >> "$LOG_FILE" 2>&1 || true
-        local DEPS=("curl" "wget" "tar" "firewalld" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis")
+        local DEPS=("curl" "wget" "tar" "unzip" "firewalld" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis")
         for dep in "${DEPS[@]}"; do install_pkg_dnf "$dep"; done
         $SUDO_CMD systemctl enable --now redis >> "$LOG_FILE" 2>&1
     fi
@@ -172,11 +172,20 @@ download_and_extract() {
         log "SUCCESS" "Download from mirror successful."
     fi
 
-    if ! $SUDO_CMD tar -xzf "$PANEL_ASSET_NAME" -C "$INSTALL_DIR" >> "$LOG_FILE" 2>&1; then
+    if ! $SUDO_CMD unzip -q "$PANEL_ASSET_NAME" -d "$INSTALL_DIR" >> "$LOG_FILE" 2>&1; then
         log "ERROR" "Failed to extract panel asset."
         return 1
     fi
     log "SUCCESS" "Panel extracted to $INSTALL_DIR"
+    
+    # Handle nested directory after extraction
+    if [ $($SUDO_CMD ls -A "$INSTALL_DIR" | wc -l) -eq 1 ] && [ -d "$INSTALL_DIR/$($SUDO_CMD ls -A "$INSTALL_DIR")" ]; then
+        EXTRACTED_DIR_NAME=$($SUDO_CMD ls -A "$INSTALL_DIR")
+        log "INFO" "Moving contents from subdirectory $EXTRACTED_DIR_NAME"
+        $SUDO_CMD mv "$INSTALL_DIR/$EXTRACTED_DIR_NAME"/* "$INSTALL_DIR"
+        $SUDO_CMD mv "$INSTALL_DIR/$EXTRACTED_DIR_NAME"/.* "$INSTALL_DIR" 2>/dev/null || true
+        $SUDO_CMD rmdir "$INSTALL_DIR/$EXTRACTED_DIR_NAME"
+    fi
     
     rm -f "$PANEL_ASSET_NAME"
     

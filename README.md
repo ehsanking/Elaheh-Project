@@ -38,12 +38,12 @@ If the automated script fails, you can install the panel manually. Log into your
 *   **For Debian / Ubuntu:**
     ```bash
     sudo apt-get update
-    sudo apt-get install -y curl wget tar nginx certbot python3-certbot-nginx redis-server
+    sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
     ```
 *   **For Rocky / CentOS / Fedora:**
     ```bash
     sudo dnf check-update
-    sudo dnf install -y curl wget tar nginx certbot python3-certbot-nginx redis
+    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
     ```
 
 **2. Download and Extract Panel**
@@ -53,12 +53,17 @@ INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
 
 # Download the v1.0.0 pre-compiled release
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/v1.0.0/panel.tar.gz"
-sudo wget -O /tmp/panel.tar.gz $RELEASE_URL
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+sudo wget -O /tmp/panel.zip $RELEASE_URL
 
 # Extract the panel
-sudo tar -xzf /tmp/panel.tar.gz -C $INSTALL_DIR
-sudo rm /tmp/panel.tar.gz
+sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR
+sudo rm /tmp/panel.zip
+
+# Move files from the nested directory to the root
+# The extracted folder name might vary. Adjust if necessary.
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
 ```
 
 **3. Configure Panel**
@@ -112,12 +117,12 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 *   **برای Debian / Ubuntu:**
     ```bash
     sudo apt-get update
-    sudo apt-get install -y curl wget tar nginx certbot python3-certbot-nginx redis-server
+    sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
     ```
 *   **برای Rocky / CentOS / Fedora:**
     ```bash
     sudo dnf check-update
-    sudo dnf install -y curl wget tar nginx certbot python3-certbot-nginx redis
+    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
     ```
 
 **۲. دانلود و استخراج پنل**
@@ -127,12 +132,17 @@ INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
 
 # دانلود نسخه v1.0.0 از پیش کامپایل شده
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/v1.0.0/panel.tar.gz"
-sudo wget -O /tmp/panel.tar.gz $RELEASE_URL
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+sudo wget -O /tmp/panel.zip $RELEASE_URL
 
 # استخراج پنل
-sudo tar -xzf /tmp/panel.tar.gz -C $INSTALL_DIR
-sudo rm /tmp/panel.tar.gz
+sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR
+sudo rm /tmp/panel.zip
+
+# انتقال فایل‌ها از پوشه داخلی به مسیر اصلی
+# نام پوشه استخراج شده ممکن است متفاوت باشد. در صورت لزوم آن را تغییر دهید.
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
 ```
 
 **۳. تنظیمات پنل**
@@ -178,20 +188,22 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 **1. 安装依赖项**
 *   **对于 Debian / Ubuntu:**
     ```bash
-    sudo apt-get update && sudo apt-get install -y curl wget tar nginx certbot python3-certbot-nginx redis-server
+    sudo apt-get update && sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
     ```
 *   **对于 Rocky / CentOS / Fedora:**
     ```bash
-    sudo dnf install -y curl wget tar nginx certbot python3-certbot-nginx redis
+    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
     ```
 
 **2. 下载并解压面板**
 ```bash
 INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/v1.0.0/panel.tar.gz"
-sudo wget -O /tmp/panel.tar.gz $RELEASE_URL
-sudo tar -xzf /tmp/panel.tar.gz -C $INSTALL_DIR && sudo rm /tmp/panel.tar.gz
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+sudo wget -O /tmp/panel.zip $RELEASE_URL
+sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR && sudo rm /tmp/panel.zip
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
 ```
 
 **3. 配置面板**
@@ -221,20 +233,22 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 **1. Установка зависимостей**
 *   **Для Debian / Ubuntu:**
     ```bash
-    sudo apt-get update && sudo apt-get install -y curl wget tar nginx certbot python3-certbot-nginx redis-server
+    sudo apt-get update && sudo apt-get install -y curl wget unzip nginx certbot python3-certbot-nginx redis-server
     ```
 *   **Для Rocky / CentOS / Fedora:**
     ```bash
-    sudo dnf install -y curl wget tar nginx certbot python3-certbot-nginx redis
+    sudo dnf install -y curl wget unzip nginx certbot python3-certbot-nginx redis
     ```
 
 **2. Скачивание и извлечение панели**
 ```bash
 INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/v1.0.0/panel.tar.gz"
-sudo wget -O /tmp/panel.tar.gz $RELEASE_URL
-sudo tar -xzf /tmp/panel.tar.gz -C $INSTALL_DIR && sudo rm /tmp/panel.tar.gz
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+sudo wget -O /tmp/panel.zip $RELEASE_URL
+sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR && sudo rm /tmp/panel.zip
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
 ```
 
 **3. Настройка панели**
