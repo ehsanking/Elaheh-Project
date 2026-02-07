@@ -5,35 +5,10 @@
   <br><br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
+  [![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/ehsanking/Elaheh-Project)
   
   **Internet Freedom for Everyone or No One**
 </div>
-
----
-
-## 🆕 What's New in v1.1.0
-
-### Iran-Optimized Release
-
-**Critical Fixes for Iranian Users:**
-- ✅ **Fixed Blank Page Issue:** Replaced blocked CDNs (Google Fonts, esm.sh) with Iran-accessible alternatives (jsDelivr)
-- ✅ **Enhanced Installation:** Added fallback mechanisms for GitHub API and download mirrors
-- ✅ **NPM Mirror Support:** Automatic use of Iran-friendly npm registries via `.npmrc`
-- ✅ **Better Error Handling:** Improved config loading with proper fallbacks
-- ✅ **Build Automation:** New `build-release.sh` script for consistent releases
-
-**Technical Improvements:**
-- Replaced `https://esm.sh` with `https://cdn.jsdelivr.net` for module imports
-- Replaced `https://fonts.googleapis.com` with `https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn`
-- Replaced `https://cdn.tailwindcss.com` with accessible alternatives
-- Added retry logic and timeout configurations for downloads
-- Enhanced logging and error messages in installer
-
-**For Developers:**
-- New npm script: `npm run release` to build production packages
-- Improved TypeScript error handling
-- Better fallback configurations
 
 ---
 
@@ -122,15 +97,6 @@ Help bypass censorship by donating a server (VPS).
 ---
 
 ## 🇮🇷 فارسی (Persian)
-
-### 🆕 تغییرات نسخه 1.1.0
-
-**رفع مشکلات حیاتی برای کاربران ایرانی:**
-- ✅ **رفع مشکل صفحه سفید:** جایگزینی CDN های فیلتر شده با منابع قابل دسترس در ایران
-- ✅ **بهبود نصب خودکار:** اضافه شدن مکانیزم‌های fallback برای دانلود
-- ✅ **پشتیبانی از میرور npm:** استفاده خودکار از رجیستری‌های ایرانی
-- ✅ **مدیریت خطای بهتر:** بهبود loading config با fallback مناسب
-- ✅ **خودکارسازی ساخت:** اسکریپت جدید برای build نسخه‌های production
 
 ### نصب خودکار
 این اسکریپت نسخه **آماده و کامپایل‌شده** را نصب کرده و در کمتر از **۳۰ ثانیه** انجام می‌شود.

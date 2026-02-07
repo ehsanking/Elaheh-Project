@@ -5,20 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Elaheh</title>
   
-  <!-- Vazirmatn Font - Using Iran-accessible CDN -->
+  <!-- Vazirmatn Font (Iran-Accessible CDN) -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
 
-  <!-- Tailwind CSS - Using accessible CDN with fallback -->
-  <script>
-    // Fallback for Tailwind if CDN fails
-    window.tailwindFallback = function() {
-      console.warn('Tailwind CDN failed, using fallback configuration');
-      document.documentElement.style.fontFamily = 'Vazirmatn, Tahoma, Arial, sans-serif';
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.js" onerror="tailwindFallback()"></script>
-  <script src="https://unpkg.com/tailwindcss-cdn@3.4.1/tailwindcss.js" onerror="tailwindFallback()"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -31,10 +22,6 @@
     }
   </script>
   <style>
-    /* Fallback styles if CDNs fail */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Vazirmatn', Tahoma, Arial, sans-serif; line-height: 1.6; }
-    
     /* Custom Scrollbar for Terminal Look */
     ::-webkit-scrollbar {
       width: 8px;
@@ -154,18 +141,23 @@
 <script type="importmap">
 {
   "imports": {
-    "rxjs": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/+esm",
-    "rxjs/operators": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/operators/index.js",
-    "rxjs/ajax": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/ajax/index.js",
-    "rxjs/webSocket": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/webSocket/index.js",
-    "rxjs/testing": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/testing/index.js",
-    "rxjs/fetch": "https://cdn.jsdelivr.net/npm/rxjs@7.8.2/dist/esm/fetch/index.js",
-    "@angular/compiler": "https://cdn.jsdelivr.net/npm/@angular/compiler@21.1.2/+esm",
-    "@angular/core": "https://cdn.jsdelivr.net/npm/@angular/core@21.1.2/+esm",
-    "@google/genai": "https://cdn.jsdelivr.net/npm/@google/genai@1.39.0/+esm",
-    "@angular/common": "https://cdn.jsdelivr.net/npm/@angular/common@21.1.2/+esm",
-    "@angular/platform-browser": "https://cdn.jsdelivr.net/npm/@angular/platform-browser@21.1.2/+esm",
-    "@angular/forms": "https://cdn.jsdelivr.net/npm/@angular/forms@21.1.2/+esm",
+    "rxjs": "https://cdn.jsdelivr.net/npm/rxjs@7.8.1/+esm",
+    "rxjs/operators": "https://cdn.jsdelivr.net/npm/rxjs@7.8.1/operators/+esm",
+    "rxjs/ajax": "https://cdn.jsdelivr.net/npm/rxjs@7.8.1/ajax/+esm",
+    "rxjs/webSocket": "https://cdn.jsdelivr.net/npm/rxjs@7.8.1/webSocket/+esm",
+    "rxjs/testing": "https://cdn.jsdelivr.net/npm/rxjs@7.8.1/testing/+esm",
+    "rxjs/fetch": "https://cdn.jsdelivr.net/npm/rxjs@7.8.1/fetch/+esm",
+    "@angular/compiler": "https://cdn.jsdelivr.net/npm/@angular/compiler@19.0.5/fesm2022/compiler.mjs",
+    "@angular/compiler/": "https://cdn.jsdelivr.net/npm/@angular/compiler@19.0.5/fesm2022/",
+    "@angular/core": "https://cdn.jsdelivr.net/npm/@angular/core@19.0.5/fesm2022/core.mjs",
+    "@angular/core/": "https://cdn.jsdelivr.net/npm/@angular/core@19.0.5/fesm2022/",
+    "@google/genai": "https://cdn.jsdelivr.net/npm/@google/genai/+esm",
+    "@angular/common": "https://cdn.jsdelivr.net/npm/@angular/common@19.0.5/fesm2022/common.mjs",
+    "@angular/common/": "https://cdn.jsdelivr.net/npm/@angular/common@19.0.5/fesm2022/",
+    "@angular/platform-browser": "https://cdn.jsdelivr.net/npm/@angular/platform-browser@19.0.5/fesm2022/platform-browser.mjs",
+    "@angular/platform-browser/": "https://cdn.jsdelivr.net/npm/@angular/platform-browser@19.0.5/fesm2022/",
+    "@angular/forms": "https://cdn.jsdelivr.net/npm/@angular/forms@19.0.5/fesm2022/forms.mjs",
+    "@angular/forms/": "https://cdn.jsdelivr.net/npm/@angular/forms@19.0.5/fesm2022/",
     "qrcode": "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm"
   }
 }
