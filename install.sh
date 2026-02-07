@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 4.4.0 (Direct GitHub Clone)
+# Version 4.5.0 (Robust Clone Strategy)
 # Author: EHSANKiNG
 
 # Disable immediate exit on error to handle errors gracefully with logs
@@ -54,7 +54,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 4.4.0 (Direct GitHub Clone)"
+echo "   Version 4.5.0 (Robust Clone Strategy)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -244,22 +244,30 @@ download_source() {
     $SUDO_CMD chown -R "$RUN_USER:$RUN_USER" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    log "INFO" "Cloning repository from official GitHub (https://github.com/ehsanking/Elaheh-Project.git)..."
-    
-    local count=0
-    local retries=3
-    
-    while [ $count -lt $retries ]; do
-        if git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" .; then
-            log "INFO" "Clone successful."
-            return 0
-        fi
-        count=$((count + 1))
-        log "WARN" "Clone failed, retrying ($count/$retries)..."
-        sleep 3
-    done
+    # --- Robust Clone Strategy ---
+    # Attempt 1: Direct GitHub, bypassing any local proxy.
+    log "INFO" "Attempt 1: Cloning from official GitHub, bypassing local proxy..."
+    if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
+        log "SUCCESS" "Clone from official GitHub (proxy bypassed) successful."
+        return 0
+    fi
+    log "WARN" "Attempt 1 failed. Trying fallback mirror."
 
-    log "ERROR" "Failed to clone repository from GitHub after $retries retries."
+    # --- Attempt 2: GitHub Mirror, bypassing any local proxy ---
+    log "INFO" "Attempt 2: Cloning from GitHub mirror (ghfast.top), bypassing local proxy..."
+    if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://ghfast.top/https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
+        log "SUCCESS" "Clone from GitHub mirror (proxy bypassed) successful."
+        return 0
+    fi
+    log "WARN" "Attempt 2 failed. Retrying while respecting user's proxy."
+    
+    # --- Attempt 3: Direct GitHub, respecting user's environment (in case proxy is needed) ---
+    log "INFO" "Attempt 3: Cloning from official GitHub, respecting user proxy settings..."
+    if git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
+        log "SUCCESS" "Clone from official GitHub (with user proxy) successful."
+        return 0
+    fi
+    log "ERROR" "All clone attempts failed. Please check network connection and proxy settings."
     return 1
 }
 
