@@ -12,8 +12,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 LOG_FILE="/var/log/elaheh-install.log"
-RELEASE_TAG="elaheh-project" 
-PANEL_ASSET_NAME="Elaheh-Project-1.0.0.zip"
+RELEASE_TAG="elaheh-1.0.1" 
+PANEL_ASSET_NAME="Elaheh-Project-1.0.1.zip"
 
 # --- Helper Functions ---
 log() {

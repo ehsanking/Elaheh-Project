@@ -52,8 +52,8 @@ If the automated script fails, you can install the panel manually. Log into your
 INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
 
-# Download the v1.0.0 pre-compiled release
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+# Download the v1.0.1 pre-compiled release
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
 sudo wget -O /tmp/panel.zip $RELEASE_URL
 
 # Extract the panel
@@ -62,8 +62,8 @@ sudo rm /tmp/panel.zip
 
 # Move files from the nested directory to the root
 # The extracted folder name might vary. Adjust if necessary.
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
 ```
 
 **3. Configure Panel**
@@ -131,8 +131,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
 
-# دانلود نسخه v1.0.0 از پیش کامپایل شده
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+# دانلود نسخه v1.0.1 از پیش کامپایل شده
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
 sudo wget -O /tmp/panel.zip $RELEASE_URL
 
 # استخراج پنل
@@ -141,8 +141,8 @@ sudo rm /tmp/panel.zip
 
 # انتقال فایل‌ها از پوشه داخلی به مسیر اصلی
 # نام پوشه استخراج شده ممکن است متفاوت باشد. در صورت لزوم آن را تغییر دهید.
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
 ```
 
 **۳. تنظیمات پنل**
@@ -199,11 +199,11 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ```bash
 INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
 sudo wget -O /tmp/panel.zip $RELEASE_URL
 sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR && sudo rm /tmp/panel.zip
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
 ```
 
 **3. 配置面板**
@@ -244,11 +244,11 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ```bash
 INSTALL_DIR="/opt/elaheh-project"
 sudo mkdir -p $INSTALL_DIR
-RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-project/Elaheh-Project-1.0.0.zip"
+RELEASE_URL="https://github.com/ehsanking/Elaheh-Project/releases/download/elaheh-1.0.1/Elaheh-Project-1.0.1.zip"
 sudo wget -O /tmp/panel.zip $RELEASE_URL
 sudo unzip -q /tmp/panel.zip -d $INSTALL_DIR && sudo rm /tmp/panel.zip
-sudo mv $INSTALL_DIR/Elaheh-Project-1.0.0/* $INSTALL_DIR/
-sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.0/
+sudo mv $INSTALL_DIR/Elaheh-Project-1.0.1/* $INSTALL_DIR/
+sudo rmdir $INSTALL_DIR/Elaheh-Project-1.0.1/
 ```
 
 **3. Настройка панели**
