@@ -29,19 +29,13 @@ import { FormsModule } from '@angular/forms';
               <div class="flex items-center gap-1 bg-gray-700 p-1 rounded-lg">
                 <button type="button" (click)="core.setTunnelMode('auto')"
                         class="px-3 py-1 text-sm font-medium rounded-md transition-colors w-28"
-                        [class.bg-teal-600]="core.tunnelMode() === 'auto'"
-                        [class.text-white]="core.tunnelMode() === 'auto'"
-                        [class.text-gray-400]="core.tunnelMode() !== 'auto'"
-                        [class.hover:bg-gray-600]="core.tunnelMode() !== 'auto'"
+                        [class]="core.tunnelMode() === 'auto' ? 'bg-teal-600 text-white' : 'text-gray-400 hover:bg-gray-600'"
                         [attr.data-tooltip]="languageService.translate('tooltips.settings.autoPilot')">
                     {{ languageService.translate('tunnel.autoPilot') }}
                 </button>
                 <button type="button" (click)="core.setTunnelMode('manual')"
                         class="px-3 py-1 text-sm font-medium rounded-md transition-colors w-28"
-                        [class.bg-teal-600]="core.tunnelMode() === 'manual'"
-                        [class.text-white]="core.tunnelMode() === 'manual'"
-                        [class.text-gray-400]="core.tunnelMode() !== 'manual'"
-                        [class.hover:bg-gray-600]="core.tunnelMode() !== 'manual'"
+                        [class]="core.tunnelMode() === 'manual' ? 'bg-teal-600 text-white' : 'text-gray-400 hover:bg-gray-600'"
                         [attr.data-tooltip]="languageService.translate('tooltips.settings.manualMode')">
                     {{ languageService.translate('tunnel.manual') }}
                 </button>
