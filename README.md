@@ -1,4 +1,3 @@
-
 # Project Elaheh (پروژه الهه) - Advanced Tunneling Management System
 
 <div align="center">
@@ -26,6 +25,65 @@
 
 ## 🇺🇸 English
 
+### Installation (Automated)
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
+```
+
+### Manual Installation
+If the automated script fails, you can install the panel manually. Log into your server as a non-root user with `sudo` privileges and follow these steps.
+
+**1. Install Dependencies**
+*   **For Debian / Ubuntu:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis-server npm
+    ```
+*   **For Rocky / CentOS / Fedora:**
+    ```bash
+    sudo dnf check-update
+    sudo dnf install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis npm
+    ```
+
+**2. Download Source Code**
+```bash
+git clone https://github.com/ehsanking/Elaheh-Project.git
+cd Elaheh-Project
+```
+
+**3. Build The Application**
+This step might take a few minutes.
+```bash
+# Configure NPM to use a faster mirror (recommended)
+npm config set registry https://registry.npmmirror.com
+
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Build the application
+npm run build
+```
+
+**4. Move Files & Configure**
+```bash
+# Create the destination directory and move files
+sudo mkdir -p /opt/elaheh-project/
+sudo mv dist/project-elaheh/browser/* /opt/elaheh-project/
+
+# Create a server config file
+sudo bash -c 'cat > /opt/elaheh-project/assets/server-config.json <<EOF
+{
+  "role": "iran",
+  "domain": "YOUR_DOMAIN_HERE",
+  "installedAt": "$(date)"
+}
+EOF'
+```
+*Replace `"iran"` with `"external"` for a foreign server. Replace `YOUR_DOMAIN_HERE` with your domain.*
+
+**5. Configure Web Server**
+The final step is to configure Nginx to serve files from `/opt/elaheh-project` and set up an SSL certificate using `sudo certbot --nginx`. This is an advanced step that the script automates.
+
 ### 🌍 Donate a Server
 Help bypass censorship by donating a server (VPS).
 1. Install this project on a VPS outside censorship zones (e.g., Germany, Netherlands).
@@ -44,14 +102,68 @@ Help bypass censorship by donating a server (VPS).
 *   **Disk:** 2GB Free SSD
 *   **OS:** Ubuntu 20.04+, Debian 11+, Rocky 9
 
-### Installation
+---
+
+## 🇮🇷 فارسی (Persian)
+
+### نصب خودکار
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
----
+### نصب دستی
+اگر اسکریپت خودکار با خطا مواجه شد، می‌توانید پنل را به صورت دستی نصب کنید. با یک کاربر غیر-root که دسترسی `sudo` دارد وارد سرور شوید و مراحل زیر را دنبال کنید.
 
-## 🇮🇷 فارسی (Persian)
+**۱. نصب پیش‌نیازها**
+*   **برای Debian / Ubuntu:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis-server npm
+    ```
+*   **برای Rocky / CentOS / Fedora:**
+    ```bash
+    sudo dnf check-update
+    sudo dnf install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis npm
+    ```
+
+**۲. دانلود سورس کد**
+```bash
+git clone https://github.com/ehsanking/Elaheh-Project.git
+cd Elaheh-Project
+```
+
+**۳. ساخت اپلیکیشن**
+این مرحله ممکن است چند دقیقه طول بکشد.
+```bash
+# تنظیم NPM برای استفاده از میرور سریع‌تر (پیشنهادی)
+npm config set registry https://registry.npmmirror.com
+
+# نصب وابستگی‌ها
+npm install --legacy-peer-deps
+
+# ساخت اپلیکیشن
+npm run build
+```
+
+**۴. انتقال فایل‌ها و تنظیمات**
+```bash
+# ساخت پوشه مقصد و انتقال فایل‌ها
+sudo mkdir -p /opt/elaheh-project/
+sudo mv dist/project-elaheh/browser/* /opt/elaheh-project/
+
+# ساخت فایل کانفیگ سرور
+sudo bash -c 'cat > /opt/elaheh-project/assets/server-config.json <<EOF
+{
+  "role": "iran",
+  "domain": "YOUR_DOMAIN_HERE",
+  "installedAt": "$(date)"
+}
+EOF'
+```
+*برای سرور خارج، `"iran"` را با `"external"` جایگزین کنید. `YOUR_DOMAIN_HERE` را با دامنه خود جایگزین کنید.*
+
+**۵. تنظیم وب سرور**
+مرحله آخر، تنظیم Nginx برای ارائه فایل‌ها از مسیر `/opt/elaheh-project` و نصب گواهی SSL با دستور `sudo certbot --nginx` است. این یک مرحله پیشرفته است که اسکریپت به صورت خودکار انجام می‌دهد.
 
 ### 🌍 اهدای سرور (کمک به گردش آزاد اطلاعات)
 اگر در خارج از ایران هستید، می‌توانید با تهیه یک سرور و نصب این پروژه، کلید اتصال را به دوستان خود در ایران بدهید.
@@ -64,17 +176,68 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 *   **بدون لاگ:** هیچ گزارشی از فعالیت کاربران ذخیره نمی‌شود.
 *   **مولتی سرور:** پنل ایران قابلیت اتصال همزمان به چندین سرور اهدایی را دارد تا در صورت مسدود شدن یکی، بقیه فعال بمانند.
 
-### نام کاربری و رمز عبور پیش‌فرض
-`admin` / `admin`
+---
 
-### نصب آسان
+## 🇨🇳 中文 (Chinese)
+
+### 自动安装
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
----
+### 手动安装
+如果自动脚本失败，您可以手动安装面板。使用具有 `sudo` 权限的非 root 用户登录到您的服务器，并按照以下步骤操作。
 
-## 🇨🇳 中文 (Chinese)
+**1. 安装依赖项**
+*   **对于 Debian / Ubuntu:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis-server npm
+    ```
+*   **对于 Rocky / CentOS / Fedora:**
+    ```bash
+    sudo dnf check-update
+    sudo dnf install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis npm
+    ```
+
+**2. 下载源代码**
+```bash
+git clone https://github.com/ehsanking/Elaheh-Project.git
+cd Elaheh-Project
+```
+
+**3. 构建应用程序**
+此步骤可能需要几分钟。
+```bash
+# 配置 NPM 使用更快的镜像（推荐）
+npm config set registry https://registry.npmmirror.com
+
+# 安装依赖项
+npm install --legacy-peer-deps
+
+# 构建应用程序
+npm run build
+```
+
+**4. 移动文件并配置**
+```bash
+# 创建目标目录并移动文件
+sudo mkdir -p /opt/elaheh-project/
+sudo mv dist/project-elaheh/browser/* /opt/elaheh-project/
+
+# 创建服务器配置文件
+sudo bash -c 'cat > /opt/elaheh-project/assets/server-config.json <<EOF
+{
+  "role": "iran",
+  "domain": "YOUR_DOMAIN_HERE",
+  "installedAt": "$(date)"
+}
+EOF'
+```
+*对于国外服务器，请将 `"iran"` 替换为 `"external"`。将 `YOUR_DOMAIN_HERE` 替换为您的域名。*
+
+**5. 配置 Web 服务器**
+最后一步是配置 Nginx 以从 `/opt/elaheh-project` 提供文件，并使用 `sudo certbot --nginx` 设置 SSL 证书。这是一个高级步骤，由脚本自动完成。
 
 ### 🌍 捐赠服务器
 通过捐赠服务器（VPS）帮助绕过审查。
@@ -87,17 +250,68 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 *   **加密中继:** 所有流量均使用 TLS 1.3 / XTLS 加密。您无法看到流量内容。
 *   **无日志:** 系统设计为不记录用户活动。
 
-### 默认凭据
-`admin` / `admin`
+---
 
-### 安装
+## 🇷🇺 Русский (Russian)
+
+### Автоматическая установка
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
 ```
 
----
+### Ручная установка
+Если автоматический скрипт не сработал, вы можете установить панель вручную. Войдите на свой сервер как пользователь без прав root, но с доступом к `sudo`, и следуйте этим шагам.
 
-## 🇷🇺 Русский (Russian)
+**1. Установка зависимостей**
+*   **Для Debian / Ubuntu:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis-server npm
+    ```
+*   **Для Rocky / CentOS / Fedora:**
+    ```bash
+    sudo dnf check-update
+    sudo dnf install -y curl git unzip nginx certbot python3-certbot-nginx nodejs redis npm
+    ```
+
+**2. Скачивание исходного кода**
+```bash
+git clone https://github.com/ehsanking/Elaheh-Project.git
+cd Elaheh-Project
+```
+
+**3. Сборка приложения**
+Этот шаг может занять несколько минут.
+```bash
+# Настроить NPM на использование более быстрого зеркала (рекомендуется)
+npm config set registry https://registry.npmmirror.com
+
+# Установка зависимостей
+npm install --legacy-peer-deps
+
+# Сборка приложения
+npm run build
+```
+
+**4. Перемещение файлов и настройка**
+```bash
+# Создание целевого каталога и перемещение файлов
+sudo mkdir -p /opt/elaheh-project/
+sudo mv dist/project-elaheh/browser/* /opt/elaheh-project/
+
+# Создание файла конфигурации сервера
+sudo bash -c 'cat > /opt/elaheh-project/assets/server-config.json <<EOF
+{
+  "role": "iran",
+  "domain": "YOUR_DOMAIN_HERE",
+  "installedAt": "$(date)"
+}
+EOF'
+```
+*Для зарубежного сервера замените `"iran"` на `"external"`. Замените `YOUR_DOMAIN_HERE` на ваш домен.*
+
+**5. Настройка веб-сервера**
+Последний шаг — настроить Nginx для обслуживания файлов из `/opt/elaheh-project` и установить SSL-сертификат с помощью `sudo certbot --nginx`. Это сложный шаг, который автоматизирует скрипт.
 
 ### 🌍 Пожертвовать сервер
 Помогите обойти цензуру, пожертвовав сервер (VPS).
@@ -110,13 +324,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 *   **Шифрование:** Весь трафик зашифрован (TLS 1.3). Вы не видите содержимое.
 *   **Без логов:** Активность пользователей не сохраняется.
 
-### Учетные данные по умолчанию
-`admin` / `admin`
-
-### Установка
-```bash
-bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/install.sh)
-```
+---
 
 **License:** MIT  
 **Author:** EHSANKiNG

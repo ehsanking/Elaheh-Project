@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 4.5.0 (Robust Clone Strategy)
+# Version 4.6.0 (Proxy Bypass & Manual Fallback)
 # Author: EHSANKiNG
 
 # Disable immediate exit on error to handle errors gracefully with logs
@@ -54,7 +54,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 4.5.0 (Robust Clone Strategy)"
+echo "   Version 4.6.0 (Proxy Bypass & Manual Fallback)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -244,30 +244,26 @@ download_source() {
     $SUDO_CMD chown -R "$RUN_USER:$RUN_USER" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    # --- Robust Clone Strategy ---
-    # Attempt 1: Direct GitHub, bypassing any local proxy.
-    log "INFO" "Attempt 1: Cloning from official GitHub, bypassing local proxy..."
+    # --- Robust Clone Strategy v2 ---
+    # Forcefully unset any proxy environment variables that might be interfering.
+    unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+
+    # Attempt 1: Direct GitHub, explicitly bypassing any git config proxy.
+    log "INFO" "Attempt 1: Cloning from official GitHub (bypassing proxies)..."
     if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
-        log "SUCCESS" "Clone from official GitHub (proxy bypassed) successful."
+        log "SUCCESS" "Clone from official GitHub successful."
         return 0
     fi
     log "WARN" "Attempt 1 failed. Trying fallback mirror."
 
-    # --- Attempt 2: GitHub Mirror, bypassing any local proxy ---
-    log "INFO" "Attempt 2: Cloning from GitHub mirror (ghfast.top), bypassing local proxy..."
+    # --- Attempt 2: GitHub Mirror, also bypassing proxy ---
+    log "INFO" "Attempt 2: Cloning from GitHub mirror (ghfast.top), bypassing proxies..."
     if git -c http.proxy="" -c https.proxy="" clone --quiet --depth 1 "https://ghfast.top/https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
-        log "SUCCESS" "Clone from GitHub mirror (proxy bypassed) successful."
+        log "SUCCESS" "Clone from GitHub mirror successful."
         return 0
     fi
-    log "WARN" "Attempt 2 failed. Retrying while respecting user's proxy."
-    
-    # --- Attempt 3: Direct GitHub, respecting user's environment (in case proxy is needed) ---
-    log "INFO" "Attempt 3: Cloning from official GitHub, respecting user proxy settings..."
-    if git clone --quiet --depth 1 "https://github.com/ehsanking/Elaheh-Project.git" . >> "$LOG_FILE" 2>&1; then
-        log "SUCCESS" "Clone from official GitHub (with user proxy) successful."
-        return 0
-    fi
-    log "ERROR" "All clone attempts failed. Please check network connection and proxy settings."
+
+    log "ERROR" "All automated clone attempts failed. Please check network connection or try manual installation as described in README."
     return 1
 }
 
@@ -289,6 +285,7 @@ spinner $! "   > Downloading Source from GitHub..."
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Failed to download source code from GitHub.${NC}"
     echo -e "${YELLOW}Check your internet connection or proxy settings.${NC}"
+    echo -e "${YELLOW}Alternatively, follow the 'Manual Installation' guide in the README.${NC}"
     exit 1
 fi
 
