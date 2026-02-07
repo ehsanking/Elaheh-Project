@@ -33,6 +33,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ### Manual Installation
 If the automated script fails, you can install the panel manually. Log into your server as a non-root user with `sudo` privileges and follow these steps.
 
+**Note:** The entire process can take up to 30 minutes, especially during the application build step.
+
 **1. Install Dependencies**
 *   **For Debian / Ubuntu:**
     ```bash
@@ -46,8 +48,9 @@ If the automated script fails, you can install the panel manually. Log into your
     ```
 
 **2. Download Source Code**
+This command bypasses any local git proxy that might be configured.
 ```bash
-git clone https://github.com/ehsanking/Elaheh-Project.git
+git -c http.proxy="" -c https.proxy="" clone https://github.com/ehsanking/Elaheh-Project.git
 cd Elaheh-Project
 ```
 
@@ -114,6 +117,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ### نصب دستی
 اگر اسکریپت خودکار با خطا مواجه شد، می‌توانید پنل را به صورت دستی نصب کنید. با یک کاربر غیر-root که دسترسی `sudo` دارد وارد سرور شوید و مراحل زیر را دنبال کنید.
 
+**توجه:** کل فرآیند نصب، به خصوص مرحله ساخت اپلیکیشن، ممکن است تا ۳۰ دقیقه زمان ببرد.
+
 **۱. نصب پیش‌نیازها**
 *   **برای Debian / Ubuntu:**
     ```bash
@@ -127,8 +132,9 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
     ```
 
 **۲. دانلود سورس کد**
+این دستور هرگونه پراکسی محلی که روی git تنظیم شده باشد را نادیده می‌گیرد.
 ```bash
-git clone https://github.com/ehsanking/Elaheh-Project.git
+git -c http.proxy="" -c https.proxy="" clone https://github.com/ehsanking/Elaheh-Project.git
 cd Elaheh-Project
 ```
 
@@ -188,6 +194,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ### 手动安装
 如果自动脚本失败，您可以手动安装面板。使用具有 `sudo` 权限的非 root 用户登录到您的服务器，并按照以下步骤操作。
 
+**请注意：** 整个过程最多可能需要30分钟，尤其是在应用程序构建步骤。
+
 **1. 安装依赖项**
 *   **对于 Debian / Ubuntu:**
     ```bash
@@ -201,8 +209,9 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
     ```
 
 **2. 下载源代码**
+此命令将绕过任何可能已配置的本地git代理。
 ```bash
-git clone https://github.com/ehsanking/Elaheh-Project.git
+git -c http.proxy="" -c https.proxy="" clone https://github.com/ehsanking/Elaheh-Project.git
 cd Elaheh-Project
 ```
 
@@ -262,6 +271,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
 ### Ручная установка
 Если автоматический скрипт не сработал, вы можете установить панель вручную. Войдите на свой сервер как пользователь без прав root, но с доступом к `sudo`, и следуйте этим шагам.
 
+**Примечание:** Весь процесс может занять до 30 минут, особенно на этапе сборки приложения.
+
 **1. Установка зависимостей**
 *   **Для Debian / Ubuntu:**
     ```bash
@@ -275,8 +286,9 @@ bash <(curl -Ls https://raw.githubusercontent.com/ehsanking/Elaheh-Project/main/
     ```
 
 **2. Скачивание исходного кода**
+Эта команда обходит любой локальный git-прокси, который может быть настроен.
 ```bash
-git clone https://github.com/ehsanking/Elaheh-Project.git
+git -c http.proxy="" -c https.proxy="" clone https://github.com/ehsanking/Elaheh-Project.git
 cd Elaheh-Project
 ```
 
