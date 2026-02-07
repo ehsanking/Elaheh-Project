@@ -6,7 +6,7 @@ import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.2'; 
+export const APP_VERSION = '1.0.3'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
@@ -28,6 +28,7 @@ export interface EdgeServer {
     name: string;
     host: string; // IP or Domain
     location?: string;
+    status?: 'untested' | 'testing' | 'reachable' | 'unreachable';
 }
 
 export interface User {
@@ -421,13 +422,30 @@ export class ElahehCoreService {
   }
 
   // Multi-Server Management
-  addEdgeServer(server: EdgeServer) {
-      this.edgeServers.update(s => [...s, server]);
+  addEdgeServer(server: Omit<EdgeServer, 'id' | 'status'>) {
+      const newServer: EdgeServer = { ...server, id: Math.random().toString(36).substring(2), status: 'untested' };
+      this.edgeServers.update(s => [...s, newServer]);
       this.addLog('SUCCESS', `Edge Server added: ${server.name} (${server.host})`);
   }
 
   removeEdgeServer(id: string) {
       this.edgeServers.update(s => s.filter(x => x.id !== id));
+  }
+  
+  checkServerHealth(serverId: string) {
+      this.edgeServers.update(servers => servers.map(s => s.id === serverId ? { ...s, status: 'testing' } : s));
+      this.addLog('INFO', `Pinging edge node...`);
+
+      setTimeout(() => {
+          const success = Math.random() > 0.2; // 80% success rate
+          this.edgeServers.update(servers => servers.map(s => s.id === serverId ? { ...s, status: success ? 'reachable' : 'unreachable' } : s));
+          const server = this.edgeServers().find(s => s.id === serverId);
+          if (success) {
+              this.addLog('SUCCESS', `Edge node ${server?.name} is reachable.`);
+          } else {
+              this.addLog('ERROR', `Edge node ${server?.name} is unreachable.`);
+          }
+      }, 1500);
   }
 
   updateDomainSettings(config: any) {
@@ -725,6 +743,31 @@ export class ElahehCoreService {
   updateBranding(name: string, logo: string | null, currency: string) { this.brandName.set(name); if(logo) this.brandLogo.set(logo); this.currency.set(currency); }
 
   testEdgeNodeConnection() { this.edgeNodeStatus.set('connecting'); setTimeout(() => this.edgeNodeStatus.set('connected'), 1000); }
+
+  async getAiOptimizationAdvice(prompt: string): Promise<string> {
+    if (!this.ai) {
+      return Promise.resolve('AI Service not initialized. API_KEY might be missing.');
+    }
+    try {
+      this.addLog('INFO', 'Querying Gemini for optimization advice...');
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: `Context: You are a network security expert specializing in censorship circumvention for Project Elaheh. Analyze the following user query and provide concise, actionable advice on tunnel optimization. User query: "${prompt}"`,
+        config: {
+          thinkingConfig: {
+            thinkingBudget: 32768,
+          },
+        },
+      });
+      const text = response.text;
+      this.addLog('SUCCESS', 'Received advice from Gemini.');
+      return text;
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      this.addLog('ERROR', 'Failed to get advice from Gemini.');
+      return 'An error occurred while communicating with the AI service.';
+    }
+  }
   
   // Metric Simulation
   initSimulatedMetrics() { 

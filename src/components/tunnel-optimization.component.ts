@@ -1,18 +1,26 @@
 
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+
+import { Component, inject, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ElahehCoreService, TunnelProvider, EndpointStrategy } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-tunnel-optimization',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="bg-gray-900/50 p-6 rounded-lg border border-gray-700 mt-8">
-      <div class="border-b border-gray-700 pb-2 mb-4">
-          <h3 class="text-lg font-bold text-gray-200" [attr.data-tooltip]="languageService.translate('tooltips.settings.tunnelOptimization')">{{ languageService.translate('tunnel.title') }}</h3>
-          <p class="text-sm text-gray-400 mt-1">{{ languageService.translate('tunnel.description') }}</p>
+      <div class="border-b border-gray-700 pb-2 mb-4 flex justify-between items-start">
+          <div>
+            <h3 class="text-lg font-bold text-gray-200" [attr.data-tooltip]="languageService.translate('tooltips.settings.tunnelOptimization')">{{ languageService.translate('tunnel.title') }}</h3>
+            <p class="text-sm text-gray-400 mt-1">{{ languageService.translate('tunnel.description') }}</p>
+          </div>
+          <button (click)="openAiModal()" class="flex items-center gap-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" /></svg>
+             Ask AI for Advice
+          </button>
       </div>
 
       <!-- Controls -->
@@ -68,13 +76,7 @@ import { LanguageService } from '../services/language.service';
 
       <div class="space-y-3">
         @for(provider of core.tunnelProviders(); track provider.id) {
-          <div class="p-4 rounded-lg flex items-center justify-between transition-all border"
-            [class.bg-gray-800]="provider.status !== 'optimal'"
-            [class.border-gray-700]="provider.status !== 'optimal' && provider.status !== 'testing'"
-            [ngClass]="{'bg-teal-900/50': provider.status === 'optimal'}"
-            [class.border-teal-500]="provider.status === 'optimal'"
-            [class.border-blue-700]="provider.status === 'testing'">
-            
+          <div [class]="'p-4 rounded-lg flex items-center justify-between transition-all border ' + (provider.status === 'optimal' ? 'bg-teal-900/50 border-teal-500' : 'bg-gray-800') + (provider.status === 'testing' ? ' border-blue-700' : ' border-gray-700')">
             <div class="flex items-center gap-4 flex-1">
               <div class="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold flex-shrink-0"
                    [class.bg-gray-700]="provider.status === 'untested' || provider.status === 'suboptimal'"
@@ -127,12 +129,54 @@ import { LanguageService } from '../services/language.service';
         }
       </div>
     </div>
+
+    <!-- AI Modal -->
+    @if(showAiModal()) {
+      <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4" (click)="closeAiModal()">
+        <div class="bg-gray-800 border border-gray-600 rounded-lg w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]" (click)="$event.stopPropagation()">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L9 9.61V16a1 1 0 001 1h.01a1 1 0 001-1V9.61l6.394-2.69a1 1 0 000-1.84l-7-3zM10 8.39L4.606 5.91 10 3.53 15.394 5.91 10 8.39z" /></svg>
+                    Gemini Optimization Assistant
+                </h3>
+                <button (click)="closeAiModal()" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto">
+                <label class="text-sm text-gray-400 mb-2 block">Describe your network issue or goal:</label>
+                <textarea [(ngModel)]="aiPrompt" placeholder="e.g., 'My connection for gaming is unstable, suggest the best protocol and camouflage settings.'"
+                          class="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white text-sm outline-none focus:border-indigo-500 transition-colors h-24"></textarea>
+                
+                @if(isThinking()) {
+                    <div class="mt-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700 text-center">
+                        <div class="animate-pulse text-indigo-400 font-mono text-sm">Gemini is thinking...</div>
+                    </div>
+                }
+                @if(aiResponse()) {
+                    <div class="mt-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                        <p class="text-sm text-gray-300 whitespace-pre-wrap">{{ aiResponse() }}</p>
+                    </div>
+                }
+            </div>
+             <div class="p-4 border-t border-gray-700 flex justify-end gap-3">
+                <button (click)="closeAiModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                <button (click)="askAi()" [disabled]="isThinking() || !aiPrompt()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-sm disabled:opacity-50">
+                  {{ isThinking() ? 'Generating...' : 'Generate Advice' }}
+                </button>
+              </div>
+        </div>
+      </div>
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TunnelOptimizationComponent {
   core = inject(ElahehCoreService);
   languageService = inject(LanguageService);
+
+  showAiModal = signal(false);
+  aiPrompt = signal('');
+  aiResponse = signal('');
+  isThinking = signal(false);
 
   formatSeconds(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
@@ -145,7 +189,6 @@ export class TunnelOptimizationComponent {
 
     let strategy: EndpointStrategy;
     
-    // Define features based on type
     let features = ['TLS 1.3'];
     if (provider.type === 'CDN') features = ['TLS 1.3', 'HTTP/3', 'DDoS Protection', 'Anycast'];
     else if (provider.type === 'VPS') features = ['TLS 1.3', 'TCP/BBR', 'Lowest Latency'];
@@ -161,7 +204,6 @@ export class TunnelOptimizationComponent {
 
     this.core.setEndpointStrategy(strategy, true); // manual = true
     
-    // Also update provider status visually
     this.core.tunnelProviders.update(providers => 
       providers.map(p => {
         if (p.id === provider.id) return { ...p, status: 'optimal' };
@@ -169,5 +211,25 @@ export class TunnelOptimizationComponent {
         return p;
       })
     );
+  }
+
+  openAiModal() {
+    this.showAiModal.set(true);
+  }
+
+  closeAiModal() {
+    this.showAiModal.set(false);
+    this.aiPrompt.set('');
+    this.aiResponse.set('');
+    this.isThinking.set(false);
+  }
+
+  async askAi() {
+    if (!this.aiPrompt()) return;
+    this.isThinking.set(true);
+    this.aiResponse.set('');
+    const response = await this.core.getAiOptimizationAdvice(this.aiPrompt());
+    this.aiResponse.set(response);
+    this.isThinking.set(false);
   }
 }

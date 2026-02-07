@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.0.2 (Auto-Fetches Latest Release)
+# Version 1.0.3 (Auto-Fetches Latest Release)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -52,7 +52,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.0.2 (Auto-Fetches Latest Release)"
+echo "   Version 1.0.3 (Auto-Fetches Latest Release)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -161,6 +161,8 @@ download_and_extract() {
     fi
     log "INFO" "Latest release URL: $RELEASE_URL"
     PANEL_ASSET_NAME=$(basename "$RELEASE_URL")
+    
+    echo -e "   > Found latest version: ${CYAN}${PANEL_ASSET_NAME}${NC}"
 
     cd /tmp
     
@@ -209,7 +211,7 @@ download_and_extract() {
 }
 
 (download_and_extract) &
-spinner $! "   > Downloading and extracting latest panel..."
+spinner $! "   > Downloading and extracting..."
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Failed to download or extract the panel.${NC}"
     echo -e "${YELLOW}Check your internet connection and see log: ${LOG_FILE}${NC}"

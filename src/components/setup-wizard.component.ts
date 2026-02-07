@@ -1,4 +1,5 @@
 
+
 import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { ElahehCoreService, EdgeNodeInfo } from '../services/elaheh-core.service';
 import { LanguageService } from '../services/language.service';
@@ -128,10 +129,7 @@ import { FormsModule } from '@angular/forms';
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <!-- External -->
-                  <button type="button" (click)="selectRole('external')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
-                    [class.border-teal-500]="selectedRole() === 'external'" 
-                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'external'}"
-                    [class.border-gray-600]="selectedRole() !== 'external'">
+                  <button type="button" (click)="selectRole('external')" [class]="'p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right ' + (selectedRole() === 'external' ? 'border-teal-500 bg-teal-900/20' : 'border-gray-600')">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
                             <svg class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
@@ -145,10 +143,7 @@ import { FormsModule } from '@angular/forms';
                   </button>
 
                   <!-- Iran -->
-                  <button type="button" (click)="selectRole('iran')" class="p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right" 
-                    [class.border-teal-500]="selectedRole() === 'iran'" 
-                    [ngClass]="{'bg-teal-900/20': selectedRole() === 'iran'}"
-                    [class.border-gray-600]="selectedRole() !== 'iran'">
+                  <button type="button" (click)="selectRole('iran')" [class]="'p-6 rounded-xl border-2 flex flex-col gap-3 transition-all hover:bg-gray-700 group text-left rtl:text-right ' + (selectedRole() === 'iran' ? 'border-teal-500 bg-teal-900/20' : 'border-gray-600')">
                     <div class="flex justify-between items-start">
                         <div class="p-3 bg-gray-700 rounded-lg group-hover:bg-gray-600 transition-colors">
                             <svg class="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>

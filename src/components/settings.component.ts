@@ -1,7 +1,8 @@
 
+
 import { Component, inject, signal, ChangeDetectionStrategy, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ElahehCoreService } from '../services/elaheh-core.service';
+import { ElahehCoreService, EdgeServer } from '../services/elaheh-core.service';
 import { CryptoLayerService } from '../services/crypto-layer.service';
 import { CamouflageSettingsComponent } from './camouflage-settings.component';
 import { LanguageService } from '../services/language.service';
@@ -151,17 +152,17 @@ export class SettingsComponent implements OnInit, OnDestroy {
   createEdgeServer() {
       if(this.edgeServerForm.valid) {
           const { name, host } = this.edgeServerForm.value;
-          this.core.addEdgeServer({
-              id: Math.random().toString(36).substring(2),
-              name: name!,
-              host: host!
-          });
+          this.core.addEdgeServer({ name: name!, host: host! });
           this.edgeServerForm.reset();
       }
   }
 
   removeEdgeServer(id: string) {
       this.core.removeEdgeServer(id);
+  }
+
+  checkServerHealth(serverId: string) {
+    this.core.checkServerHealth(serverId);
   }
 
   // Upstream Logic

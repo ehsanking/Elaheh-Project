@@ -1,4 +1,5 @@
 
+
 import { Component, inject, OnInit, OnDestroy, signal, effect, ChangeDetectionStrategy, computed, untracked } from '@angular/core';
 import { ElahehCoreService } from '../services/elaheh-core.service';
 import { CommonModule } from '@angular/common';
@@ -115,10 +116,7 @@ import { LanguageService } from '../services/language.service';
                         <path class="text-gray-200 dark:text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
                         <path [attr.stroke-dasharray]="qualityScore() + ', 100'"
                               class="transition-all duration-1000 ease-out"
-                              [class.text-green-500]="core.connectionQuality() === 'Excellent'"
-                              [class.text-blue-500]="core.connectionQuality() === 'Good'"
-                              [class.text-yellow-500]="core.connectionQuality() === 'Fair'"
-                              [class.text-red-500]="core.connectionQuality() === 'Poor'"
+                              [class]="qualityScoreClass()"
                               d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
                     </svg>
                     <div class="absolute flex flex-col items-center">
@@ -130,15 +128,7 @@ import { LanguageService } from '../services/language.service';
                         </span>
                     </div>
                 </div>
-                <div class="text-lg font-bold"
-                     [class.text-green-600]="core.connectionQuality() === 'Excellent'"
-                     [class.dark:text-green-400]="core.connectionQuality() === 'Excellent'"
-                     [class.text-blue-600]="core.connectionQuality() === 'Good'"
-                     [class.dark:text-blue-400]="core.connectionQuality() === 'Good'"
-                     [class.text-yellow-600]="core.connectionQuality() === 'Fair'"
-                     [class.dark:text-yellow-400]="core.connectionQuality() === 'Fair'"
-                     [class.text-red-600]="core.connectionQuality() === 'Poor'"
-                     [class.dark:text-red-400]="core.connectionQuality() === 'Poor'">
+                <div class="text-lg font-bold" [class]="qualityClass()">
                     {{ languageService.translate('dashboard.quality.' + core.connectionQuality()) }}
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-1">{{ languageService.translate('dashboard.connectionQuality') }}</div>
@@ -223,7 +213,7 @@ import { LanguageService } from '../services/language.service';
       <h3 class="text-gray-500 dark:text-gray-400 mb-2 border-b border-gray-200 dark:border-gray-800 pb-2">{{ languageService.translate('systemLogs') }}</h3>
       <div class="flex-1 overflow-y-auto space-y-2 pr-2 h-40">
         @for (log of core.logs(); track log.timestamp) {
-          <div class="flex gap-2"><span class="text-gray-400 dark:text-gray-500">[{{log.timestamp}}]</span><span [class.text-blue-500]="log.level === 'INFO'" [class.dark:text-blue-400]="log.level === 'INFO'" [class.text-yellow-500]="log.level === 'WARN'" [class.dark:text-yellow-400]="log.level === 'WARN'" [class.text-red-600]="log.level === 'ERROR'" [class.dark:text-red-500]="log.level === 'ERROR'" [class.text-green-600]="log.level === 'SUCCESS'" [class.dark:text-green-400]="log.level === 'SUCCESS'">{{log.level}}</span><span class="text-gray-700 dark:text-gray-300">{{log.message}}</span></div>
+          <div class="flex gap-2"><span class="text-gray-400 dark:text-gray-500">[{{log.timestamp}}]</span><span [class]="getLogLevelClass(log.level)">{{log.level}}</span><span class="text-gray-700 dark:text-gray-300">{{log.message}}</span></div>
         }
       </div>
     </div>
@@ -260,6 +250,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (q === 'Good') return 75;
       if (q === 'Fair') return 50;
       return 25;
+  });
+
+  qualityClass = computed(() => {
+    switch (this.core.connectionQuality()) {
+        case 'Excellent': return 'text-green-600 dark:text-green-400';
+        case 'Good': return 'text-blue-600 dark:text-blue-400';
+        case 'Fair': return 'text-yellow-600 dark:text-yellow-400';
+        case 'Poor': return 'text-red-600 dark:text-red-400';
+        default: return '';
+    }
+  });
+
+  qualityScoreClass = computed(() => {
+    switch (this.core.connectionQuality()) {
+        case 'Excellent': return 'text-green-500';
+        case 'Good': return 'text-blue-500';
+        case 'Fair': return 'text-yellow-500';
+        case 'Poor': return 'text-red-500';
+        default: return 'text-gray-500';
+    }
   });
   
   chartOptions = computed(() => {
@@ -377,6 +387,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     clearInterval(this.timerInterval);
     if (this.chart) this.chart.destroy();
     if (this.stabilityChart) this.stabilityChart.destroy();
+  }
+
+  getLogLevelClass(level: string): string {
+    switch (level) {
+        case 'INFO': return 'text-blue-500 dark:text-blue-400';
+        case 'WARN': return 'text-yellow-500 dark:text-yellow-400';
+        case 'ERROR': return 'text-red-600 dark:text-red-500';
+        case 'SUCCESS': return 'text-green-600 dark:text-green-400';
+        default: return '';
+    }
   }
 
   private initCharts(): void {
