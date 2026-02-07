@@ -1,11 +1,12 @@
 
+
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { GoogleGenAI } from "@google/genai";
 import { DatabaseService } from './database.service';
 import { SmtpConfig } from './email.service';
 
 // --- Metadata ---
-export const APP_VERSION = '1.0.7'; 
+export const APP_VERSION = '1.0.0'; 
 export const APP_DEFAULT_BRAND = 'Elaheh VPN'; 
 
 // Declare process for type checking
