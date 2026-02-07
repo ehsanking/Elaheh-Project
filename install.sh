@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Project Elaheh - Ultimate Installer (Iran/Sanction Optimized)
-# Version 1.0.4 (Auto-Fetches Latest Release)
+# Version 1.0.7 (Builds from source, fetches latest release)
 # Author: EHSANKiNG
 
 # --- UI Colors ---
@@ -52,7 +52,7 @@ clear
 echo -e "${CYAN}"
 echo "################################################################"
 echo "   Project Elaheh - Anti-Censorship Tunnel Manager"
-echo "   Version 1.0.4 (Auto-Fetches Latest Release)"
+echo "   Version 1.0.7 (Builds from source, fetches latest release)"
 echo "   'Breaking the Silence.'"
 echo "################################################################"
 echo -e "${NC}"
@@ -115,6 +115,27 @@ log "INFO" "Starting installation for $ROLE on $DOMAIN ($OS) by user $RUN_USER"
 # --- STEP 1: Smart Package Installation ---
 echo -e "\n${GREEN}--- STEP 1: SYSTEM PACKAGES & DEPENDENCIES ---${NC}"
 
+install_nodejs() {
+    if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+        log "INFO" "Node.js/npm not found. Installing Node.js v20..."
+        if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+            curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO_CMD -E bash - >> "$LOG_FILE" 2>&1
+            $SUDO_CMD apt-get install -y nodejs >> "$LOG_FILE" 2>&1
+        else # Rocky/CentOS/Fedora
+            curl -fsSL https://rpm.nodesource.com/setup_20.x | $SUDO_CMD -E bash - >> "$LOG_FILE" 2>&1
+            $SUDO_CMD dnf install -y nodejs >> "$LOG_FILE" 2>&1
+        fi
+    else
+        log "INFO" "Node.js and npm are already installed."
+    fi
+    
+    if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+        log "ERROR" "Failed to install Node.js/npm."
+        return 1
+    fi
+    return 0
+}
+
 install_pkg_apt() {
     PKG=$1
     if dpkg -l | grep -q "^ii  $PKG "; then
@@ -136,6 +157,9 @@ install_pkg_dnf() {
 }
 
 prepare_system() {
+    install_nodejs
+    if [ $? -ne 0 ]; then return 1; fi
+
     if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
         $SUDO_CMD apt-get update -y -qq >> "$LOG_FILE" 2>&1
         local DEPS=("curl" "wget" "tar" "unzip" "ufw" "nginx" "certbot" "python3-certbot-nginx" "socat" "redis-server")
@@ -149,18 +173,21 @@ prepare_system() {
     fi
 }
 (prepare_system) &
-spinner $! "   > Verifying and installing base packages..."
+spinner $! "   > Verifying and installing base packages (incl. Node.js)..."
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to install system dependencies.${NC}"
+    exit 1
+fi
 
-# --- STEP 2: DOWNLOAD & INSTALL PANEL ---
-echo -e "\n${GREEN}--- STEP 2: INSTALLING ELAHEH PANEL ---${NC}"
+# --- STEP 2: DOWNLOAD, BUILD & INSTALL PANEL ---
+echo -e "\n${GREEN}--- STEP 2: INSTALLING & BUILDING ELAHEH PANEL ---${NC}"
 INSTALL_DIR="/opt/elaheh-project"
 
-download_and_extract() {
+download_and_build() {
     log "INFO" "Cleaning install directory $INSTALL_DIR"
     $SUDO_CMD rm -rf "$INSTALL_DIR"
     $SUDO_CMD mkdir -p "$INSTALL_DIR"
     
-    # --- Dynamic Release Fetching ---
     log "INFO" "Fetching latest release URL from GitHub..."
     RELEASE_URL=$(curl -s https://api.github.com/repos/ehsanking/Elaheh-Project/releases/latest | grep "browser_download_url" | grep ".zip" | cut -d '"' -f 4)
 
@@ -175,29 +202,18 @@ download_and_extract() {
 
     cd /tmp
     
-    # --- Robust Download Strategy ---
-    log "INFO" "Attempt 1: Downloading from GitHub Release: ${RELEASE_URL}"
-    if curl -s -L -o "$PANEL_ASSET_NAME" "$RELEASE_URL" >> "$LOG_FILE" 2>&1; then
-        log "SUCCESS" "Download from GitHub successful."
-    else
-        log "WARN" "Attempt 1 failed. Falling back to mirror."
-        MIRROR_URL="https://ghproxy.com/${RELEASE_URL}"
-        log "INFO" "Attempt 2: Downloading from mirror: ${MIRROR_URL}"
-        if ! curl -s -L -o "$PANEL_ASSET_NAME" "$MIRROR_URL" >> "$LOG_FILE" 2>&1; then
-            log "ERROR" "All download attempts failed."
-            return 1
-        fi
-        log "SUCCESS" "Download from mirror successful."
+    log "INFO" "Downloading source from GitHub: ${RELEASE_URL}"
+    if ! curl -s -L -o "$PANEL_ASSET_NAME" "$RELEASE_URL" >> "$LOG_FILE" 2>&1; then
+        log "ERROR" "Download failed."
+        return 1
     fi
 
     if ! $SUDO_CMD unzip -q "$PANEL_ASSET_NAME" -d "$INSTALL_DIR" >> "$LOG_FILE" 2>&1; then
         log "ERROR" "Failed to extract panel asset."
         return 1
     fi
-    log "SUCCESS" "Panel extracted to $INSTALL_DIR"
+    log "SUCCESS" "Panel source extracted to $INSTALL_DIR"
     
-    # Handle nested directory after extraction
-    # Using a wildcard to be version-agnostic
     if [ -d "$INSTALL_DIR"/Elaheh-Project-* ]; then
         EXTRACTED_DIR_PATH=$(find "$INSTALL_DIR" -maxdepth 1 -type d -name "Elaheh-Project-*")
         if [ -n "$EXTRACTED_DIR_PATH" ]; then
@@ -209,9 +225,27 @@ download_and_extract() {
     fi
     
     rm -f "$PANEL_ASSET_NAME"
+
+    # --- BUILD STEP ---
+    log "INFO" "Installing npm dependencies..."
+    cd "$INSTALL_DIR" || return 1
+    if ! $SUDO_CMD npm install >> "$LOG_FILE" 2>&1; then
+        log "ERROR" "npm install failed. Check log for details."
+        return 1
+    fi
+    log "SUCCESS" "npm dependencies installed."
+
+    log "INFO" "Building the Angular application for production..."
+    if ! $SUDO_CMD npm run build -- --configuration production >> "$LOG_FILE" 2>&1; then
+        log "ERROR" "Angular build failed. Check log for details."
+        return 1
+    fi
+    log "SUCCESS" "Angular application built successfully."
+    # --- END BUILD STEP ---
     
-    $SUDO_CMD mkdir -p "$INSTALL_DIR/assets"
-    echo "{\"role\": \"${ROLE}\", \"domain\": \"${DOMAIN}\", \"installedAt\": \"$(date)\"}" | $SUDO_CMD tee "$INSTALL_DIR/assets/server-config.json" > /dev/null
+    # Place config in the assets folder of the built application
+    $SUDO_CMD mkdir -p "$INSTALL_DIR/dist/project-elaheh/browser/assets"
+    echo "{\"role\": \"${ROLE}\", \"domain\": \"${DOMAIN}\", \"installedAt\": \"$(date)\"}" | $SUDO_CMD tee "$INSTALL_DIR/dist/project-elaheh/browser/assets/server-config.json" > /dev/null
     
     $SUDO_CMD chown -R root:root "$INSTALL_DIR"
     $SUDO_CMD chmod -R 755 "$INSTALL_DIR"
@@ -219,10 +253,10 @@ download_and_extract() {
     return 0
 }
 
-(download_and_extract) &
-spinner $! "   > Downloading and extracting..."
+(download_and_build) &
+spinner $! "   > Downloading source, installing dependencies, and building..."
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Failed to download or extract the panel.${NC}"
+    echo -e "${RED}Error: Failed to download or build the panel.${NC}"
     echo -e "${YELLOW}Check your internet connection and see log: ${LOG_FILE}${NC}"
     exit 1
 fi
@@ -277,6 +311,7 @@ if [ "$USE_SELF_SIGNED" -eq 1 ]; then
     SSL_CERT="$SELF_DIR/selfsigned.crt"
 fi
 
+NGINX_ROOT_DIR="${INSTALL_DIR}/dist/project-elaheh/browser"
 cat <<EOF | $SUDO_CMD tee /etc/nginx/sites-available/elaheh > /dev/null
 server {
     listen 80;
@@ -303,7 +338,7 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     
-    root ${INSTALL_DIR};
+    root ${NGINX_ROOT_DIR};
     index index.html;
 
     location / {
@@ -355,7 +390,7 @@ spinner $! "   > Configuring Firewall (UFW/Firewalld)..."
 echo ""
 echo -e "${GREEN}==============================================${NC}"
 echo -e "${GREEN}          INSTALLATION SUCCESSFUL!${NC}"
-echo -e "          Installation Time: < 2 Minutes"
+echo -e "          Installation Time: < 3 Minutes (with build)"
 echo -e "          Role: ${ROLE^^}"
 echo -e "          Panel Address: https://${DOMAIN}"
 if [ "$USE_SELF_SIGNED" -eq 1 ]; then
